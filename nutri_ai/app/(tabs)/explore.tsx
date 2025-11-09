@@ -7,7 +7,7 @@ import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Fonts } from "@/constants/theme";
+import { Typography } from "@/constants/theme";
 
 export default function TabTwoScreen() {
   return (
@@ -26,7 +26,7 @@ export default function TabTwoScreen() {
         <ThemedText
           type="title"
           style={{
-            fontFamily: Fonts.rounded,
+            fontFamily: Typography.fonts.rounded,
           }}
         >
           Explore
@@ -91,7 +91,10 @@ export default function TabTwoScreen() {
             components/HelloWave.tsx
           </ThemedText>{" "}
           component uses the powerful{" "}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
+          <ThemedText
+            type="defaultSemiBold"
+            style={{ fontFamily: Typography.fonts.mono }}
+          >
             react-native-reanimated
           </ThemedText>{" "}
           library to create a waving hand animation.
