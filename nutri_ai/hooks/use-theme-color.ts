@@ -6,9 +6,11 @@
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+type ColorKey = "text" | "background" | "cardBackground";
+
 export function useThemeColor(
   props: { light?: string; dark?: string },
-  colorName: keyof typeof Colors.light & keyof typeof Colors.dark,
+  colorName: ColorKey,
 ) {
   const theme = useColorScheme() ?? "light";
   const colorFromProps = props[theme];
@@ -16,6 +18,15 @@ export function useThemeColor(
   if (colorFromProps) {
     return colorFromProps;
   } else {
-    return Colors[theme][colorName];
+    // Handle the nested color structure in the unified theme
+    if (colorName === "text") {
+      return Colors.text[theme];
+    } else if (colorName === "background") {
+      return Colors.background[theme];
+    } else if (colorName === "cardBackground") {
+      return Colors.cardBackground[theme];
+    }
+    // Fallback to text color if unknown key
+    return Colors.text[theme];
   }
 }
