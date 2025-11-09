@@ -12,7 +12,7 @@
      It installs all dependencies specified in `package.json`.
 
 2. Start the app
-   - In the package.json you find a section called `scripts`. This section lists all custom defined run commands currently in place.
+   - In the package.json you find a section called `scripts`. This section lists all custom defined run commands currently in place. Please install prettier and eslint to make this work :)
      - `start` script: formats code using `prettierrs.js` config for uniform code style and then starts the app, run with:
        ```bash
        npm start
