@@ -1,7 +1,7 @@
 import { logger, consoleTransport } from "react-native-logs";
 
 const config = {
-// Only show debug logs in development
+  // Only show debug logs in development
   severity: __DEV__ ? "debug" : "warn",
   transport: consoleTransport,
   transportOptions: {
