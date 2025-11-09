@@ -14,8 +14,21 @@ export class MealQuality {
     goalFitPercentage: number,
     mealQualityScore: number,
   ) {
+    validateNonNegative("calorieDensity", calorieDensity);
     this._calorieDensity = calorieDensity;
+
+    if (goalFitPercentage < 0 || goalFitPercentage > 100) {
+      log.error(
+        "Invalid goal fit percentage value: must be between 0 and 100.",
+      );
+      throw new RangeError("Goal fit percentage must be between 0 and 100.");
+    }
     this._goalFitPercentage = goalFitPercentage;
+
+    if (mealQualityScore < 1 || mealQualityScore > 10) {
+      log.error("Invalid meal quality score value: must be between 1 and 10.");
+      throw new RangeError("Meal quality score must be between 1 and 10.");
+    }
     this._mealQualityScore = mealQualityScore;
   }
 

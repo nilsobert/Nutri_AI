@@ -40,6 +40,9 @@ export class User implements IUser {
     password: string;
     medicalCondition: MedicalCondition;
   }) {
+    validateNonNegative("age", params.age);
+    validateNonNegative("weightKg", params.weightKg);
+
     this._name = params.name;
     this._age = params.age;
     this._weightKg = params.weightKg;
