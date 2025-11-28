@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   LayoutAnimation,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   UIManager,
   useColorScheme,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -252,16 +252,55 @@ const IOSStyleHomeScreen: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
-  // Generate a week of dates ending with today
-  const days = Array.from({ length: 7 }, (_, i) => {
+  // Layout calculations for date strip
+  const itemWidth = 32;
+  const gap = 20;
+  const itemFullWidth = itemWidth + gap;
+  const basePadding = Spacing.xl;
+  
+  // Calculate dynamic padding to ensure integer number of items are visible
+  const availableWidth = screenWidth - (basePadding * 2);
+  const numVisibleItems = Math.floor((availableWidth + gap) / itemFullWidth);
+  const totalItemWidth = numVisibleItems * itemFullWidth - gap;
+  const remainingSpace = availableWidth - totalItemWidth;
+  const dynamicPadding = basePadding + (remainingSpace / 2);
+
+  // Generate 30 days of dates ending with today
+  const days = Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
-    date.setDate(date.getDate() - (6 - i)); // 6 days ago to today
+    date.setDate(date.getDate() - (29 - i)); // 29 days ago to today
     return date;
   });
 
-  const meals: MealEntry[] = mockMeals;
+  React.useEffect(() => {
+    // Scroll to end (today) on mount
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+  }, []);
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
+  };
+
+  const scrollToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const meals: MealEntry[] = mockMeals.filter((meal) => {
+    const mealDate = new Date(meal.getTimestamp() * 1000);
+    return isSameDay(mealDate, currentDate);
+  });
 
   const totalCalories = meals.reduce(
     (sum: number, meal: MealEntry) =>
@@ -401,20 +440,20 @@ const IOSStyleHomeScreen: React.FC = () => {
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: Spacing.xl, paddingBottom: 100 }}>
-          <Text
-            style={{
-              fontSize: Typography.sizes.xl,
-              fontWeight: Typography.weights.semibold,
-              marginBottom: Spacing.lg,
-              color: textColor,
-            }}
-          >
-            Today's Meals
+        {/* Meals Section */}
+        <View style={styles.mealsSection}>
+          <Text style={[styles.sectionTitle, { color: textColor }]}>
+            {isSameDay(currentDate, new Date()) ? "Today's Meals" : "Meals"}
           </Text>
-          {meals.map((meal, idx) => (
-            <MealCard key={idx} meal={meal} isDark={isDark} />
-          ))}
+          {meals.length > 0 ? (
+            meals.map((meal: MealEntry, index: number) => (
+              <MealCard key={index} meal={meal} isDark={isDark} />
+            ))
+          ) : (
+            <Text style={{ color: secondaryText, textAlign: "center" }}>
+              No meals recorded for this day
+            </Text>
+          )}
         </View>
       </ScrollView>
 
@@ -433,7 +472,7 @@ const IOSStyleHomeScreen: React.FC = () => {
         <View style={styles.headerTopRow}>
           <View>
             <Text style={[styles.headerDate, { color: secondaryText }]}>
-              {new Date()
+              {currentDate
                 .toLocaleDateString("en-US", {
                   weekday: "long",
                   month: "long",
@@ -442,10 +481,22 @@ const IOSStyleHomeScreen: React.FC = () => {
                 .toUpperCase()}
             </Text>
             <Text style={[styles.headerTitle, { color: textColor }]}>
-              Today
+              {isSameDay(currentDate, new Date())
+                ? "Today"
+                : currentDate.toLocaleDateString("en-US", { weekday: "long" })}
             </Text>
           </View>
           <View style={styles.headerButtons}>
+            {!isSameDay(currentDate, new Date()) && (
+              <TouchableOpacity
+                style={[styles.todayButton, { backgroundColor: cardBg }]}
+                onPress={scrollToToday}
+              >
+                <Text style={[styles.todayButtonText, { color: Colors.primary }]}>
+                  Today
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: cardBg }]}
             >
@@ -464,56 +515,72 @@ const IOSStyleHomeScreen: React.FC = () => {
         </View>
 
         {/* Date Strip */}
-        <View style={styles.dateStrip}>
-          {days.map((day, index) => {
-            const isSelected = day.getDate() === currentDate.getDate();
-            const isToday = day.getDate() === new Date().getDate();
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.dateItem}
-                onPress={() => setCurrentDate(day)}
-                activeOpacity={0.7}
-              >
-                <Text
+        <View style={styles.dateStripContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.dateStripContent,
+              { paddingHorizontal: dynamicPadding },
+            ]}
+            style={styles.dateStrip}
+            snapToInterval={itemFullWidth}
+            decelerationRate="fast"
+          >
+            {days.map((day, index) => {
+              const isSelected = isSameDay(day, currentDate);
+              const isToday = isSameDay(day, new Date());
+              return (
+                <TouchableOpacity
+                  key={index}
                   style={[
-                    styles.dayName,
-                    {
-                      color: isSelected
-                        ? Colors.primary
-                        : isToday
-                          ? Colors.primary
-                          : secondaryText,
-                      fontWeight: isSelected ? "600" : "400",
-                    },
+                    styles.dateItem,
+                    index !== days.length - 1 && { marginRight: gap },
                   ]}
-                >
-                  {day.toLocaleDateString("en-US", { weekday: "short" })[0]}
-                </Text>
-                <View
-                  style={[
-                    styles.dayNumberContainer,
-                    isSelected && { backgroundColor: Colors.primary },
-                  ]}
+                  onPress={() => setCurrentDate(day)}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[
-                      styles.dayNumber,
+                      styles.dayName,
                       {
                         color: isSelected
-                          ? "white"
+                          ? Colors.primary
                           : isToday
                             ? Colors.primary
-                            : textColor,
+                            : secondaryText,
+                        fontWeight: isSelected ? "600" : "400",
                       },
                     ]}
                   >
-                    {day.getDate()}
+                    {day.toLocaleDateString("en-US", { weekday: "short" })[0]}
                   </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                  <View
+                    style={[
+                      styles.dayNumberContainer,
+                      isSelected && { backgroundColor: Colors.primary },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayNumber,
+                        {
+                          color: isSelected
+                            ? "white"
+                            : isToday
+                              ? Colors.primary
+                              : textColor,
+                        },
+                      ]}
+                    >
+                      {day.getDate()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       </BlurView>
 
@@ -572,14 +639,31 @@ const styles = StyleSheet.create({
     alignItems: "center",
     ...Shadows.small,
   },
+  todayButton: {
+    height: 40,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.small,
+  },
+  todayButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dateStripContainer: {
+    position: "relative",
+  },
   dateStrip: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.xl,
+    flexGrow: 0,
+  },
+  dateStripContent: {
+    // paddingHorizontal is handled dynamically
   },
   dateItem: {
     alignItems: "center",
     gap: 6,
+    width: 32, // Fixed width for alignment
   },
   dayName: {
     fontSize: 11,
