@@ -29,9 +29,10 @@ export class MealEntry {
     nutritionInfo: NutritionInfo,
     image?: string,
     transcription?: string,
+    timestamp?: number,
   ) {
     this._id = uuidv4();
-    this._timestamp = Math.floor(Date.now() / MS_TO_S);
+    this._timestamp = timestamp || Math.floor(Date.now() / MS_TO_S);
     this._category = category;
     this._mealQuality = mealQuality;
     this._nutritionInfo = nutritionInfo;

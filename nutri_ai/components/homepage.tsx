@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   LayoutAnimation,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,16 +11,29 @@ import {
   UIManager,
   useColorScheme,
   View,
+  useWindowDimensions,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 import {
   BorderRadius,
   Colors,
   Shadows,
   Spacing,
   Typography,
+  TextStyles,
 } from "../constants/theme";
 import { mockMeals } from "../mock-data/meals";
 import { MealCategory, MealEntry } from "../types/mealEntry";
+import { ActivityRings } from "./ActivityRings";
 
 if (
   Platform.OS === "android" &&
@@ -30,19 +42,66 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-interface MealCardProps {
-  meal: MealEntry;
+interface NutrientPillProps {
+  label: string;
+  value: string;
+  color: string;
   isDark: boolean;
 }
 
-const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
+const AnimatedTouchableOpacity =
+  Animated.createAnimatedComponent(TouchableOpacity);
+
+const NutrientPill: React.FC<NutrientPillProps> = ({
+  label,
+  value,
+  color,
+  isDark,
+}) => (
+  <View
+    style={[
+      styles.nutrientPill,
+      { backgroundColor: isDark ? `${color}20` : `${color}15` },
+    ]}
+  >
+    <View style={[styles.nutrientDot, { backgroundColor: color }]} />
+    <View>
+      <Text style={[styles.nutrientValue, { color: isDark ? "#fff" : "#000" }]}>
+        {value}
+      </Text>
+      <Text style={[styles.nutrientLabel, { color: color }]}>{label}</Text>
+    </View>
+  </View>
+);
+
+interface MealCardProps {
+  meal: MealEntry;
+  isDark: boolean;
+  isToday: boolean;
+}
+
+const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const rotation = useSharedValue(0);
   const nutrition = meal.getNutritionInfo();
   const quality = meal.getMealQuality();
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(!expanded);
+    rotation.value = withTiming(expanded ? 0 : 180);
+  };
+
+  const chevronStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${rotation.value}deg` }],
+    };
+  });
+
+  const getQualityColor = (score: number) => {
+    if (score >= 7) return "#34C759"; // Green
+    if (score >= 4) return "#FF9500"; // Orange
+    return "#FF3B30"; // Red
   };
 
   const getMealIcon = (category: MealCategory) => {
@@ -65,122 +124,156 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
+  const borderColor = isDark ? "#333" : "#f0f0f0";
 
   return (
-    <TouchableOpacity
+    <AnimatedTouchableOpacity
       onPress={toggleExpand}
       style={[styles.mealCard, { backgroundColor: cardBg }]}
       activeOpacity={0.7}
+      layout={LinearTransition}
     >
       <View style={styles.mealCardHeader}>
-        <View style={styles.mealIconContainer}>
-          <View
-            style={[
-              styles.mealIcon,
-              { backgroundColor: isDark ? "#2a2a2a" : "#f5f5f5" },
-            ]}
-          >
-            <Ionicons
-              name={getMealIcon(meal.getCategory()) as any}
-              size={24}
-              color={Colors.primary}
-            />
-          </View>
-          <View style={styles.mealInfo}>
+        <View
+          style={[
+            styles.mealIcon,
+            { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+          ]}
+        >
+          <Ionicons
+            name={getMealIcon(meal.getCategory()) as any}
+            size={24}
+            color={Colors.primary}
+          />
+        </View>
+
+        <View style={styles.mealHeaderInfo}>
+          <View style={styles.mealTitleRow}>
             <Text style={[styles.mealName, { color: textColor }]}>
               {meal.getCategory()}
             </Text>
-            <Text style={[styles.mealDescription, { color: secondaryText }]}>
-              {meal.getTranscription() || "No description"}
+            <Text style={[styles.mealCalories, { color: textColor }]}>
+              {nutrition.getCalories()}{" "}
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "400",
+                  color: secondaryText,
+                }}
+              >
+                kcal
+              </Text>
             </Text>
           </View>
-        </View>
-        <View style={styles.mealCaloriesContainer}>
-          <Text style={[styles.mealCalories, { color: Colors.primary }]}>
-            {nutrition.getCalories()}
-          </Text>
-          <Text style={[styles.mealCaloriesLabel, { color: secondaryText }]}>
-            kcal
-          </Text>
+          <View style={styles.mealSubtitleRow}>
+            <Text
+              style={[styles.mealDescription, { color: secondaryText }]}
+              numberOfLines={1}
+            >
+              {meal.getTranscription() || "No description"}
+            </Text>
+            <Animated.View style={chevronStyle}>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={secondaryText}
+              />
+            </Animated.View>
+          </View>
         </View>
       </View>
 
       {expanded && (
-        <View style={styles.mealDetails}>
-          <View
-            style={[
-              styles.detailsDivider,
-              { backgroundColor: isDark ? "#333" : "#eee" },
-            ]}
-          />
-          {/* Nutrition Info */}
-          <View style={styles.nutritionGrid}>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Carbs
+        <Animated.View
+          style={styles.mealDetails}
+          entering={FadeIn}
+          exiting={FadeOut}
+        >
+          <View style={styles.nutrientRow}>
+            <NutrientPill
+              label="Carbs"
+              value={`${nutrition.getCarbs()}g`}
+              color={Colors.secondary.carbs}
+              isDark={isDark}
+            />
+            <NutrientPill
+              label="Protein"
+              value={`${nutrition.getProtein()}g`}
+              color={Colors.secondary.protein}
+              isDark={isDark}
+            />
+            <NutrientPill
+              label="Fat"
+              value={`${nutrition.getFat()}g`}
+              color={Colors.secondary.fat}
+              isDark={isDark}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Quality
               </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getCarbs()}g
+              <View
+                style={[
+                  styles.qualityBadge,
+                  {
+                    backgroundColor: getQualityColor(
+                      quality.getMealQualityScore(),
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.qualityScore}>
+                  {quality.getMealQualityScore()}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Goal Fit
+              </Text>
+              <Text style={[styles.statValue, { color: textColor }]}>
+                {quality.getGoalFitPercentage()}%
               </Text>
             </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Protein
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Density
               </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getProtein()}g
-              </Text>
-            </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Fat
-              </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getFat()}g
-              </Text>
-            </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Sugar
-              </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getSugar()}g
+              <Text style={[styles.statValue, { color: textColor }]}>
+                {quality.getCalorieDensity().toFixed(1)}
               </Text>
             </View>
           </View>
 
-          {/* Meal Quality */}
-          <View style={styles.qualitySection}>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Quality Score
+          {isToday && (
+            <TouchableOpacity
+              style={[
+                styles.addMealButton,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+              onPress={() => router.push("/add-meal")}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={Colors.primary}
+              />
+              <Text
+                style={[styles.addMealButtonText, { color: Colors.primary }]}
+              >
+                Add Item
               </Text>
-              <View style={styles.qualityBadge}>
-                <Text style={styles.qualityScore}>
-                  {quality.getMealQualityScore()}/10
-                </Text>
-              </View>
-            </View>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Goal Fit
-              </Text>
-              <Text style={[styles.qualityValue, { color: textColor }]}>
-                {quality.getGoalFitPercentage()}%
-              </Text>
-            </View>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Calorie Density
-              </Text>
-              <Text style={[styles.qualityValue, { color: textColor }]}>
-                {quality.getCalorieDensity().toFixed(1)} kcal/g
-              </Text>
-            </View>
-          </View>
-        </View>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   );
 };
 
@@ -188,29 +281,56 @@ const IOSStyleHomeScreen: React.FC = () => {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
-  // compute previous 3 days + current
-  const getDays = (date: Date) => {
-    return [-3, -2, -1, 0].map((offset) => {
-      const d = new Date(date);
-      d.setDate(date.getDate() + offset);
-      return d;
-    });
+  // Layout calculations for date strip
+  const itemWidth = 32;
+  const gap = 20;
+  const itemFullWidth = itemWidth + gap;
+  const basePadding = Spacing.xl;
+  
+  // Calculate dynamic padding to ensure integer number of items are visible
+  const availableWidth = screenWidth - (basePadding * 2);
+  const numVisibleItems = Math.floor((availableWidth + gap) / itemFullWidth);
+  const totalItemWidth = numVisibleItems * itemFullWidth - gap;
+  const remainingSpace = availableWidth - totalItemWidth;
+  const dynamicPadding = basePadding + (remainingSpace / 2);
+
+  // Generate 30 days of dates ending with today
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - i)); // 29 days ago to today
+    return date;
+  });
+
+  React.useEffect(() => {
+    // Scroll to end (today) on mount
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+  }, []);
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
   };
 
-  const days = getDays(currentDate);
-
-  const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "short",
-      day: "numeric",
-    };
-    return date.toLocaleDateString("en-US", options);
+  const scrollToToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
-  const meals: MealEntry[] = mockMeals;
+  const meals: MealEntry[] = mockMeals.filter((meal) => {
+    const mealDate = new Date(meal.getTimestamp() * 1000);
+    return isSameDay(mealDate, currentDate);
+  });
 
   const totalCalories = meals.reduce(
     (sum: number, meal: MealEntry) =>
@@ -218,7 +338,27 @@ const IOSStyleHomeScreen: React.FC = () => {
     0,
   );
 
+  const totalCarbs = meals.reduce(
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
+    0,
+  );
+
+  const totalProtein = meals.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getProtein(),
+    0,
+  );
+
+  const totalFat = meals.reduce(
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
+    0,
+  );
+
   const calorieGoal = 2500;
+  const carbsGoal = 300;
+  const proteinGoal = 150;
+  const fatGoal = 80;
+
   const remainingCalories = calorieGoal - totalCalories;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
@@ -229,120 +369,359 @@ const IOSStyleHomeScreen: React.FC = () => {
   const secondaryText = isDark ? "#999" : "#666";
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Today
-            </Text>
-            <Text style={[styles.headerDate, { color: secondaryText }]}>
-              {currentDate.toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.calendarButton, { backgroundColor: cardBg }]}
-            onPress={() => router.push("/screens/calendar-screen")}
-          >
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color={Colors.primary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* 4-day horizontal bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginVertical: Spacing.lg, paddingHorizontal: Spacing.lg }}
-          contentContainerStyle={{ gap: Spacing.sm }}
-        >
-          {days.map((day, index) => {
-            const isSelected = day.getDate() === currentDate.getDate();
-            return (
-              <TouchableOpacity
-                key={index}
-                onPress={() => setCurrentDate(day)}
-                style={{
-                  paddingVertical: Spacing.sm,
-                  paddingHorizontal: Spacing.lg,
-                  borderRadius: BorderRadius.xl,
-                  backgroundColor: isSelected ? Colors.primary : cardBg,
-                }}
-              >
-                <Text
-                  style={{
-                    color: isSelected ? "white" : textColor,
-                    fontWeight: isSelected ? "700" : "500",
-                  }}
-                >
-                  {formatDate(day)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {/* Calories and Meals Section */}
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: 160 + insets.top },
+        ]}
+      >
+        {/* Calorie Summary Card */}
         <View style={[styles.summaryCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.summaryTitle, { color: textColor }]}>
             Daily Summary
           </Text>
-          <Text style={{ color: textColor }}>
-            Remaining calories: {remainingCalories}
-          </Text>
+
+          <View style={styles.summaryContent}>
+            {/* Rings Section */}
+            <View style={styles.ringsContainer}>
+              <ActivityRings
+                carbs={totalCarbs}
+                carbsGoal={carbsGoal}
+                protein={totalProtein}
+                proteinGoal={proteinGoal}
+                fat={totalFat}
+                fatGoal={fatGoal}
+                size={180}
+              />
+              <View style={styles.ringsOverlay}>
+                <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
+                  {remainingCalories}
+                </Text>
+                <Text style={[styles.ringsOverlayLabel, { color: secondaryText }]}>
+                  kcal left
+                </Text>
+              </View>
+            </View>
+
+            {/* Legend Section */}
+            <View style={styles.legendContainer}>
+              {/* Calories */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.primary }]}>
+                  Calories
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCalories}
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {calorieGoal} kcal
+                  </Text>
+                </View>
+              </View>
+
+              {/* Carbs */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>
+                  Carbs
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCarbs}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {carbsGoal}g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Protein */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>
+                  Protein
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalProtein}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {proteinGoal}g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Fat */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>
+                  Fat
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalFat}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {fatGoal}g
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
         </View>
 
-        <View style={{ paddingHorizontal: Spacing.xl, paddingBottom: 100 }}>
-          <Text
-            style={{
-              fontSize: Typography.sizes.xl,
-              fontWeight: Typography.weights.semibold,
-              marginBottom: Spacing.lg,
-              color: textColor,
-            }}
-          >
-            Today's Meals
+        {/* Meals Section */}
+        <View style={styles.mealsSection}>
+          <Text style={[styles.sectionTitle, { color: textColor }]}>
+            {isSameDay(currentDate, new Date()) ? "Today's Meals" : "Meals"}
           </Text>
-          {meals.map((meal, idx) => (
-            <MealCard key={idx} meal={meal} isDark={isDark} />
-          ))}
+          {meals.length > 0 ? (
+            meals.map((meal: MealEntry, index: number) => (
+              <MealCard
+                key={index}
+                meal={meal}
+                isDark={isDark}
+                isToday={isSameDay(currentDate, new Date())}
+              />
+            ))
+          ) : (
+            <Text style={{ color: secondaryText, textAlign: "center" }}>
+              No meals recorded for this day
+            </Text>
+          )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Blur Header */}
+      <BlurView
+        intensity={80}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.absoluteHeader,
+          {
+            paddingTop: insets.top + Spacing.md,
+            borderBottomColor: isDark ? "#333" : "#ccc",
+          },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={[styles.headerDate, { color: secondaryText }]}>
+              {currentDate
+                .toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })
+                .toUpperCase()}
+            </Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              {isSameDay(currentDate, new Date())
+                ? "Today"
+                : currentDate.toLocaleDateString("en-US", { weekday: "long" })}
+            </Text>
+          </View>
+          <View style={styles.headerButtons}>
+            {!isSameDay(currentDate, new Date()) && (
+              <TouchableOpacity
+                style={[styles.todayButton, { backgroundColor: cardBg }]}
+                onPress={scrollToToday}
+              >
+                <Text style={[styles.todayButtonText, { color: Colors.primary }]}>
+                  Today
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.iconButton, { backgroundColor: cardBg }]}
+              onPress={() => router.push("/screens/calendar-screen")}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconButton, { backgroundColor: cardBg }]}
+            >
+              <Ionicons name="person" size={20} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Date Strip */}
+        <View style={styles.dateStripContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.dateStripContent,
+              { paddingHorizontal: dynamicPadding },
+            ]}
+            style={styles.dateStrip}
+            snapToInterval={itemFullWidth}
+            decelerationRate="fast"
+          >
+            {days.map((day, index) => {
+              const isSelected = isSameDay(day, currentDate);
+              const isToday = isSameDay(day, new Date());
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.dateItem,
+                    index !== days.length - 1 && { marginRight: gap },
+                  ]}
+                  onPress={() => setCurrentDate(day)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.dayName,
+                      {
+                        color: isSelected
+                          ? Colors.primary
+                          : isToday
+                            ? Colors.primary
+                            : secondaryText,
+                        fontWeight: isSelected ? "600" : "400",
+                      },
+                    ]}
+                  >
+                    {day.toLocaleDateString("en-US", { weekday: "short" })[0]}
+                  </Text>
+                  <View
+                    style={[
+                      styles.dayNumberContainer,
+                      isSelected && { backgroundColor: Colors.primary },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayNumber,
+                        {
+                          color: isSelected
+                            ? "white"
+                            : isToday
+                              ? Colors.primary
+                              : textColor,
+                        },
+                      ]}
+                    >
+                      {day.getDate()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </BlurView>
+
+      {/* Floating Action Button */}
+      {isSameDay(currentDate, new Date()) && (
+        <AnimatedTouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/add-meal")}
+          activeOpacity={0.8}
+          entering={FadeIn}
+          exiting={FadeOut}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </AnimatedTouchableOpacity>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
+  container: {
+    flex: 1,
+  },
+  absoluteHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 100,
+  },
+  headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
+    marginBottom: Spacing.md,
   },
   headerTitle: {
-    fontSize: Typography.sizes["4xl"],
-    fontWeight: Typography.weights.bold,
-    marginBottom: 4,
+    fontSize: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.3,
   },
-  headerDate: { fontSize: Typography.sizes.sm },
-  calendarButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.lg,
+  headerDate: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.small,
+  },
+  todayButton: {
+    height: 40,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.small,
+  },
+  todayButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dateStripContainer: {
+    position: "relative",
+  },
+  dateStrip: {
+    flexGrow: 0,
+  },
+  dateStripContent: {
+    // paddingHorizontal is handled dynamically
+  },
+  dateItem: {
+    alignItems: "center",
+    gap: 6,
+    width: 32, // Fixed width for alignment
+  },
+  dayName: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  dayNumberContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dayNumber: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   summaryCard: {
     marginHorizontal: Spacing.xl,
@@ -356,6 +735,61 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.lg,
   },
+  summaryContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+  },
+  ringsContainer: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringsOverlay: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringsOverlayValue: {
+    ...TextStyles.ringValue,
+  },
+  ringsOverlayLabel: {
+    ...TextStyles.ringLabel,
+    marginTop: 2,
+  },
+  legendContainer: {
+    flex: 1,
+    marginLeft: Spacing.xl,
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  legendItem: {
+    flexDirection: "column",
+  },
+  legendLabel: {
+    ...TextStyles.legendLabel,
+  },
+  legendValues: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+  },
+  legendValue: {
+    ...TextStyles.legendValue,
+  },
+  legendGoal: {
+    ...TextStyles.legendGoal,
+  },
+  mealsSection: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: 100,
+  },
+  sectionTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.lg,
+  },
   mealCard: {
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
@@ -364,10 +798,8 @@ const styles = StyleSheet.create({
   },
   mealCardHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
-  mealIconContainer: { flexDirection: "row", alignItems: "center", flex: 1 },
   mealIcon: {
     width: 48,
     height: 48,
@@ -376,58 +808,123 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: Spacing.md,
   },
-  mealInfo: { flex: 1 },
-  mealName: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: 2,
+  mealHeaderInfo: {
+    flex: 1,
+    justifyContent: "center",
   },
-  mealDescription: { fontSize: Typography.sizes.sm },
-  mealCaloriesContainer: { alignItems: "flex-end" },
-  mealCalories: {
-    fontSize: Typography.sizes["2xl"],
-    fontWeight: Typography.weights.bold,
-  },
-  mealCaloriesLabel: { fontSize: Typography.sizes.xs },
-  mealDetails: { marginTop: Spacing.lg },
-  detailsDivider: { height: 1, marginBottom: Spacing.lg },
-  nutritionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: Spacing.lg,
-  },
-  nutritionItem: { width: "50%", marginBottom: Spacing.md },
-  nutritionLabel: { fontSize: Typography.sizes.sm, marginBottom: 4 },
-  nutritionValue: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-  },
-  qualitySection: {
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  qualityRow: {
+  mealTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: 4,
   },
-  qualityLabel: { fontSize: Typography.sizes.sm },
-  qualityValue: {
+  mealSubtitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  mealName: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+  },
+  mealDescription: {
+    fontSize: Typography.sizes.sm,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  mealCalories: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+  },
+  mealDetails: {
+    marginTop: Spacing.lg,
+  },
+  nutrientRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  nutrientPill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.xs,
+  },
+  nutrientDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  nutrientValue: {
     fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.bold,
+    lineHeight: 20,
+  },
+  nutrientLabel: {
+    fontSize: 11,
     fontWeight: Typography.weights.medium,
+    textTransform: "uppercase",
+  },
+  divider: {
+    height: 1,
+    marginBottom: Spacing.lg,
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: Typography.sizes.xs,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
   },
   qualityBadge: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
   },
   qualityScore: {
     color: "white",
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.bold,
+  },
+  addMealButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  addMealButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+  },
+  fab: {
+    position: "absolute",
+    bottom: Spacing["3xl"],
+    right: Spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.large,
   },
 });
 

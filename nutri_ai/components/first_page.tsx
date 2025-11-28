@@ -200,7 +200,7 @@ export default function FirstPage() {
               backgroundColor: "#149B2A",
               ...Shadows.large,
             }}
-            onPress={() => router.push("/screens/home-screen")}
+            onPress={() => router.push("/(tabs)")}
             activeOpacity={0.85}
           >
             <Text

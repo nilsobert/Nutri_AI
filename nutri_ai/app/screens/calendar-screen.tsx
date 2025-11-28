@@ -11,6 +11,9 @@ import {
   Platform,
   UIManager,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
 import {
   BorderRadius,
   Colors,
@@ -18,9 +21,6 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
-
-import { Ionicons } from "@expo/vector-icons";
-import Feather from "@expo/vector-icons/Feather";
 
 // Enable LayoutAnimation on Android
 if (
@@ -67,10 +67,26 @@ const categoryLabels: Record<string, string> = {
   other: "Other",
 };
 
+const getMealIcon = (category: string) => {
+  switch (category) {
+    case "breakfast":
+      return "sunny-outline";
+    case "lunch":
+      return "restaurant-outline";
+    case "dinner":
+      return "moon-outline";
+    case "snack":
+      return "cafe-outline";
+    default:
+      return "fast-food-outline";
+  }
+};
+
 export default function MergedCalendar() {
   const today = new Date();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
@@ -167,210 +183,283 @@ export default function MergedCalendar() {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      {/* Segmented control */}
-      <View
-        style={[
-          styles.segmentWrap,
-          { backgroundColor: isDark ? "#2a2a2a" : "#e8e8e8" },
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: 60 + insets.top },
         ]}
       >
-        {(["month", "year"] as const).map((v) => (
-          <TouchableOpacity
-            key={v}
-            onPress={() => setViewMode(v)}
-            style={[
-              styles.segment,
-              viewMode === v && { backgroundColor: GREEN },
-            ]}
-          >
-            <Text
+        {/* Segmented control */}
+        <View
+          style={[
+            styles.segmentWrap,
+            { backgroundColor: isDark ? "#2a2a2a" : "#e8e8e8" },
+          ]}
+        >
+          {(["month", "year"] as const).map((v) => (
+            <TouchableOpacity
+              key={v}
+              onPress={() => setViewMode(v)}
               style={[
-                styles.segmentText,
-                { color: viewMode === v ? "white" : GREEN },
+                styles.segment,
+                viewMode === v && { backgroundColor: GREEN },
               ]}
             >
-              {v.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Header */}
-      <View style={styles.header}>
-        {viewMode === "month" && (
-          <>
-            <TouchableOpacity onPress={prevMonth}>
-              <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
-            </TouchableOpacity>
-            <View style={styles.centeredHeader}>
-              <Text style={[styles.headerTitle, { color: textColor }]}>
-                {monthNames[month]} {year}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={nextMonth}>
-              <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        {viewMode === "year" && (
-          <View style={styles.yearHeader}>
-            <TouchableOpacity onPress={prevYear}>
-              <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
-            </TouchableOpacity>
-            <View style={styles.centeredHeader}>
-              <Text style={[styles.headerTitle, { color: textColor }]}>
-                {year}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={nextYear}>
-              <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      {/* MONTH VIEW */}
-      {viewMode === "month" && (
-        <View>
-          <View style={styles.weekLabelsRow}>
-            {["M", "T", "W", "T", "F", "S", "S"].map((ini, i) => (
               <Text
-                key={i}
-                style={[styles.weekLabel, { color: secondaryText }]}
+                style={[
+                  styles.segmentText,
+                  { color: viewMode === v ? "white" : GREEN },
+                ]}
               >
-                {ini}
+                {v.toUpperCase()}
               </Text>
-            ))}
-          </View>
-          {monthMatrix.map((row, rIdx) => (
-            <View key={rIdx} style={styles.gridRow}>
-              {row.map((day, cIdx) => {
-                const isToday =
-                  day !== null &&
-                  isSameDate(new Date(year, month, day), new Date());
-                const dayStr = day
-                  ? new Date(year, month, day).toISOString().split("T")[0]
-                  : "";
-                const hasMeal =
-                  dayStr &&
-                  dummyMeals[dayStr] &&
-                  Object.values(dummyMeals[dayStr]).some(
-                    (arr) => arr.length > 0,
-                  );
+            </TouchableOpacity>
+          ))}
+        </View>
 
-                return (
-                  <View key={cIdx} style={styles.gridCell}>
-                    {day ? (
-                      <TouchableOpacity
-                        onPress={() => handleDayPress(day)}
-                        style={[
-                          styles.dayCircle,
-                          isToday && {
-                            backgroundColor: GREEN,
-                            shadowColor: "#000",
-                            shadowOpacity: 0.15,
-                            shadowRadius: 4,
-                          },
-                          hasMeal &&
-                            !isToday && { borderWidth: 2, borderColor: GREEN },
-                        ]}
-                      >
-                        <Text
+        {/* Header */}
+        <View style={styles.header}>
+          {viewMode === "month" && (
+            <>
+              <TouchableOpacity onPress={prevMonth}>
+                <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
+              </TouchableOpacity>
+              <View style={styles.centeredHeader}>
+                <Text style={[styles.headerTitle, { color: textColor }]}>
+                  {monthNames[month]} {year}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={nextMonth}>
+                <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {viewMode === "year" && (
+            <View style={styles.yearHeader}>
+              <TouchableOpacity onPress={prevYear}>
+                <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
+              </TouchableOpacity>
+              <View style={styles.centeredHeader}>
+                <Text style={[styles.headerTitle, { color: textColor }]}>
+                  {year}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={nextYear}>
+                <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* MONTH VIEW */}
+        {viewMode === "month" && (
+          <View>
+            <View style={styles.weekLabelsRow}>
+              {["M", "T", "W", "T", "F", "S", "S"].map((ini, i) => (
+                <Text
+                  key={i}
+                  style={[styles.weekLabel, { color: secondaryText }]}
+                >
+                  {ini}
+                </Text>
+              ))}
+            </View>
+            {monthMatrix.map((row, rIdx) => (
+              <View key={rIdx} style={styles.gridRow}>
+                {row.map((day, cIdx) => {
+                  const isToday =
+                    day !== null &&
+                    isSameDate(new Date(year, month, day), new Date());
+                  const dayStr = day
+                    ? new Date(year, month, day).toISOString().split("T")[0]
+                    : "";
+                  const hasMeal =
+                    dayStr &&
+                    dummyMeals[dayStr] &&
+                    Object.values(dummyMeals[dayStr]).some(
+                      (arr) => arr.length > 0,
+                    );
+
+                  return (
+                    <View key={cIdx} style={styles.gridCell}>
+                      {day ? (
+                        <TouchableOpacity
+                          onPress={() => handleDayPress(day)}
                           style={[
-                            styles.dayText,
-                            {
-                              color: isToday ? "white" : textColor,
-                              fontWeight: isToday ? "700" : "400",
+                            styles.dayCircle,
+                            isToday && {
+                              backgroundColor: GREEN,
+                              shadowColor: "#000",
+                              shadowOpacity: 0.15,
+                              shadowRadius: 4,
                             },
+                            hasMeal &&
+                              !isToday && { borderWidth: 2, borderColor: GREEN },
                           ]}
                         >
-                          {day}
+                          <Text
+                            style={[
+                              styles.dayText,
+                              {
+                                color: isToday ? "white" : textColor,
+                                fontWeight: isToday ? "700" : "400",
+                              },
+                            ]}
+                          >
+                            {day}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={styles.dayEmpty} />
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* YEAR VIEW */}
+        {viewMode === "year" && (
+          <View style={styles.yearGrid}>
+            {yearGrid.map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[
+                  styles.yearCell,
+                  { backgroundColor: cardBg },
+                  Shadows.small,
+                ]}
+                onPress={() => {
+                  setMonth(m);
+                  setViewMode("month");
+                }}
+              >
+                <Text style={[styles.yearMonthText, { color: textColor }]}>
+                  {monthNames[m]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Selected Date */}
+        <Text style={[styles.dateTitle, { color: GREEN }]}>{selectedDate}</Text>
+
+        {/* Meal List */}
+        <View style={styles.mealList}>
+          {mealCategories.map((category) => (
+            <View
+              key={category}
+              style={[styles.categoryContainer, { backgroundColor: cardBg }]}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.categoryHeader,
+                  { backgroundColor: isDark ? "#262727" : "#E3F2FD" },
+                ]}
+                onPress={() => toggleExpand(category)}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Ionicons
+                    name={getMealIcon(category) as any}
+                    size={20}
+                    color={GREEN}
+                  />
+                  <Text style={[styles.categoryTitle, { color: GREEN }]}>
+                    {categoryLabels[category]}
+                  </Text>
+                </View>
+                <Ionicons
+                  name={expanded[category] ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color={GREEN}
+                />
+              </TouchableOpacity>
+              {expanded[category] && (
+                <View style={styles.mealDetails}>
+                  {mealsForSelected[category].length === 0 ? (
+                    <Text style={[styles.noMealText, { color: secondaryText }]}>
+                      No meals recorded.
+                    </Text>
+                  ) : (
+                    mealsForSelected[category].map((meal, idx) => (
+                      <View key={idx} style={styles.mealItem}>
+                        <Text style={[styles.mealName, { color: textColor }]}>
+                          {meal.name}
                         </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={styles.dayEmpty} />
-                    )}
-                  </View>
-                );
-              })}
+                        <Text style={[styles.mealDesc, { color: secondaryText }]}>
+                          {meal.details}
+                        </Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              )}
             </View>
           ))}
         </View>
-      )}
-
-      {/* YEAR VIEW */}
-      {viewMode === "year" && (
-        <ScrollView contentContainerStyle={styles.yearGrid}>
-          {yearGrid.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[
-                styles.yearCell,
-                { backgroundColor: cardBg },
-                Shadows.small,
-              ]}
-              onPress={() => {
-                setMonth(m);
-                setViewMode("month");
-              }}
-            >
-              <Text style={[styles.yearMonthText, { color: textColor }]}>
-                {monthNames[m]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
-      {/* Selected Date */}
-      <Text style={[styles.dateTitle, { color: GREEN }]}>{selectedDate}</Text>
-
-      {/* Meal List */}
-      <ScrollView style={styles.mealList}>
-        {mealCategories.map((category) => (
-          <View
-            key={category}
-            style={[styles.categoryContainer, { backgroundColor: cardBg }]}
-          >
-            <TouchableOpacity
-              style={[
-                styles.categoryHeader,
-                { backgroundColor: isDark ? "#262727" : "#E3F2FD" },
-              ]}
-              onPress={() => toggleExpand(category)}
-            >
-              <Text style={[styles.categoryTitle, { color: GREEN }]}>
-                {categoryLabels[category]}
-              </Text>
-              <Ionicons
-                name={expanded[category] ? "calendar" : "calendar"}
-                size={20}
-                color={GREEN}
-              />
-            </TouchableOpacity>
-            {expanded[category] && (
-              <View style={styles.mealDetails}>
-                {mealsForSelected[category].length === 0 ? (
-                  <Text style={styles.noMealText}>No meals recorded.</Text>
-                ) : (
-                  mealsForSelected[category].map((meal, idx) => (
-                    <View key={idx} style={styles.mealItem}>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={styles.mealDesc}>{meal.details}</Text>
-                    </View>
-                  ))
-                )}
-              </View>
-            )}
-          </View>
-        ))}
       </ScrollView>
+
+      {/* Glass Header */}
+      <BlurView
+        intensity={80}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.absoluteHeader,
+          {
+            paddingTop: insets.top,
+            height: 44 + insets.top,
+            borderBottomColor: isDark ? "#333" : "#ccc",
+          },
+        ]}
+      >
+        <View style={styles.headerContent}>
+          <Text style={[styles.headerTitleText, { color: textColor }]}>
+            Calendar
+          </Text>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: Spacing.xl },
+  container: { flex: 1 },
+  scrollContent: {
+    paddingBottom: 100,
+    paddingHorizontal: Spacing.xl,
+  },
+  absoluteHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 100,
+    justifyContent: "center",
+  },
+  headerContent: {
+    paddingHorizontal: Spacing.lg,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: 44,
+  },
+  headerTitleText: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  doneButtonText: {
+    color: Colors.primary,
+    fontSize: 17,
+    fontWeight: "600",
+  },
   segmentWrap: {
     flexDirection: "row",
     padding: 4,
@@ -441,6 +530,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    width: "100%",
   },
   yearMonthText: {
     fontSize: Typography.sizes.lg,
