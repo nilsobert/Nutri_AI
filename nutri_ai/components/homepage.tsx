@@ -9,9 +9,11 @@ import {
   LayoutAnimation,
   UIManager,
   Platform,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import CalendarScreen from "../app/screens/calendarScreen";
 import { router } from "expo-router";
 import { MealEntry, MealCategory } from "../types/mealEntry";
 import { NutritionInfo } from "../types/nutritionInfo";
@@ -67,7 +69,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
+  const secondaryText = isDark ? Colors.text.dark : Colors.text.light;
 
   return (
     <TouchableOpacity
@@ -80,7 +82,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
           <View
             style={[
               styles.mealIcon,
-              { backgroundColor: isDark ? "#2a2a2a" : "#f5f5f5" },
+              { backgroundColor: isDark ? Colors.cardBackground.dark : Colors.cardBackground.light },
             ]}
           >
             <Ionicons
@@ -109,11 +111,11 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
       </View>
 
       {expanded && (
-        <View style={styles.mealDetails}>
+          <View style={styles.mealDetails}>
           <View
             style={[
               styles.detailsDivider,
-              { backgroundColor: isDark ? "#333" : "#eee" },
+              { backgroundColor: isDark ? Colors.nutrientBar.dark : Colors.nutrientBar.light },
             ]}
           />
 
@@ -192,6 +194,7 @@ const IOSStyleHomeScreen = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const days = [-3, -2, -1, 0].map((offset) => {
     const date = new Date();
@@ -237,7 +240,7 @@ const IOSStyleHomeScreen = () => {
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
+  const secondaryText = isDark ? Colors.text.dark : Colors.text.light;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -258,14 +261,26 @@ const IOSStyleHomeScreen = () => {
           </View>
           <TouchableOpacity
             style={[styles.calendarButton, { backgroundColor: cardBg }]}
+            onPress={() => setShowCalendar((s) => !s)}
+            activeOpacity={0.8}
           >
             <Ionicons
-              name="calendar-outline"
+              name={showCalendar ? "calendar" : "calendar-outline"}
               size={24}
               color={Colors.primary}
             />
           </TouchableOpacity>
         </View>
+
+        {/* Open calendar as a full-screen modal when toggled */}
+        <Modal
+          visible={showCalendar}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setShowCalendar(false)}
+        >
+          <CalendarScreen onClose={() => setShowCalendar(false)} />
+        </Modal>
 
         {/* Date Selector */}
         <ScrollView
@@ -344,7 +359,7 @@ const IOSStyleHomeScreen = () => {
           {/* Macros Breakdown */}
           <View style={styles.macrosContainer}>
             <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFE5E5" }]}>
+              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.breakfast }]}>
                 <Text style={styles.macroEmoji}>🍞</Text>
               </View>
               <Text style={[styles.macroValue, { color: textColor }]}>
@@ -355,7 +370,7 @@ const IOSStyleHomeScreen = () => {
               </Text>
             </View>
             <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFE5F0" }]}>
+              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.lunch }]}>
                 <Text style={styles.macroEmoji}>🥩</Text>
               </View>
               <Text style={[styles.macroValue, { color: textColor }]}>
@@ -366,7 +381,7 @@ const IOSStyleHomeScreen = () => {
               </Text>
             </View>
             <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFF4E5" }]}>
+              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.dinner }]}>
                 <Text style={styles.macroEmoji}>🥑</Text>
               </View>
               <Text style={[styles.macroValue, { color: textColor }]}>
@@ -468,22 +483,22 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.lg,
   },
   circleOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     borderWidth: 12,
     justifyContent: "center",
     alignItems: "center",
   },
   circleInner: {
-    width: 156,
-    height: 156,
-    borderRadius: 78,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     justifyContent: "center",
     alignItems: "center",
   },
   remainingCalories: {
-    fontSize: 42,
+    fontSize: Typography.sizes["4xl"],
     fontWeight: Typography.weights.bold,
   },
   remainingText: {
@@ -511,14 +526,14 @@ const styles = StyleSheet.create({
   calorieInfoDivider: {
     width: 1,
     height: 40,
-    backgroundColor: "#ddd",
+    backgroundColor: Colors.nutrientBar.light,
   },
   macrosContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
     paddingTop: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: Colors.nutrientBar.light,
   },
   macroItem: {
     alignItems: "center",
@@ -532,7 +547,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   macroEmoji: {
-    fontSize: 24,
+    fontSize: Typography.sizes.lg,
   },
   macroValue: {
     fontSize: Typography.sizes.lg,
@@ -623,7 +638,7 @@ const styles = StyleSheet.create({
   qualitySection: {
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: Colors.nutrientBar.light,
   },
   qualityRow: {
     flexDirection: "row",
