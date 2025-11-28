@@ -10,11 +10,13 @@ import {
   UIManager,
   Platform,
   useWindowDimensions,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useUser } from "../context/UserContext";
 import { MealEntry, MealCategory } from "../types/mealEntry";
 import { NutritionInfo } from "../types/nutritionInfo";
 import { MealQuality } from "../types/mealQuality";
@@ -255,6 +257,7 @@ const IOSStyleHomeScreen = () => {
   const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollViewRef = React.useRef<ScrollView>(null);
+  const { profileImage } = useUser();
 
   // Layout calculations for date strip
   const itemWidth = 32;
@@ -505,8 +508,16 @@ const IOSStyleHomeScreen = () => {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: cardBg }]}
+              onPress={() => router.push("/profile")}
             >
-              <Ionicons name="person" size={20} color={Colors.primary} />
+              {profileImage ? (
+                <Image
+                  source={{ uri: profileImage }}
+                  style={styles.profileImage}
+                />
+              ) : (
+                <Ionicons name="person" size={20} color={Colors.primary} />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -635,6 +646,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.small,
+    overflow: "hidden",
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
   },
   todayButton: {
     height: 40,
