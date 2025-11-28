@@ -25,6 +25,7 @@ import {
   TextStyles,
 } from "../constants/theme";
 import { mockMeals } from "../mock-data/meals";
+import { ActivityRings } from "./ActivityRings";
 
 if (
   Platform.OS === "android" &&
@@ -229,6 +230,10 @@ const IOSStyleHomeScreen = () => {
   );
 
   const calorieGoal = 2500;
+  const carbsGoal = 300;
+  const proteinGoal = 150;
+  const fatGoal = 80;
+  
   const remainingCalories = calorieGoal - totalCalories;
   const consumedPercentage = (totalCalories / calorieGoal) * 100;
 
@@ -306,75 +311,89 @@ const IOSStyleHomeScreen = () => {
             Daily Summary
           </Text>
 
-          <View style={styles.calorieCircle}>
-            <View style={[styles.circleOuter, { borderColor: Colors.primary }]}>
-              <View style={[styles.circleInner, { backgroundColor: bgColor }]}>
-                <Text
-                  style={[styles.remainingCalories, { color: Colors.primary }]}
-                >
+          <View style={styles.summaryContent}>
+            {/* Rings Section */}
+            <View style={styles.ringsContainer}>
+              <ActivityRings
+                carbs={totalCarbs}
+                carbsGoal={carbsGoal}
+                protein={totalProtein}
+                proteinGoal={proteinGoal}
+                fat={totalFat}
+                fatGoal={fatGoal}
+                size={180}
+              />
+              <View style={styles.ringsOverlay}>
+                <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
                   {remainingCalories}
                 </Text>
-                <Text style={[styles.remainingText, { color: secondaryText }]}>
-                  remaining
+                <Text style={[styles.ringsOverlayLabel, { color: secondaryText }]}>
+                  kcal left
                 </Text>
               </View>
             </View>
-          </View>
 
-          <View style={styles.calorieInfo}>
-            <View style={styles.calorieInfoItem}>
-              <Text style={[styles.calorieInfoValue, { color: textColor }]}>
-                {totalCalories}
-              </Text>
-              <Text style={[styles.calorieInfoLabel, { color: secondaryText }]}>
-                consumed
-              </Text>
-            </View>
-            <View style={styles.calorieInfoDivider} />
-            <View style={styles.calorieInfoItem}>
-              <Text style={[styles.calorieInfoValue, { color: textColor }]}>
-                {calorieGoal}
-              </Text>
-              <Text style={[styles.calorieInfoLabel, { color: secondaryText }]}>
-                goal
-              </Text>
-            </View>
-          </View>
+            {/* Legend Section */}
+            <View style={styles.legendContainer}>
+              {/* Calories */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.primary }]}>
+                  Calories
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCalories}
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {calorieGoal} kcal
+                  </Text>
+                </View>
+              </View>
 
-          {/* Macros Breakdown */}
-          <View style={styles.macrosContainer}>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFE5E5" }]}>
-                <Text style={styles.macroEmoji}>🍞</Text>
+              {/* Carbs */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>
+                  Carbs
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCarbs}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {carbsGoal}g
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalCarbs}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Carbs
-              </Text>
-            </View>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFE5F0" }]}>
-                <Text style={styles.macroEmoji}>🥩</Text>
+
+              {/* Protein */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>
+                  Protein
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalProtein}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {proteinGoal}g
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalProtein}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Protein
-              </Text>
-            </View>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: "#FFF4E5" }]}>
-                <Text style={styles.macroEmoji}>🥑</Text>
+
+              {/* Fat */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>
+                  Fat
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalFat}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {fatGoal}g
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalFat}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Fat
-              </Text>
             </View>
           </View>
         </View>
@@ -463,84 +482,51 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.lg,
   },
-  calorieCircle: {
-    alignItems: "center",
-    marginVertical: Spacing.lg,
-  },
-  circleOuter: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleInner: {
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  remainingCalories: {
-    fontSize: 42,
-    fontWeight: Typography.weights.bold,
-  },
-  remainingText: {
-    fontSize: Typography.sizes.sm,
-    marginTop: 4,
-  },
-  calorieInfo: {
+  summaryContent: {
     flexDirection: "row",
-    justifyContent: "space-around",
     alignItems: "center",
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xl,
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
   },
-  calorieInfoItem: {
+  ringsContainer: {
+    position: "relative",
     alignItems: "center",
-  },
-  calorieInfoValue: {
-    fontSize: Typography.sizes["2xl"],
-    fontWeight: Typography.weights.semibold,
-  },
-  calorieInfoLabel: {
-    fontSize: Typography.sizes.sm,
-    marginTop: 4,
-  },
-  calorieInfoDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#ddd",
-  },
-  macrosContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  macroItem: {
-    alignItems: "center",
-  },
-  macroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: "center",
+  },
+  ringsOverlay: {
+    position: "absolute",
     alignItems: "center",
-    marginBottom: Spacing.sm,
+    justifyContent: "center",
   },
-  macroEmoji: {
-    fontSize: 24,
+  ringsOverlayValue: {
+    ...TextStyles.ringValue,
   },
-  macroValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-  },
-  macroLabel: {
-    fontSize: Typography.sizes.xs,
+  ringsOverlayLabel: {
+    ...TextStyles.ringLabel,
     marginTop: 2,
+  },
+  legendContainer: {
+    flex: 1,
+    marginLeft: Spacing.xl,
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  legendItem: {
+    flexDirection: "column",
+  },
+  legendLabel: {
+    ...TextStyles.legendLabel,
+  },
+  legendValues: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+  },
+  legendValue: {
+    ...TextStyles.legendValue,
+  },
+  legendGoal: {
+    ...TextStyles.legendGoal,
   },
   mealsSection: {
     paddingHorizontal: Spacing.xl,
