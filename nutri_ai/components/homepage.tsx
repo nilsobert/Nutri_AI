@@ -10,7 +10,8 @@ import {
   UIManager,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { MealEntry, MealCategory } from "../types/mealEntry";
@@ -249,21 +250,15 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
 const IOSStyleHomeScreen = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const days = [-3, -2, -1, 0].map((offset) => {
+  // Generate a week of dates ending with today
+  const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
-    date.setDate(date.getDate() + offset);
+    date.setDate(date.getDate() - (6 - i)); // 6 days ago to today
     return date;
   });
-
-  const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: "short",
-      day: "numeric",
-    };
-    return date.toLocaleDateString("en-US", options);
-  };
 
   const meals: MealEntry[] = mockMeals;
 
@@ -290,9 +285,8 @@ const IOSStyleHomeScreen = () => {
   const carbsGoal = 300;
   const proteinGoal = 150;
   const fatGoal = 80;
-  
+
   const remainingCalories = calorieGoal - totalCalories;
-  const consumedPercentage = (totalCalories / calorieGoal) * 100;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
@@ -302,66 +296,14 @@ const IOSStyleHomeScreen = () => {
   const secondaryText = isDark ? "#999" : "#666";
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Today
-            </Text>
-            <Text style={[styles.headerDate, { color: secondaryText }]}>
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.calendarButton, { backgroundColor: cardBg }]}
-          >
-            <Ionicons
-              name="calendar-outline"
-              size={24}
-              color={Colors.primary}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Date Selector */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dateSelector}
-          contentContainerStyle={styles.dateSelectorContent}
-        >
-          {days.map((day, index) => {
-            const isSelected = day.getDate() === currentDate.getDate();
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.dateChip,
-                  { backgroundColor: cardBg },
-                  isSelected && { backgroundColor: Colors.primary },
-                ]}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.dateText,
-                    { color: textColor },
-                    isSelected && styles.selectedDateText,
-                  ]}
-                >
-                  {formatDate(day)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: 160 + insets.top },
+        ]}
+      >
         {/* Calorie Summary Card */}
         <View style={[styles.summaryCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.summaryTitle, { color: textColor }]}>
@@ -466,6 +408,105 @@ const IOSStyleHomeScreen = () => {
         </View>
       </ScrollView>
 
+      {/* Blur Header */}
+      <BlurView
+        intensity={80}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.absoluteHeader,
+          {
+            paddingTop: insets.top + Spacing.md,
+            borderBottomColor: isDark ? "#333" : "#ccc",
+          },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={[styles.headerDate, { color: secondaryText }]}>
+              {new Date()
+                .toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })
+                .toUpperCase()}
+            </Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Today
+            </Text>
+          </View>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={[styles.iconButton, { backgroundColor: cardBg }]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={20}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.iconButton, { backgroundColor: cardBg }]}
+            >
+              <Ionicons name="person" size={20} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Date Strip */}
+        <View style={styles.dateStrip}>
+          {days.map((day, index) => {
+            const isSelected = day.getDate() === currentDate.getDate();
+            const isToday = day.getDate() === new Date().getDate();
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.dateItem}
+                onPress={() => setCurrentDate(day)}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.dayName,
+                    {
+                      color: isSelected
+                        ? Colors.primary
+                        : isToday
+                          ? Colors.primary
+                          : secondaryText,
+                      fontWeight: isSelected ? "600" : "400",
+                    },
+                  ]}
+                >
+                  {day.toLocaleDateString("en-US", { weekday: "short" })[0]}
+                </Text>
+                <View
+                  style={[
+                    styles.dayNumberContainer,
+                    isSelected && { backgroundColor: Colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      {
+                        color: isSelected
+                          ? "white"
+                          : isToday
+                            ? Colors.primary
+                            : textColor,
+                      },
+                    ]}
+                  >
+                    {day.getDate()}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </BlurView>
+
       {/* Floating Action Button */}
       <TouchableOpacity
         style={styles.fab}
@@ -474,7 +515,7 @@ const IOSStyleHomeScreen = () => {
       >
         <Ionicons name="add" size={28} color="white" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -482,50 +523,71 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  absoluteHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    zIndex: 100,
+  },
+  headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
+    marginBottom: Spacing.md,
   },
   headerTitle: {
-    fontSize: Typography.sizes["4xl"],
-    fontWeight: Typography.weights.bold,
-    marginBottom: 4,
+    fontSize: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.3,
   },
   headerDate: {
-    fontSize: Typography.sizes.sm,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
   },
-  calendarButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.lg,
+  headerButtons: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.small,
   },
-  dateSelector: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+  dateStrip: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.xl,
   },
-  dateSelectorContent: {
-    gap: Spacing.sm,
+  dateItem: {
+    alignItems: "center",
+    gap: 6,
   },
-  dateChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    ...Shadows.small,
+  dayName: {
+    fontSize: 11,
+    fontWeight: "500",
   },
-  dateText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
+  dayNumberContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  selectedDateText: {
-    color: "white",
-    fontWeight: Typography.weights.bold,
+  dayNumber: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   summaryCard: {
     marginHorizontal: Spacing.xl,
