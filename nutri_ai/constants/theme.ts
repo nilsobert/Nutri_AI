@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 
 // Colors
 export const Colors = {
-  primary: "#0a7ea4",
+  primary: "#209621", // replaced blue with dark green
   secondary: {
     protein: "#FF6B6B",
     carbs: "#4ECDC4",
@@ -31,14 +31,16 @@ export const Colors = {
     dark: "#333",
   },
   floatingButton: {
-    light: "#0a7ea4",
-    dark: "#0a7ea4",
+    light: "#1E8E3E", // replaced blue with dark green
+    dark: "#1E8E3E",
+  },
+  grey: {
+    light: "#f0f0f0",
   },
 };
 
 // Typography
 export const Typography = {
-  // Font families
   fonts: Platform.select({
     ios: {
       sans: "system-ui",
@@ -60,28 +62,22 @@ export const Typography = {
       mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
     },
   }),
-
-  // Font sizes
   sizes: {
-    xs: 14,
-    sm: 16,
-    base: 19,
-    lg: 21,
-    xl: 23,
-    "2xl": 27,
-    "3xl": 32,
-    "4xl": 36,
+    xs: 12,
+    sm: 14,
+    base: 16,
+    lg: 18,
+    xl: 20,
+    "2xl": 24,
+    "3xl": 28,
+    "4xl": 32,
   },
-
-  // Font weights
   weights: {
     normal: "400" as const,
     medium: "500" as const,
     semibold: "600" as const,
     bold: "700" as const,
   },
-
-  // Line heights
   lineHeights: {
     tight: 1.2,
     normal: 1.5,
@@ -93,12 +89,12 @@ export const Typography = {
 export const Spacing = {
   xs: 4,
   sm: 8,
-  md: 14,
-  lg: 18,
-  xl: 22,
-  "2xl": 28,
-  "3xl": 36,
-  "4xl": 44,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  "2xl": 24,
+  "3xl": 32,
+  "4xl": 40,
 };
 
 // Border radius
@@ -115,30 +111,21 @@ export const BorderRadius = {
 export const Shadows = {
   small: {
     shadowColor: Colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2.22,
     elevation: 3,
   },
   medium: {
     shadowColor: Colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
   },
   large: {
     shadowColor: Colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
@@ -147,22 +134,17 @@ export const Shadows = {
 
 // Component-specific styles
 export const ComponentStyles = {
-  // Header
   header: {
-    height: 140,
+    height: 120,
     padding: Spacing.lg,
-    paddingTop: 72,
+    paddingTop: 60,
   },
-
-  // Cards
   card: {
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
     ...Shadows.medium,
   },
-
-  // Floating Action Button
   floatingButton: {
     position: "absolute" as const,
     bottom: Spacing["3xl"],
@@ -174,26 +156,18 @@ export const ComponentStyles = {
     alignItems: "center" as const,
     ...Shadows.large,
   },
-
-  // Circular Progress
   circularProgress: {
     size: 120,
     innerSize: 104,
     borderWidth: 8,
   },
-
-  // Nutrient Bar
   nutrientBar: {
     height: 8,
     borderRadius: BorderRadius.sm,
   },
-
-  // Meal Item
   mealItem: {
     paddingVertical: Spacing.sm,
   },
-
-  // Meal Icon
   mealIcon: {
     width: 40,
     height: 40,
@@ -202,15 +176,11 @@ export const ComponentStyles = {
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
-
-  // Date Overview
   dateOverview: {
     height: 80,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
-
-  // Calendar Button
   calendarButton: {
     width: 40,
     height: 40,
