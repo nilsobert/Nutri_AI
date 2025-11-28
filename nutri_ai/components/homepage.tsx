@@ -1,32 +1,27 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  useColorScheme,
   LayoutAnimation,
-  UIManager,
   Platform,
-  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  useColorScheme,
+  View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import CalendarScreen from "../app/screens/calendarScreen";
-import { router } from "expo-router";
-import { MealEntry, MealCategory } from "../types/mealEntry";
-import { NutritionInfo } from "../types/nutritionInfo";
-import { MealQuality } from "../types/mealQuality";
 import {
-  Colors,
-  Typography,
-  Spacing,
   BorderRadius,
+  Colors,
   Shadows,
-  TextStyles,
+  Spacing,
+  Typography,
 } from "../constants/theme";
 import { mockMeals } from "../mock-data/meals";
+import { MealCategory, MealEntry } from "../types/mealEntry";
 
 if (
   Platform.OS === "android" &&
@@ -69,7 +64,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? Colors.text.dark : Colors.text.light;
+  const secondaryText = isDark ? "#999" : "#666";
 
   return (
     <TouchableOpacity
@@ -82,7 +77,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
           <View
             style={[
               styles.mealIcon,
-              { backgroundColor: isDark ? Colors.cardBackground.dark : Colors.cardBackground.light },
+              { backgroundColor: isDark ? "#2a2a2a" : "#f5f5f5" },
             ]}
           >
             <Ionicons
@@ -111,14 +106,13 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
       </View>
 
       {expanded && (
-          <View style={styles.mealDetails}>
+        <View style={styles.mealDetails}>
           <View
             style={[
               styles.detailsDivider,
-              { backgroundColor: isDark ? Colors.nutrientBar.dark : Colors.nutrientBar.light },
+              { backgroundColor: isDark ? "#333" : "#eee" },
             ]}
           />
-
           {/* Nutrition Info */}
           <View style={styles.nutritionGrid}>
             <View style={styles.nutritionItem}>
@@ -190,17 +184,23 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
   );
 };
 
-const IOSStyleHomeScreen = () => {
+const IOSStyleHomeScreen: React.FC = () => {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
 
-  const days = [-3, -2, -1, 0].map((offset) => {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-    return date;
-  });
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // compute previous 3 days + current
+  const getDays = (date: Date) => {
+    return [-3, -2, -1, 0].map((offset) => {
+      const d = new Date(date);
+      d.setDate(date.getDate() + offset);
+      return d;
+    });
+  };
+
+  const days = getDays(currentDate);
 
   const formatDate = (date: Date) => {
     const options: Intl.DateTimeFormatOptions = {
@@ -217,30 +217,16 @@ const IOSStyleHomeScreen = () => {
       sum + meal.getNutritionInfo().getCalories(),
     0,
   );
-  const totalCarbs = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
-    0,
-  );
-  const totalProtein = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.getNutritionInfo().getProtein(),
-    0,
-  );
-  const totalFat = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
-    0,
-  );
 
   const calorieGoal = 2500;
   const remainingCalories = calorieGoal - totalCalories;
-  const consumedPercentage = (totalCalories / calorieGoal) * 100;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? Colors.text.dark : Colors.text.light;
+  const secondaryText = isDark ? "#999" : "#666";
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
@@ -252,7 +238,7 @@ const IOSStyleHomeScreen = () => {
               Today
             </Text>
             <Text style={[styles.headerDate, { color: secondaryText }]}>
-              {new Date().toLocaleDateString("en-US", {
+              {currentDate.toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
                 day: "numeric",
@@ -261,52 +247,41 @@ const IOSStyleHomeScreen = () => {
           </View>
           <TouchableOpacity
             style={[styles.calendarButton, { backgroundColor: cardBg }]}
-            onPress={() => setShowCalendar((s) => !s)}
-            activeOpacity={0.8}
+            onPress={() => router.push("/screens/calendar-screen")}
           >
             <Ionicons
-              name={showCalendar ? "calendar" : "calendar-outline"}
+              name="calendar-outline"
               size={24}
               color={Colors.primary}
             />
           </TouchableOpacity>
         </View>
 
-        {/* Open calendar as a full-screen modal when toggled */}
-        <Modal
-          visible={showCalendar}
-          animationType="slide"
-          presentationStyle="fullScreen"
-          onRequestClose={() => setShowCalendar(false)}
-        >
-          <CalendarScreen onClose={() => setShowCalendar(false)} />
-        </Modal>
-
-        {/* Date Selector */}
+        {/* 4-day horizontal bar */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.dateSelector}
-          contentContainerStyle={styles.dateSelectorContent}
+          style={{ marginVertical: Spacing.lg, paddingHorizontal: Spacing.lg }}
+          contentContainerStyle={{ gap: Spacing.sm }}
         >
           {days.map((day, index) => {
             const isSelected = day.getDate() === currentDate.getDate();
             return (
               <TouchableOpacity
                 key={index}
-                style={[
-                  styles.dateChip,
-                  { backgroundColor: cardBg },
-                  isSelected && { backgroundColor: Colors.primary },
-                ]}
-                activeOpacity={0.7}
+                onPress={() => setCurrentDate(day)}
+                style={{
+                  paddingVertical: Spacing.sm,
+                  paddingHorizontal: Spacing.lg,
+                  borderRadius: BorderRadius.xl,
+                  backgroundColor: isSelected ? Colors.primary : cardBg,
+                }}
               >
                 <Text
-                  style={[
-                    styles.dateText,
-                    { color: textColor },
-                    isSelected && styles.selectedDateText,
-                  ]}
+                  style={{
+                    color: isSelected ? "white" : textColor,
+                    fontWeight: isSelected ? "700" : "500",
+                  }}
                 >
                   {formatDate(day)}
                 </Text>
@@ -315,112 +290,38 @@ const IOSStyleHomeScreen = () => {
           })}
         </ScrollView>
 
-        {/* Calorie Summary Card */}
+        {/* Calories and Meals Section */}
         <View style={[styles.summaryCard, { backgroundColor: cardBg }]}>
           <Text style={[styles.summaryTitle, { color: textColor }]}>
             Daily Summary
           </Text>
-
-          <View style={styles.calorieCircle}>
-            <View style={[styles.circleOuter, { borderColor: Colors.primary }]}>
-              <View style={[styles.circleInner, { backgroundColor: bgColor }]}>
-                <Text
-                  style={[styles.remainingCalories, { color: Colors.primary }]}
-                >
-                  {remainingCalories}
-                </Text>
-                <Text style={[styles.remainingText, { color: secondaryText }]}>
-                  remaining
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.calorieInfo}>
-            <View style={styles.calorieInfoItem}>
-              <Text style={[styles.calorieInfoValue, { color: textColor }]}>
-                {totalCalories}
-              </Text>
-              <Text style={[styles.calorieInfoLabel, { color: secondaryText }]}>
-                consumed
-              </Text>
-            </View>
-            <View style={styles.calorieInfoDivider} />
-            <View style={styles.calorieInfoItem}>
-              <Text style={[styles.calorieInfoValue, { color: textColor }]}>
-                {calorieGoal}
-              </Text>
-              <Text style={[styles.calorieInfoLabel, { color: secondaryText }]}>
-                goal
-              </Text>
-            </View>
-          </View>
-
-          {/* Macros Breakdown */}
-          <View style={styles.macrosContainer}>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.breakfast }]}>
-                <Text style={styles.macroEmoji}>🍞</Text>
-              </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalCarbs}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Carbs
-              </Text>
-            </View>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.lunch }]}>
-                <Text style={styles.macroEmoji}>🥩</Text>
-              </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalProtein}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Protein
-              </Text>
-            </View>
-            <View style={styles.macroItem}>
-              <View style={[styles.macroIcon, { backgroundColor: Colors.iconBackground.dinner }]}>
-                <Text style={styles.macroEmoji}>🥑</Text>
-              </View>
-              <Text style={[styles.macroValue, { color: textColor }]}>
-                {totalFat}g
-              </Text>
-              <Text style={[styles.macroLabel, { color: secondaryText }]}>
-                Fat
-              </Text>
-            </View>
-          </View>
+          <Text style={{ color: textColor }}>
+            Remaining calories: {remainingCalories}
+          </Text>
         </View>
 
-        {/* Meals Section */}
-        <View style={styles.mealsSection}>
-          <Text style={[styles.sectionTitle, { color: textColor }]}>
+        <View style={{ paddingHorizontal: Spacing.xl, paddingBottom: 100 }}>
+          <Text
+            style={{
+              fontSize: Typography.sizes.xl,
+              fontWeight: Typography.weights.semibold,
+              marginBottom: Spacing.lg,
+              color: textColor,
+            }}
+          >
             Today's Meals
           </Text>
-          {meals.map((meal: MealEntry, index: number) => (
-            <MealCard key={index} meal={meal} isDark={isDark} />
+          {meals.map((meal, idx) => (
+            <MealCard key={idx} meal={meal} isDark={isDark} />
           ))}
         </View>
       </ScrollView>
-
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/add-meal")}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -434,9 +335,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.bold,
     marginBottom: 4,
   },
-  headerDate: {
-    fontSize: Typography.sizes.sm,
-  },
+  headerDate: { fontSize: Typography.sizes.sm },
   calendarButton: {
     width: 44,
     height: 44,
@@ -444,27 +343,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.small,
-  },
-  dateSelector: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  dateSelectorContent: {
-    gap: Spacing.sm,
-  },
-  dateChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    ...Shadows.small,
-  },
-  dateText: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: Typography.weights.medium,
-  },
-  selectedDateText: {
-    color: "white",
-    fontWeight: Typography.weights.bold,
   },
   summaryCard: {
     marginHorizontal: Spacing.xl,
@@ -474,94 +352,6 @@ const styles = StyleSheet.create({
     ...Shadows.medium,
   },
   summaryTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: Spacing.lg,
-  },
-  calorieCircle: {
-    alignItems: "center",
-    marginVertical: Spacing.lg,
-  },
-  circleOuter: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  circleInner: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  remainingCalories: {
-    fontSize: Typography.sizes["4xl"],
-    fontWeight: Typography.weights.bold,
-  },
-  remainingText: {
-    fontSize: Typography.sizes.sm,
-    marginTop: 4,
-  },
-  calorieInfo: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  calorieInfoItem: {
-    alignItems: "center",
-  },
-  calorieInfoValue: {
-    fontSize: Typography.sizes["2xl"],
-    fontWeight: Typography.weights.semibold,
-  },
-  calorieInfoLabel: {
-    fontSize: Typography.sizes.sm,
-    marginTop: 4,
-  },
-  calorieInfoDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.nutrientBar.light,
-  },
-  macrosContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.nutrientBar.light,
-  },
-  macroItem: {
-    alignItems: "center",
-  },
-  macroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  macroEmoji: {
-    fontSize: Typography.sizes.lg,
-  },
-  macroValue: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-  },
-  macroLabel: {
-    fontSize: Typography.sizes.xs,
-    marginTop: 2,
-  },
-  mealsSection: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: 100,
-  },
-  sectionTitle: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.lg,
@@ -577,11 +367,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  mealIconContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
+  mealIconContainer: { flexDirection: "row", alignItems: "center", flex: 1 },
   mealIcon: {
     width: 48,
     height: 48,
@@ -590,47 +376,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: Spacing.md,
   },
-  mealInfo: {
-    flex: 1,
-  },
+  mealInfo: { flex: 1 },
   mealName: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
     marginBottom: 2,
   },
-  mealDescription: {
-    fontSize: Typography.sizes.sm,
-  },
-  mealCaloriesContainer: {
-    alignItems: "flex-end",
-  },
+  mealDescription: { fontSize: Typography.sizes.sm },
+  mealCaloriesContainer: { alignItems: "flex-end" },
   mealCalories: {
     fontSize: Typography.sizes["2xl"],
     fontWeight: Typography.weights.bold,
   },
-  mealCaloriesLabel: {
-    fontSize: Typography.sizes.xs,
-  },
-  mealDetails: {
-    marginTop: Spacing.lg,
-  },
-  detailsDivider: {
-    height: 1,
-    marginBottom: Spacing.lg,
-  },
+  mealCaloriesLabel: { fontSize: Typography.sizes.xs },
+  mealDetails: { marginTop: Spacing.lg },
+  detailsDivider: { height: 1, marginBottom: Spacing.lg },
   nutritionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: Spacing.lg,
   },
-  nutritionItem: {
-    width: "50%",
-    marginBottom: Spacing.md,
-  },
-  nutritionLabel: {
-    fontSize: Typography.sizes.sm,
-    marginBottom: 4,
-  },
+  nutritionItem: { width: "50%", marginBottom: Spacing.md },
+  nutritionLabel: { fontSize: Typography.sizes.sm, marginBottom: 4 },
   nutritionValue: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.semibold,
@@ -638,7 +405,7 @@ const styles = StyleSheet.create({
   qualitySection: {
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.nutrientBar.light,
+    borderTopColor: "#eee",
   },
   qualityRow: {
     flexDirection: "row",
@@ -646,9 +413,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing.sm,
   },
-  qualityLabel: {
-    fontSize: Typography.sizes.sm,
-  },
+  qualityLabel: { fontSize: Typography.sizes.sm },
   qualityValue: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
@@ -663,18 +428,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.bold,
-  },
-  fab: {
-    position: "absolute",
-    bottom: Spacing["3xl"],
-    right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    ...Shadows.large,
   },
 });
 
