@@ -56,7 +56,7 @@ const IOSStyleLoginScreen = () => {
         return;
       }
 
-      router.push("/screens/home-screen");
+      router.push("/(tabs)");
     } catch (err) {
       console.warn("login error", err);
       Alert.alert("Login error", "An unexpected error occurred. Try again.");
@@ -162,7 +162,7 @@ const IOSStyleLoginScreen = () => {
 
             <View style={{ alignItems: "center", marginTop: 14 }}>
               <TouchableOpacity
-                onPress={() => router.push("/screens/home-screen")}
+                onPress={() => router.push("/(tabs)")}
               >
                 <Text style={[styles.welcomeLink, { color: Colors.primary }]}>
                   Go to Home Page

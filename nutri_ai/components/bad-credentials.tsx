@@ -35,7 +35,7 @@ const BadCredentialsComponent = () => {
         </View>
 
         <TouchableOpacity
-          onPress={() => router.push("/screens/home-screen")}
+          onPress={() => router.push("/(tabs)")}
           style={styles.homeWrap}
         >
           <Text style={styles.welcomeLink}>Welcome Screen</Text>
