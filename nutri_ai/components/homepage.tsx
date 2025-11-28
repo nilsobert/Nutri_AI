@@ -13,6 +13,14 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import {
@@ -41,6 +49,9 @@ interface NutrientPillProps {
   isDark: boolean;
 }
 
+const AnimatedTouchableOpacity =
+  Animated.createAnimatedComponent(TouchableOpacity);
+
 const NutrientPill: React.FC<NutrientPillProps> = ({
   label,
   value,
@@ -66,18 +77,26 @@ const NutrientPill: React.FC<NutrientPillProps> = ({
 interface MealCardProps {
   meal: MealEntry;
   isDark: boolean;
+  isToday: boolean;
 }
 
-const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
+const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const rotation = useSharedValue(0);
   const nutrition = meal.getNutritionInfo();
   const quality = meal.getMealQuality();
 
   const toggleExpand = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(!expanded);
+    rotation.value = withTiming(expanded ? 0 : 180);
   };
+
+  const chevronStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${rotation.value}deg` }],
+    };
+  });
 
   const getQualityColor = (score: number) => {
     if (score >= 7) return "#34C759"; // Green
@@ -108,10 +127,11 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
   const borderColor = isDark ? "#333" : "#f0f0f0";
 
   return (
-    <TouchableOpacity
+    <AnimatedTouchableOpacity
       onPress={toggleExpand}
       style={[styles.mealCard, { backgroundColor: cardBg }]}
       activeOpacity={0.7}
+      layout={LinearTransition}
     >
       <View style={styles.mealCardHeader}>
         <View
@@ -152,17 +172,23 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
             >
               {meal.getTranscription() || "No description"}
             </Text>
-            <Ionicons
-              name={expanded ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={secondaryText}
-            />
+            <Animated.View style={chevronStyle}>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={secondaryText}
+              />
+            </Animated.View>
           </View>
         </View>
       </View>
 
       {expanded && (
-        <View style={styles.mealDetails}>
+        <Animated.View
+          style={styles.mealDetails}
+          entering={FadeIn}
+          exiting={FadeOut}
+        >
           <View style={styles.nutrientRow}>
             <NutrientPill
               label="Carbs"
@@ -224,26 +250,30 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.addMealButton,
-              { backgroundColor: isDark ? "#333" : "#f5f5f5" },
-            ]}
-            onPress={() => router.push("/add-meal")}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={20}
-              color={Colors.primary}
-            />
-            <Text style={[styles.addMealButtonText, { color: Colors.primary }]}>
-              Add Item
-            </Text>
-          </TouchableOpacity>
-        </View>
+          {isToday && (
+            <TouchableOpacity
+              style={[
+                styles.addMealButton,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+              onPress={() => router.push("/add-meal")}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={Colors.primary}
+              />
+              <Text
+                style={[styles.addMealButtonText, { color: Colors.primary }]}
+              >
+                Add Item
+              </Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       )}
-    </TouchableOpacity>
+    </AnimatedTouchableOpacity>
   );
 };
 
@@ -447,7 +477,12 @@ const IOSStyleHomeScreen: React.FC = () => {
           </Text>
           {meals.length > 0 ? (
             meals.map((meal: MealEntry, index: number) => (
-              <MealCard key={index} meal={meal} isDark={isDark} />
+              <MealCard
+                key={index}
+                meal={meal}
+                isDark={isDark}
+                isToday={isSameDay(currentDate, new Date())}
+              />
             ))
           ) : (
             <Text style={{ color: secondaryText, textAlign: "center" }}>
@@ -499,6 +534,7 @@ const IOSStyleHomeScreen: React.FC = () => {
             )}
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: cardBg }]}
+              onPress={() => router.push("/screens/calendar-screen")}
             >
               <Ionicons
                 name="calendar-outline"
@@ -585,13 +621,17 @@ const IOSStyleHomeScreen: React.FC = () => {
       </BlurView>
 
       {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/add-meal")}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
+      {isSameDay(currentDate, new Date()) && (
+        <AnimatedTouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push("/add-meal")}
+          activeOpacity={0.8}
+          entering={FadeIn}
+          exiting={FadeOut}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </AnimatedTouchableOpacity>
+      )}
     </View>
   );
 };
