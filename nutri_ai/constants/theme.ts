@@ -4,9 +4,9 @@ import { Platform } from "react-native";
 export const Colors = {
   primary: "#0a7ea4",
   secondary: {
-    protein: "#FF6B6B",
-    carbs: "#4ECDC4",
-    fat: "#45B7D1",
+    protein: "#4ECDC4",
+    carbs: "#3bd445ff",
+    fat: "#FF6B6B",
   },
   background: {
     light: "#fff",
@@ -227,79 +227,107 @@ export const TextStyles = {
   greeting: {
     fontSize: Typography.sizes["3xl"],
     fontWeight: Typography.weights.bold,
-    lineHeight: Typography.lineHeights.tight,
+    lineHeight: Typography.sizes["3xl"] * Typography.lineHeights.tight,
   },
   date: {
     fontSize: Typography.sizes.base,
     opacity: 0.7,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
   },
   title: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.sm,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.xl * Typography.lineHeights.normal,
   },
   numbers: {
     fontSize: Typography.sizes["2xl"],
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.sm,
-    lineHeight: Typography.lineHeights.tight,
+    lineHeight: Typography.sizes["2xl"] * Typography.lineHeights.tight,
   },
   remaining: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
   },
   sectionTitle: {
     fontSize: Typography.sizes.xl,
     marginBottom: Spacing.lg,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.xl * Typography.lineHeights.normal,
   },
   nutrientLabel: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
   },
   nutrientValues: {
     fontSize: Typography.sizes.sm,
     opacity: 0.7,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
   },
   buttonText: {
     fontSize: Typography.sizes.lg,
     fontWeight: Typography.weights.semibold,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.lg * Typography.lineHeights.normal,
   },
   mealName: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.medium,
     marginBottom: 2,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.normal,
   },
   mealCalories: {
     fontSize: Typography.sizes.sm,
     opacity: 0.7,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
   },
   circularProgressText: {
     fontSize: Typography.sizes["2xl"],
-    lineHeight: Typography.lineHeights.tight,
+    lineHeight: Typography.sizes["2xl"] * Typography.lineHeights.tight,
   },
   circularProgressSubtext: {
     fontSize: Typography.sizes.xs,
     opacity: 0.7,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.xs * Typography.lineHeights.normal,
   },
   dateOverviewText: {
     fontSize: Typography.sizes.sm,
     fontWeight: Typography.weights.medium,
-    lineHeight: Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
   },
   dateOverviewValue: {
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.semibold,
-    lineHeight: Typography.lineHeights.tight,
+    lineHeight: Typography.sizes.base * Typography.lineHeights.tight,
+  },
+  // Ring Overlay
+  ringValue: {
+    fontSize: Typography.sizes["3xl"],
+    fontWeight: Typography.weights.bold,
+    lineHeight: Typography.sizes["3xl"] * Typography.lineHeights.tight,
+  },
+  ringLabel: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
+  },
+  // Legend
+  legendLabel: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: 2,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
+  },
+  legendValue: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    lineHeight: Typography.sizes.lg * Typography.lineHeights.normal,
+  },
+  legendGoal: {
+    fontSize: Typography.sizes.sm,
+    opacity: 0.7,
+    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
   },
 };
 
