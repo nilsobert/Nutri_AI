@@ -19,9 +19,11 @@ import {
   Shadows,
   Spacing,
   Typography,
+  TextStyles,
 } from "../constants/theme";
 import { mockMeals } from "../mock-data/meals";
 import { MealCategory, MealEntry } from "../types/mealEntry";
+import { ActivityRings } from "./ActivityRings";
 
 if (
   Platform.OS === "android" &&
@@ -218,7 +220,27 @@ const IOSStyleHomeScreen: React.FC = () => {
     0,
   );
 
+  const totalCarbs = meals.reduce(
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
+    0,
+  );
+
+  const totalProtein = meals.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getProtein(),
+    0,
+  );
+
+  const totalFat = meals.reduce(
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
+    0,
+  );
+
   const calorieGoal = 2500;
+  const carbsGoal = 300;
+  const proteinGoal = 150;
+  const fatGoal = 80;
+  
   const remainingCalories = calorieGoal - totalCalories;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
@@ -295,9 +317,92 @@ const IOSStyleHomeScreen: React.FC = () => {
           <Text style={[styles.summaryTitle, { color: textColor }]}>
             Daily Summary
           </Text>
-          <Text style={{ color: textColor }}>
-            Remaining calories: {remainingCalories}
-          </Text>
+
+          <View style={styles.summaryContent}>
+            {/* Rings Section */}
+            <View style={styles.ringsContainer}>
+              <ActivityRings
+                carbs={totalCarbs}
+                carbsGoal={carbsGoal}
+                protein={totalProtein}
+                proteinGoal={proteinGoal}
+                fat={totalFat}
+                fatGoal={fatGoal}
+                size={180}
+              />
+              <View style={styles.ringsOverlay}>
+                <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
+                  {remainingCalories}
+                </Text>
+                <Text style={[styles.ringsOverlayLabel, { color: secondaryText }]}>
+                  kcal left
+                </Text>
+              </View>
+            </View>
+
+            {/* Legend Section */}
+            <View style={styles.legendContainer}>
+              {/* Calories */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.primary }]}>
+                  Calories
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCalories}
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {calorieGoal} kcal
+                  </Text>
+                </View>
+              </View>
+
+              {/* Carbs */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>
+                  Carbs
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalCarbs}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {carbsGoal}g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Protein */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>
+                  Protein
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalProtein}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {proteinGoal}g
+                  </Text>
+                </View>
+              </View>
+
+              {/* Fat */}
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>
+                  Fat
+                </Text>
+                <View style={styles.legendValues}>
+                  <Text style={[styles.legendValue, { color: textColor }]}>
+                    {totalFat}g
+                  </Text>
+                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
+                    / {fatGoal}g
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
         </View>
 
         <View style={{ paddingHorizontal: Spacing.xl, paddingBottom: 100 }}>
@@ -352,6 +457,61 @@ const styles = StyleSheet.create({
     ...Shadows.medium,
   },
   summaryTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.semibold,
+    marginBottom: Spacing.lg,
+  },
+  summaryContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+  },
+  ringsContainer: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringsOverlay: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ringsOverlayValue: {
+    ...TextStyles.ringValue,
+  },
+  ringsOverlayLabel: {
+    ...TextStyles.ringLabel,
+    marginTop: 2,
+  },
+  legendContainer: {
+    flex: 1,
+    marginLeft: Spacing.xl,
+    justifyContent: "center",
+    gap: Spacing.md,
+  },
+  legendItem: {
+    flexDirection: "column",
+  },
+  legendLabel: {
+    ...TextStyles.legendLabel,
+  },
+  legendValues: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+  },
+  legendValue: {
+    ...TextStyles.legendValue,
+  },
+  legendGoal: {
+    ...TextStyles.legendGoal,
+  },
+  mealsSection: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: 100,
+  },
+  sectionTitle: {
     fontSize: Typography.sizes.xl,
     fontWeight: Typography.weights.semibold,
     marginBottom: Spacing.lg,
