@@ -32,12 +32,42 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+interface NutrientPillProps {
+  label: string;
+  value: string;
+  color: string;
+  isDark: boolean;
+}
+
+const NutrientPill: React.FC<NutrientPillProps> = ({
+  label,
+  value,
+  color,
+  isDark,
+}) => (
+  <View
+    style={[
+      styles.nutrientPill,
+      { backgroundColor: isDark ? `${color}20` : `${color}15` },
+    ]}
+  >
+    <View style={[styles.nutrientDot, { backgroundColor: color }]} />
+    <View>
+      <Text style={[styles.nutrientValue, { color: isDark ? "#fff" : "#000" }]}>
+        {value}
+      </Text>
+      <Text style={[styles.nutrientLabel, { color: color }]}>{label}</Text>
+    </View>
+  </View>
+);
+
 interface MealCardProps {
   meal: MealEntry;
   isDark: boolean;
 }
 
 const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const nutrition = meal.getNutritionInfo();
   const quality = meal.getMealQuality();
@@ -45,6 +75,12 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(!expanded);
+  };
+
+  const getQualityColor = (score: number) => {
+    if (score >= 7) return "#34C759"; // Green
+    if (score >= 4) return "#FF9500"; // Orange
+    return "#FF3B30"; // Red
   };
 
   const getMealIcon = (category: MealCategory) => {
@@ -67,6 +103,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
+  const borderColor = isDark ? "#333" : "#f0f0f0";
 
   return (
     <TouchableOpacity
@@ -75,111 +112,133 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark }) => {
       activeOpacity={0.7}
     >
       <View style={styles.mealCardHeader}>
-        <View style={styles.mealIconContainer}>
-          <View
-            style={[
-              styles.mealIcon,
-              { backgroundColor: isDark ? "#2a2a2a" : "#f5f5f5" },
-            ]}
-          >
-            <Ionicons
-              name={getMealIcon(meal.getCategory()) as any}
-              size={24}
-              color={Colors.primary}
-            />
-          </View>
-          <View style={styles.mealInfo}>
+        <View
+          style={[
+            styles.mealIcon,
+            { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+          ]}
+        >
+          <Ionicons
+            name={getMealIcon(meal.getCategory()) as any}
+            size={24}
+            color={Colors.primary}
+          />
+        </View>
+
+        <View style={styles.mealHeaderInfo}>
+          <View style={styles.mealTitleRow}>
             <Text style={[styles.mealName, { color: textColor }]}>
               {meal.getCategory()}
             </Text>
-            <Text style={[styles.mealDescription, { color: secondaryText }]}>
-              {meal.getTranscription() || "No description"}
+            <Text style={[styles.mealCalories, { color: textColor }]}>
+              {nutrition.getCalories()}{" "}
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "400",
+                  color: secondaryText,
+                }}
+              >
+                kcal
+              </Text>
             </Text>
           </View>
-        </View>
-        <View style={styles.mealCaloriesContainer}>
-          <Text style={[styles.mealCalories, { color: Colors.primary }]}>
-            {nutrition.getCalories()}
-          </Text>
-          <Text style={[styles.mealCaloriesLabel, { color: secondaryText }]}>
-            kcal
-          </Text>
+          <View style={styles.mealSubtitleRow}>
+            <Text
+              style={[styles.mealDescription, { color: secondaryText }]}
+              numberOfLines={1}
+            >
+              {meal.getTranscription() || "No description"}
+            </Text>
+            <Ionicons
+              name={expanded ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={secondaryText}
+            />
+          </View>
         </View>
       </View>
 
       {expanded && (
         <View style={styles.mealDetails}>
-          <View
-            style={[
-              styles.detailsDivider,
-              { backgroundColor: isDark ? "#333" : "#eee" },
-            ]}
-          />
-          {/* Nutrition Info */}
-          <View style={styles.nutritionGrid}>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Carbs
+          <View style={styles.nutrientRow}>
+            <NutrientPill
+              label="Carbs"
+              value={`${nutrition.getCarbs()}g`}
+              color={Colors.secondary.carbs}
+              isDark={isDark}
+            />
+            <NutrientPill
+              label="Protein"
+              value={`${nutrition.getProtein()}g`}
+              color={Colors.secondary.protein}
+              isDark={isDark}
+            />
+            <NutrientPill
+              label="Fat"
+              value={`${nutrition.getFat()}g`}
+              color={Colors.secondary.fat}
+              isDark={isDark}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Quality
               </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getCarbs()}g
+              <View
+                style={[
+                  styles.qualityBadge,
+                  {
+                    backgroundColor: getQualityColor(
+                      quality.getMealQualityScore(),
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.qualityScore}>
+                  {quality.getMealQualityScore()}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Goal Fit
+              </Text>
+              <Text style={[styles.statValue, { color: textColor }]}>
+                {quality.getGoalFitPercentage()}%
               </Text>
             </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Protein
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: secondaryText }]}>
+                Density
               </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getProtein()}g
-              </Text>
-            </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Fat
-              </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getFat()}g
-              </Text>
-            </View>
-            <View style={styles.nutritionItem}>
-              <Text style={[styles.nutritionLabel, { color: secondaryText }]}>
-                Sugar
-              </Text>
-              <Text style={[styles.nutritionValue, { color: textColor }]}>
-                {nutrition.getSugar()}g
+              <Text style={[styles.statValue, { color: textColor }]}>
+                {quality.getCalorieDensity().toFixed(1)}
               </Text>
             </View>
           </View>
 
-          {/* Meal Quality */}
-          <View style={styles.qualitySection}>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Quality Score
-              </Text>
-              <View style={styles.qualityBadge}>
-                <Text style={styles.qualityScore}>
-                  {quality.getMealQualityScore()}/10
-                </Text>
-              </View>
-            </View>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Goal Fit
-              </Text>
-              <Text style={[styles.qualityValue, { color: textColor }]}>
-                {quality.getGoalFitPercentage()}%
-              </Text>
-            </View>
-            <View style={styles.qualityRow}>
-              <Text style={[styles.qualityLabel, { color: secondaryText }]}>
-                Calorie Density
-              </Text>
-              <Text style={[styles.qualityValue, { color: textColor }]}>
-                {quality.getCalorieDensity().toFixed(1)} kcal/g
-              </Text>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.addMealButton,
+              { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+            ]}
+            onPress={() => router.push("/add-meal")}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={20}
+              color={Colors.primary}
+            />
+            <Text style={[styles.addMealButtonText, { color: Colors.primary }]}>
+              Add Item
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
     </TouchableOpacity>
@@ -524,10 +583,8 @@ const styles = StyleSheet.create({
   },
   mealCardHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
-  mealIconContainer: { flexDirection: "row", alignItems: "center", flex: 1 },
   mealIcon: {
     width: 48,
     height: 48,
@@ -536,58 +593,123 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: Spacing.md,
   },
-  mealInfo: { flex: 1 },
-  mealName: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-    marginBottom: 2,
+  mealHeaderInfo: {
+    flex: 1,
+    justifyContent: "center",
   },
-  mealDescription: { fontSize: Typography.sizes.sm },
-  mealCaloriesContainer: { alignItems: "flex-end" },
-  mealCalories: {
-    fontSize: Typography.sizes["2xl"],
-    fontWeight: Typography.weights.bold,
-  },
-  mealCaloriesLabel: { fontSize: Typography.sizes.xs },
-  mealDetails: { marginTop: Spacing.lg },
-  detailsDivider: { height: 1, marginBottom: Spacing.lg },
-  nutritionGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: Spacing.lg,
-  },
-  nutritionItem: { width: "50%", marginBottom: Spacing.md },
-  nutritionLabel: { fontSize: Typography.sizes.sm, marginBottom: 4 },
-  nutritionValue: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-  },
-  qualitySection: {
-    paddingTop: Spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-  },
-  qualityRow: {
+  mealTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.sm,
+    marginBottom: 4,
   },
-  qualityLabel: { fontSize: Typography.sizes.sm },
-  qualityValue: {
+  mealSubtitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  mealName: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.semibold,
+  },
+  mealDescription: {
+    fontSize: Typography.sizes.sm,
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  mealCalories: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+  },
+  mealDetails: {
+    marginTop: Spacing.lg,
+  },
+  nutrientRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  nutrientPill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.xs,
+  },
+  nutrientDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  nutrientValue: {
     fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.bold,
+    lineHeight: 20,
+  },
+  nutrientLabel: {
+    fontSize: 11,
     fontWeight: Typography.weights.medium,
+    textTransform: "uppercase",
+  },
+  divider: {
+    height: 1,
+    marginBottom: Spacing.lg,
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: Typography.sizes.xs,
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
   },
   qualityBadge: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.lg,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
   },
   qualityScore: {
     color: "white",
     fontSize: Typography.sizes.base,
     fontWeight: Typography.weights.bold,
+  },
+  addMealButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+    gap: Spacing.xs,
+  },
+  addMealButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+  },
+  fab: {
+    position: "absolute",
+    bottom: Spacing["3xl"],
+    right: Spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.large,
   },
 });
 
