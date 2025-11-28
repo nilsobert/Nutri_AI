@@ -5,7 +5,7 @@ export const Colors = {
   primary: "#0a7ea4",
   secondary: {
     protein: "#4ECDC4",
-    carbs: "#3bd445ff",
+    carbs: "#3bd445",
     fat: "#FF6B6B",
   },
   background: {
