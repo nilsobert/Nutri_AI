@@ -9,6 +9,7 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { UserProvider } from "@/context/UserContext";
+import { MealProvider } from "@/context/MealContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -19,8 +20,11 @@ export default function RootLayout() {
 
   return (
     <UserProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
+      <MealProvider>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="screens/calendar-screen"
@@ -30,13 +34,14 @@ export default function RootLayout() {
             name="modal"
             options={{ presentation: "modal", title: "Modal" }}
           />
-          <Stack.Screen
-            name="profile"
-            options={{ presentation: "modal", headerShown: false }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+            <Stack.Screen
+              name="profile"
+              options={{ presentation: "modal", headerShown: false }}
+            />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </MealProvider>
     </UserProvider>
   );
 }
