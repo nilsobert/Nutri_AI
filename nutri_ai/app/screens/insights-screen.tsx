@@ -110,10 +110,10 @@ const CalorieChart = ({
           y1={0}
           x2={width}
           y2={CHART_HEIGHT}
-          stroke={isDark ? "#333" : "#e0e0e0"}
+          stroke={isDark ? "#555" : "#ccc"}
           strokeWidth={1}
         />
-        
+
         {/* Stacked Bars */}
         <Defs>
           {data.map((d, i) => {
@@ -203,9 +203,27 @@ const CalorieChart = ({
   );
 };
 
-const FixedYAxis = ({ chartMax, isDark, width }: { chartMax: number, isDark: boolean, width: number }) => {
+const FixedYAxis = ({
+  chartMax,
+  isDark,
+  width,
+}: {
+  chartMax: number;
+  isDark: boolean;
+  width: number;
+}) => {
   return (
-    <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width, zIndex: 10, pointerEvents: 'none' }}>
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width,
+        zIndex: 10,
+        pointerEvents: "none",
+      }}
+    >
       <Svg width={width} height={CHART_HEIGHT}>
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const y = CHART_HEIGHT - 30 - ratio * (CHART_HEIGHT - 50);
@@ -213,7 +231,8 @@ const FixedYAxis = ({ chartMax, isDark, width }: { chartMax: number, isDark: boo
             <G key={`grid-${ratio}`}>
               <SvgText
                 x={width - 8}
-                y={y + 4}
+                y={y}
+                dy="4"
                 fill={isDark ? "#999" : "#666"}
                 fontSize={Typography.sizes.sm}
                 textAnchor="end"
@@ -228,9 +247,24 @@ const FixedYAxis = ({ chartMax, isDark, width }: { chartMax: number, isDark: boo
   );
 };
 
-const BackgroundGrid = ({ width, isDark }: { width: number, isDark: boolean }) => {
+const BackgroundGrid = ({
+  width,
+  isDark,
+}: {
+  width: number;
+  isDark: boolean;
+}) => {
   return (
-    <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width, zIndex: 0 }}>
+    <View
+      style={{
+        position: "absolute",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width,
+        zIndex: 0,
+      }}
+    >
       <Svg width={width} height={CHART_HEIGHT}>
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const y = CHART_HEIGHT - 30 - ratio * (CHART_HEIGHT - 50);
@@ -266,6 +300,8 @@ function shiftDate(date: Date, range: string, offset: number) {
   return newDate;
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   const labels: { text: string; index: number }[] = [];
   const baseDate = new Date(startDate);
@@ -276,18 +312,17 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
       if (h < dataLength) labels.push({ text: `${h}:00`, index: h });
     });
   } else if (range === "Week") {
-    // Label every day
+    // Label every day using a fixed array for consistency
     for (let i = 0; i < dataLength; i++) {
-      const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + i);
+      const dayIndex = (baseDate.getDay() + i) % 7;
       labels.push({
-        text: d.toLocaleDateString("en-US", { weekday: "short" }),
+        text: WEEKDAYS[dayIndex],
         index: i,
       });
     }
   } else if (range === "Month") {
-    // Label every 5 days
-    for (let i = 0; i < dataLength; i += 5) {
+    // Label every 5 days, but not the very last one to prevent clipping
+    for (let i = 0; i < dataLength - 1; i += 5) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i);
       labels.push({ text: d.getDate().toString(), index: i });
@@ -374,7 +409,11 @@ function aggregateData(range: string, startDate?: Date) {
   return data;
 }
 
-function getHistoricalData(count: number, resolution: "day" | "month", endDate?: Date) {
+function getHistoricalData(
+  count: number,
+  resolution: "day" | "month",
+  endDate?: Date,
+) {
   const data = Array(count)
     .fill(null)
     .map(() => ({
@@ -478,7 +517,9 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
       })
       .reduce((sum, meal) => {
         const info = meal.getNutritionInfo();
-        return sum + info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9;
+        return (
+          sum + info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9
+        );
       }, 0);
 
     if (
@@ -545,8 +586,8 @@ function calculateLongestStreakOverall(): number {
 
   // Convert to sorted array of dates
   const sortedDates = Array.from(mealDates)
-    .map(dateStr => {
-      const [year, month, day] = dateStr.split('-').map(Number);
+    .map((dateStr) => {
+      const [year, month, day] = dateStr.split("-").map(Number);
       return new Date(year, month, day);
     })
     .sort((a, b) => a.getTime() - b.getTime());
@@ -557,11 +598,11 @@ function calculateLongestStreakOverall(): number {
   for (let i = 1; i < sortedDates.length; i++) {
     const prevDate = sortedDates[i - 1];
     const currentDate = sortedDates[i];
-    
+
     // Check if dates are consecutive (exactly 1 day apart)
     const diffTime = currentDate.getTime() - prevDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) {
       // Consecutive day, extend current streak
       currentStreak++;
@@ -574,7 +615,7 @@ function calculateLongestStreakOverall(): number {
 
   // Final check for the last streak
   longestStreak = Math.max(longestStreak, currentStreak);
-  
+
   return longestStreak;
 }
 
@@ -611,9 +652,11 @@ export default function InsightsScreen() {
     "Carbs",
     "Fat",
   ]);
+  const [currentViewIndex, setCurrentViewIndex] = useState(1); // 0: prev, 1: current, 2: next
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const chartScrollRef = useRef<ScrollView>(null);
+  const trendsScrollRef = useRef<ScrollView>(null);
   const progress = useSharedValue(0);
 
   // Theme Colors
@@ -633,41 +676,81 @@ export default function InsightsScreen() {
   useEffect(() => {
     progress.value = 0;
     progress.value = withTiming(1, { duration: 600 });
-    setCurrentDate(new Date());
-  }, [selectedRange]);
+    // Only reset date on initial mount, not on range change
+    if (currentDate.getTime() === 0) {
+      setCurrentDate(new Date());
+    }
+  }, [selectedRange, currentDate]);
 
   // Calculate start date for the current range
   const getStartDate = (range: string, baseDate: Date) => {
     const startDate = new Date(baseDate);
-    
+
     if (range === "Week") {
-      startDate.setDate(baseDate.getDate() - 6);
+      // Find the Monday of the week for the given baseDate
+      const day = startDate.getDay();
+      const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday (0)
+      startDate.setDate(diff);
     } else if (range === "Month") {
       startDate.setDate(baseDate.getDate() - 29);
     } else if (range === "Year") {
       startDate.setMonth(0, 1);
     }
-    
+
     return startDate;
   };
 
   // Prepare data for 3 pages: Prev, Current, Next
-  const prevDate = useMemo(() => shiftDate(currentDate, selectedRange, -1), [currentDate, selectedRange]);
-  const nextDate = useMemo(() => shiftDate(currentDate, selectedRange, 1), [currentDate, selectedRange]);
+  const prevDate = useMemo(
+    () => shiftDate(currentDate, selectedRange, -1),
+    [currentDate, selectedRange],
+  );
+  const nextDate = useMemo(
+    () => shiftDate(currentDate, selectedRange, 1),
+    [currentDate, selectedRange],
+  );
 
-  const currentStartDate = useMemo(() => getStartDate(selectedRange, currentDate), [selectedRange, currentDate]);
-  const prevStartDate = useMemo(() => getStartDate(selectedRange, prevDate), [selectedRange, prevDate]);
-  const nextStartDate = useMemo(() => getStartDate(selectedRange, nextDate), [selectedRange, nextDate]);
+  const currentStartDate = useMemo(
+    () => getStartDate(selectedRange, currentDate),
+    [selectedRange, currentDate],
+  );
+  const prevStartDate = useMemo(
+    () => getStartDate(selectedRange, prevDate),
+    [selectedRange, prevDate],
+  );
+  const nextStartDate = useMemo(
+    () => getStartDate(selectedRange, nextDate),
+    [selectedRange, nextDate],
+  );
 
-  const currentData = useMemo(() => aggregateData(selectedRange, currentStartDate), [selectedRange, currentStartDate]);
-  const prevPageData = useMemo(() => aggregateData(selectedRange, prevStartDate), [selectedRange, prevStartDate]);
-  const nextPageData = useMemo(() => aggregateData(selectedRange, nextStartDate), [selectedRange, nextStartDate]);
+  const currentData = useMemo(
+    () => aggregateData(selectedRange, currentStartDate),
+    [selectedRange, currentStartDate],
+  );
+  const prevPageData = useMemo(
+    () => aggregateData(selectedRange, prevStartDate),
+    [selectedRange, prevStartDate],
+  );
+  const nextPageData = useMemo(
+    () => aggregateData(selectedRange, nextStartDate),
+    [selectedRange, nextStartDate],
+  );
+
+  // Check if current date is today
+  const isCurrentDate = useMemo(() => {
+    const now = new Date();
+    return (
+      currentDate.getDate() === now.getDate() &&
+      currentDate.getMonth() === now.getMonth() &&
+      currentDate.getFullYear() === now.getFullYear()
+    );
+  }, [currentDate]);
 
   // Chart Dimensions
   const yAxisWidth = 50;
-  const chartContainerWidth = SCREEN_WIDTH - Spacing.xl * 2;
+  const chartContainerWidth = SCREEN_WIDTH - Spacing.xl * 2 - Spacing.lg * 2;
   const chartScrollWidth = chartContainerWidth - yAxisWidth;
-  
+
   const barWidth =
     selectedRange === "Year"
       ? 8
@@ -676,7 +759,7 @@ export default function InsightsScreen() {
         : selectedRange === "Week"
           ? 16
           : 8;
-  
+
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
     const maxVal = Math.max(...data.map((d) => d.calories), 10);
@@ -686,17 +769,18 @@ export default function InsightsScreen() {
     else if (maxVal > 500) step = 100;
     else if (maxVal > 100) step = 50;
     else step = 10;
-    
+
     let chartMax = Math.ceil(maxVal / step) * step;
     // Ensure chartMax is divisible by 4 for uniform integer labels
     if (chartMax % 4 !== 0) {
-      chartMax += (4 - (chartMax % 4));
+      chartMax += 4 - (chartMax % 4);
     }
-    
+
     // Calculate spacing to fill the width
     // width = n * barWidth + n * spacing
     // spacing = (width - n * barWidth) / n
-    const barSpacing = (chartScrollWidth - data.length * barWidth) / data.length;
+    const barSpacing =
+      (chartScrollWidth - data.length * barWidth) / data.length;
     const axisLabels = getAxisLabels(selectedRange, data.length, startDate);
 
     return { chartMax, barSpacing, axisLabels };
@@ -705,19 +789,46 @@ export default function InsightsScreen() {
   const currentChartProps = getChartProps(currentData, currentStartDate);
   const prevChartProps = getChartProps(prevPageData, prevStartDate);
   const nextChartProps = getChartProps(nextPageData, nextStartDate);
-  
+
   // Use current chart max for all to ensure consistency
   const unifiedChartMax = currentChartProps.chartMax;
 
-  // Trend Data - Align with current view
-  const trendData = currentData;
+  // Get the correct data and labels based on current view
+  const getTrendDataAndLabels = () => {
+    switch (currentViewIndex) {
+      case 0: // Previous
+        return {
+          data: prevPageData,
+          labels: prevChartProps.axisLabels,
+          startDate: prevStartDate,
+        };
+      case 2: // Next
+        return {
+          data: nextPageData,
+          labels: nextChartProps.axisLabels,
+          startDate: nextStartDate,
+        };
+      default: // Current
+        return {
+          data: currentData,
+          labels: currentChartProps.axisLabels,
+          startDate: currentStartDate,
+        };
+    }
+  };
+
+  const {
+    data: trendData,
+    labels: trendLabels,
+    startDate: trendStartDate,
+  } = getTrendDataAndLabels();
 
   useEffect(() => {
-    // Scroll to beginning for better UX
+    // Reset trends scroll to center when view changes
     setTimeout(() => {
-      scrollRef.current?.scrollTo({ x: 0, animated: true });
+      trendsScrollRef.current?.scrollTo({ x: 0, animated: true });
     }, 100);
-  }, [trendData, visibleTrends]);
+  }, [trendData, visibleTrends, currentViewIndex]);
 
   // Metrics (based on currentData)
   const totalCalories = currentData.reduce((sum, d) => sum + d.calories, 0);
@@ -736,9 +847,9 @@ export default function InsightsScreen() {
     endDate = new Date(currentDate);
     totalDaysInPeriod = 1;
   } else if (selectedRange === "Week") {
-    startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - 6);
-    endDate = new Date(currentDate);
+    startDate = getStartDate(selectedRange, currentDate);
+    endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
     totalDaysInPeriod = 7;
   } else if (selectedRange === "Month") {
     startDate = new Date(currentDate);
@@ -778,13 +889,17 @@ export default function InsightsScreen() {
     prevPeriodStartDate = new Date(startDate.getFullYear() - 1, 0, 1);
     prevPeriodEndDate = new Date(startDate.getFullYear() - 1, 11, 31);
   }
-  const prevDaysGoalMet = getDailyGoalMetCount(prevPeriodStartDate, prevPeriodEndDate);
+  const prevDaysGoalMet = getDailyGoalMetCount(
+    prevPeriodStartDate,
+    prevPeriodEndDate,
+  );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak
-  const streak = selectedRange === "Year" 
-    ? calculateLongestStreakOverall()
-    : calculateStreakInPeriod(startDate, endDate);
-  
+  const streak =
+    selectedRange === "Year"
+      ? calculateLongestStreakOverall()
+      : calculateStreakInPeriod(startDate, endDate);
+
   const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate);
 
   const toggleTrend = (metric: string) => {
@@ -803,16 +918,40 @@ export default function InsightsScreen() {
     if (x < chartScrollWidth / 2) {
       // Scrolled to Prev
       setCurrentDate(prevDate);
+      setCurrentViewIndex(0);
     } else if (x > chartScrollWidth * 1.5) {
       // Scrolled to Next
       setCurrentDate(nextDate);
+      setCurrentViewIndex(2);
+    } else {
+      // In the middle - Current
+      setCurrentViewIndex(1);
     }
   };
 
   useEffect(() => {
     // Reset scroll to center whenever date changes
     chartScrollRef.current?.scrollTo({ x: chartScrollWidth, animated: false });
+    setCurrentViewIndex(1); // Reset to current view
   }, [currentDate, chartScrollWidth]);
+
+  // Calculate optimal chart width for trends
+  const getOptimalTrendsWidth = () => {
+    const baseWidth = SCREEN_WIDTH - Spacing.lg * 2; // Fit within card bounds
+
+    // Calculate reasonable width based on data points and range
+    let optimalWidth = baseWidth;
+    const minPointWidth = 30; // Minimum width per data point
+
+    if (trendData.length * minPointWidth > baseWidth) {
+      // Need to scroll, but limit the width
+      optimalWidth = Math.min(trendData.length * 35, baseWidth * 1.3);
+    }
+
+    return Math.max(optimalWidth, baseWidth);
+  };
+
+  const trendsChartWidth = getOptimalTrendsWidth();
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -839,8 +978,18 @@ export default function InsightsScreen() {
           </View>
 
           <View style={{ height: CHART_HEIGHT, width: chartContainerWidth }}>
-            <FixedYAxis chartMax={unifiedChartMax} isDark={isDark} width={yAxisWidth} />
-            <View style={{ marginLeft: yAxisWidth, width: chartScrollWidth, height: CHART_HEIGHT }}>
+            <FixedYAxis
+              chartMax={unifiedChartMax}
+              isDark={isDark}
+              width={yAxisWidth}
+            />
+            <View
+              style={{
+                marginLeft: yAxisWidth,
+                width: chartScrollWidth,
+                height: CHART_HEIGHT,
+              }}
+            >
               <BackgroundGrid width={chartScrollWidth} isDark={isDark} />
               <ScrollView
                 ref={chartScrollRef}
@@ -932,7 +1081,11 @@ export default function InsightsScreen() {
 
         <View style={styles.metricsGrid}>
           <View
-            style={[styles.card, styles.metricCard, { backgroundColor: cardBg }]}
+            style={[
+              styles.card,
+              styles.metricCard,
+              { backgroundColor: cardBg },
+            ]}
           >
             <ThemedText style={styles.metricTitle}>Avg Meal Quality</ThemedText>
             <View style={styles.metricValueContainer}>
@@ -946,7 +1099,11 @@ export default function InsightsScreen() {
           </View>
 
           <View
-            style={[styles.card, styles.metricCard, { backgroundColor: cardBg }]}
+            style={[
+              styles.card,
+              styles.metricCard,
+              { backgroundColor: cardBg },
+            ]}
           >
             <ThemedText style={styles.metricTitle}>
               {selectedRange === "Year" ? "Longest Streak" : "Current Streak"}
@@ -964,7 +1121,11 @@ export default function InsightsScreen() {
 
         <View style={styles.metricsGrid}>
           <View
-            style={[styles.card, styles.metricCard, { backgroundColor: cardBg }]}
+            style={[
+              styles.card,
+              styles.metricCard,
+              { backgroundColor: cardBg },
+            ]}
           >
             <ThemedText style={styles.metricTitle}>Goal Met</ThemedText>
             <View style={styles.metricValueContainer}>
@@ -985,7 +1146,11 @@ export default function InsightsScreen() {
           </View>
 
           <View
-            style={[styles.card, styles.metricCard, { backgroundColor: cardBg }]}
+            style={[
+              styles.card,
+              styles.metricCard,
+              { backgroundColor: cardBg },
+            ]}
           >
             <ThemedText style={styles.metricTitle}>Max Meal</ThemedText>
             <View style={styles.metricValueContainer}>
@@ -1044,16 +1209,10 @@ export default function InsightsScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            ref={scrollRef}
+            ref={trendsScrollRef}
             contentContainerStyle={{ paddingHorizontal: Spacing.lg }}
           >
-            <Svg
-              width={Math.max(
-                SCREEN_WIDTH - Spacing.xl * 2,
-                trendData.length * 40,
-              )}
-              height={240}
-            >
+            <Svg width={trendsChartWidth} height={240}>
               <Defs>
                 <LinearGradient id="gradCal" x1="0" y1="0" x2="0" y2="1">
                   <Stop
@@ -1125,12 +1284,9 @@ export default function InsightsScreen() {
                 const scaleMacro = roundScale(maxMacro);
 
                 const chartH = 240;
-                const chartW = Math.max(
-                  SCREEN_WIDTH - Spacing.xl * 2,
-                  trendData.length * 40,
-                );
-                const pX = 10;
-                const pR = 10;
+                const chartW = trendsChartWidth;
+                const pX = 20; // Reduced padding for better space utilization
+                const pR = 20;
                 const drawW = chartW - pX - pR;
                 const stepX = drawW / (trendData.length - 1 || 1);
 
@@ -1148,9 +1304,9 @@ export default function InsightsScreen() {
                       return (
                         <G key={`grid-${ratio}`}>
                           <Line
-                            x1={0}
+                            x1={pX}
                             y1={y}
-                            x2={chartW}
+                            x2={chartW - pR}
                             y2={y}
                             stroke={isDark ? "#444" : Colors.grey.light}
                             strokeDasharray="4, 4"
@@ -1256,12 +1412,16 @@ export default function InsightsScreen() {
 
                     {/* X-Axis Labels */}
                     {trendData.map((d, i) => {
-                      // Use axisLabels from currentChartProps to get correct labels
-                      const label = currentChartProps.axisLabels.find(l => l.index === i)?.text;
+                      // Use trendLabels to get correct labels for the current view
+                      const label = trendLabels.find(
+                        (l) => l.index === i,
+                      )?.text;
                       if (!label) return null;
-                      
-                      // Show fewer labels if too many
-                      if (trendData.length > 10 && i % Math.ceil(trendData.length / 5) !== 0) return null;
+
+                      // Show fewer labels if too many data points
+                      const labelInterval = Math.ceil(trendData.length / 6); // Max 6 labels for better readability
+                      if (i % labelInterval !== 0 && i !== trendData.length - 1)
+                        return null;
 
                       return (
                         <SvgText
@@ -1326,9 +1486,31 @@ export default function InsightsScreen() {
           { paddingTop: insets.top, borderBottomColor: borderColor },
         ]}
       >
-        <ThemedText style={[styles.headerTitle, { color: textColor }]}>
-          Insights
-        </ThemedText>
+        <View style={styles.headerTopRow}>
+          <ThemedText style={[styles.headerTitle, { color: textColor }]}>
+            Insights
+          </ThemedText>
+          {!isCurrentDate &&
+            (selectedRange === "Day" || selectedRange === "Week") && (
+              <TouchableOpacity
+                style={[
+                  styles.todayButton,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(32, 150, 33, 0.2)"
+                      : "rgba(32, 150, 33, 0.1)",
+                  },
+                ]}
+                onPress={() => setCurrentDate(new Date())}
+              >
+                <ThemedText
+                  style={[styles.todayButtonText, { color: Colors.primary }]}
+                >
+                  Today
+                </ThemedText>
+              </TouchableOpacity>
+            )}
+        </View>
         {/* Segmented Control */}
         <View
           style={[
@@ -1385,6 +1567,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(0,0,0,0.1)",
   },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   headerTitle: {
     fontSize: 34,
     fontWeight: "bold",
@@ -1429,6 +1616,18 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     marginBottom: Spacing.lg,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  todayButtonText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: "600",
   },
   cardTitle: {
     fontSize: Typography.sizes.lg,
