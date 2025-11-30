@@ -295,7 +295,10 @@ export default function MergedCalendar() {
                               shadowRadius: 4,
                             },
                             hasMeal &&
-                              !isToday && { borderWidth: 2, borderColor: GREEN },
+                              !isToday && {
+                                borderWidth: 2,
+                                borderColor: GREEN,
+                              },
                           ]}
                         >
                           <Text
@@ -362,7 +365,9 @@ export default function MergedCalendar() {
                 ]}
                 onPress={() => toggleExpand(category)}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <View
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+                >
                   <Ionicons
                     name={getMealIcon(category) as any}
                     size={20}
@@ -390,7 +395,9 @@ export default function MergedCalendar() {
                         <Text style={[styles.mealName, { color: textColor }]}>
                           {meal.name}
                         </Text>
-                        <Text style={[styles.mealDesc, { color: secondaryText }]}>
+                        <Text
+                          style={[styles.mealDesc, { color: secondaryText }]}
+                        >
                           {meal.details}
                         </Text>
                       </View>
