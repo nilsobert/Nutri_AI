@@ -1,14 +1,14 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import React, { useEffect } from "react";
+import { View, StyleSheet } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
 import Animated, {
   useAnimatedProps,
   useSharedValue,
   withTiming,
   withDelay,
   Easing,
-} from 'react-native-reanimated';
-import { Colors } from '../constants/theme';
+} from "react-native-reanimated";
+import { Colors } from "../constants/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -22,15 +22,19 @@ interface RingProps {
 }
 
 const darkenColor = (color: string, amount: number = 0.3) => {
-  let c = color.replace('#', '');
-  if (c.length === 3) c = c.split('').map((char) => char + char).join('');
+  let c = color.replace("#", "");
+  if (c.length === 3)
+    c = c
+      .split("")
+      .map((char) => char + char)
+      .join("");
   const num = parseInt(c, 16);
   let r = (num >> 16) - Math.round(255 * amount);
   let g = ((num >> 8) & 0x00ff) - Math.round(255 * amount);
   let b = (num & 0x0000ff) - Math.round(255 * amount);
 
   return (
-    '#' +
+    "#" +
     (
       0x1000000 +
       (r < 0 ? 0 : r) * 0x10000 +
@@ -57,7 +61,10 @@ const Ring = ({
   useEffect(() => {
     fill.value = withDelay(
       delay,
-      withTiming(progress, { duration: 1500, easing: Easing.out(Easing.cubic) })
+      withTiming(progress, {
+        duration: 1500,
+        easing: Easing.out(Easing.cubic),
+      }),
     );
   }, [progress, delay]);
 
@@ -75,8 +82,8 @@ const Ring = ({
     // If val = 2.0, overlay is 0 (invisible) or full?
     // Visually, 2.0 should look like a full bright circle (on top of dark).
     // So if val % 1 === 0 && val > 0, effective = 1.
-    
-    const displayProgress = (val > 1 && val % 1 === 0) ? 1 : effectiveProgress;
+
+    const displayProgress = val > 1 && val % 1 === 0 ? 1 : effectiveProgress;
 
     return {
       strokeDashoffset: circumference * (1 - displayProgress),
@@ -167,8 +174,8 @@ export const ActivityRings: React.FC<ActivityRingsProps> = ({
       style={{
         width: size,
         height: size,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
       <Svg width={size} height={size}>

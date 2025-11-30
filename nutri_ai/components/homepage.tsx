@@ -585,7 +585,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const weekGap = 40;
   const itemFullWidth = itemWidth + normalGap;
   const basePadding = Spacing.xl;
-  
+
   // Calculate dynamic padding to ensure integer number of items are visible
   const availableWidth = screenWidth - (basePadding * 2);
   // Force 7 items to be visible as requested
@@ -751,7 +751,9 @@ const IOSStyleHomeScreen: React.FC = () => {
                 <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
                   {remainingCalories}
                 </Text>
-                <Text style={[styles.ringsOverlayLabel, { color: secondaryText }]}>
+                <Text
+                  style={[styles.ringsOverlayLabel, { color: secondaryText }]}
+                >
                   kcal left
                 </Text>
               </View>
@@ -776,7 +778,12 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Carbs */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>
+                <Text
+                  style={[
+                    styles.legendLabel,
+                    { color: Colors.secondary.carbs },
+                  ]}
+                >
                   Carbs
                 </Text>
                 <View style={styles.legendValues}>
@@ -791,7 +798,12 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Protein */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>
+                <Text
+                  style={[
+                    styles.legendLabel,
+                    { color: Colors.secondary.protein },
+                  ]}
+                >
                   Protein
                 </Text>
                 <View style={styles.legendValues}>
@@ -806,7 +818,9 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Fat */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>
+                <Text
+                  style={[styles.legendLabel, { color: Colors.secondary.fat }]}
+                >
                   Fat
                 </Text>
                 <View style={styles.legendValues}>
@@ -884,7 +898,9 @@ const IOSStyleHomeScreen: React.FC = () => {
                 style={[styles.todayButton, { backgroundColor: cardBg }]}
                 onPress={scrollToToday}
               >
-                <Text style={[styles.todayButtonText, { color: Colors.primary }]}>
+                <Text
+                  style={[styles.todayButtonText, { color: Colors.primary }]}
+                >
                   Today
                 </Text>
               </TouchableOpacity>
