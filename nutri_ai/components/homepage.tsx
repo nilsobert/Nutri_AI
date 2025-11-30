@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { useUser } from "../context/UserContext";
+import { useMeals } from "../context/MealContext";
 import {
   BorderRadius,
   Colors,
@@ -33,7 +34,6 @@ import {
   Typography,
   TextStyles,
 } from "../constants/theme";
-import { mockMeals } from "../mock-data/meals";
 import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
 
@@ -288,6 +288,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollViewRef = React.useRef<ScrollView>(null);
   const { profileImage } = useUser();
+  const { meals: allMeals } = useMeals();
 
   // Layout calculations for date strip
   const itemWidth = 32;
@@ -330,7 +331,7 @@ const IOSStyleHomeScreen: React.FC = () => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
-  const meals: MealEntry[] = mockMeals.filter((meal) => {
+  const meals: MealEntry[] = allMeals.filter((meal) => {
     const mealDate = new Date(meal.getTimestamp() * 1000);
     return isSameDay(mealDate, currentDate);
   });
