@@ -195,9 +195,7 @@ export default function SignUp() {
             </View>
 
             <View style={{ alignItems: "center", marginTop: 14 }}>
-              <TouchableOpacity
-                onPress={() => router.push("/(tabs)")}
-              >
+              <TouchableOpacity onPress={() => router.push("/(tabs)")}>
                 <Text style={[styles.welcomeLink, { color: Colors.primary }]}>
                   Go to Home Page
                 </Text>
