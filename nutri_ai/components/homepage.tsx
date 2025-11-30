@@ -175,11 +175,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
               {meal.getTranscription() || "No description"}
             </Text>
             <Animated.View style={chevronStyle}>
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={secondaryText}
-              />
+              <Ionicons name="chevron-down" size={16} color={secondaryText} />
             </Animated.View>
           </View>
         </View>
@@ -294,13 +290,13 @@ const IOSStyleHomeScreen: React.FC = () => {
   const gap = 20;
   const itemFullWidth = itemWidth + gap;
   const basePadding = Spacing.xl;
-  
+
   // Calculate dynamic padding to ensure integer number of items are visible
-  const availableWidth = screenWidth - (basePadding * 2);
+  const availableWidth = screenWidth - basePadding * 2;
   const numVisibleItems = Math.floor((availableWidth + gap) / itemFullWidth);
   const totalItemWidth = numVisibleItems * itemFullWidth - gap;
   const remainingSpace = availableWidth - totalItemWidth;
-  const dynamicPadding = basePadding + (remainingSpace / 2);
+  const dynamicPadding = basePadding + remainingSpace / 2;
 
   // Generate 30 days of dates ending with today
   const days = Array.from({ length: 30 }, (_, i) => {
@@ -402,7 +398,9 @@ const IOSStyleHomeScreen: React.FC = () => {
                 <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
                   {remainingCalories}
                 </Text>
-                <Text style={[styles.ringsOverlayLabel, { color: secondaryText }]}>
+                <Text
+                  style={[styles.ringsOverlayLabel, { color: secondaryText }]}
+                >
                   kcal left
                 </Text>
               </View>
@@ -427,7 +425,12 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Carbs */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>
+                <Text
+                  style={[
+                    styles.legendLabel,
+                    { color: Colors.secondary.carbs },
+                  ]}
+                >
                   Carbs
                 </Text>
                 <View style={styles.legendValues}>
@@ -442,7 +445,12 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Protein */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>
+                <Text
+                  style={[
+                    styles.legendLabel,
+                    { color: Colors.secondary.protein },
+                  ]}
+                >
                   Protein
                 </Text>
                 <View style={styles.legendValues}>
@@ -457,7 +465,9 @@ const IOSStyleHomeScreen: React.FC = () => {
 
               {/* Fat */}
               <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>
+                <Text
+                  style={[styles.legendLabel, { color: Colors.secondary.fat }]}
+                >
                   Fat
                 </Text>
                 <View style={styles.legendValues}>
@@ -530,7 +540,9 @@ const IOSStyleHomeScreen: React.FC = () => {
                 style={[styles.todayButton, { backgroundColor: cardBg }]}
                 onPress={scrollToToday}
               >
-                <Text style={[styles.todayButtonText, { color: Colors.primary }]}>
+                <Text
+                  style={[styles.todayButtonText, { color: Colors.primary }]}
+                >
                   Today
                 </Text>
               </TouchableOpacity>

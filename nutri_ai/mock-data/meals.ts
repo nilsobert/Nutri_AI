@@ -23,7 +23,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Oatmeal with Berries",
-    getTimestampForDaysAgo(0)
+    getTimestampForDaysAgo(0),
   ),
   new MealEntry(
     MealCategory.Lunch,
@@ -37,7 +37,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Chicken Salad with Apple",
-    getTimestampForDaysAgo(0)
+    getTimestampForDaysAgo(0),
   ),
   new MealEntry(
     MealCategory.Dinner,
@@ -51,7 +51,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Salmon with Quinoa and Veggies",
-    getTimestampForDaysAgo(0)
+    getTimestampForDaysAgo(0),
   ),
   new MealEntry(
     MealCategory.Snack,
@@ -65,7 +65,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Yogurt",
-    getTimestampForDaysAgo(0)
+    getTimestampForDaysAgo(0),
   ),
 
   // Yesterday
@@ -81,7 +81,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Pancakes with Syrup",
-    getTimestampForDaysAgo(1)
+    getTimestampForDaysAgo(1),
   ),
   new MealEntry(
     MealCategory.Lunch,
@@ -95,7 +95,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Turkey Sandwich",
-    getTimestampForDaysAgo(1)
+    getTimestampForDaysAgo(1),
   ),
   new MealEntry(
     MealCategory.Dinner,
@@ -109,7 +109,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Pasta Bolognese",
-    getTimestampForDaysAgo(1)
+    getTimestampForDaysAgo(1),
   ),
 
   // 2 Days Ago
@@ -125,7 +125,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Scrambled Eggs and Toast",
-    getTimestampForDaysAgo(2)
+    getTimestampForDaysAgo(2),
   ),
   new MealEntry(
     MealCategory.Lunch,
@@ -139,7 +139,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Grilled Chicken Breast",
-    getTimestampForDaysAgo(2)
+    getTimestampForDaysAgo(2),
   ),
   new MealEntry(
     MealCategory.Dinner,
@@ -153,7 +153,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Steak and Potatoes",
-    getTimestampForDaysAgo(2)
+    getTimestampForDaysAgo(2),
   ),
 
   // 3 Days Ago
@@ -169,7 +169,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Cereal with Milk",
-    getTimestampForDaysAgo(3)
+    getTimestampForDaysAgo(3),
   ),
   new MealEntry(
     MealCategory.Lunch,
@@ -183,7 +183,7 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Tuna Salad Wrap",
-    getTimestampForDaysAgo(3)
+    getTimestampForDaysAgo(3),
   ),
   new MealEntry(
     MealCategory.Dinner,
@@ -197,6 +197,6 @@ export const mockMeals: MealEntry[] = [
     }),
     undefined,
     "Baked Cod with Asparagus",
-    getTimestampForDaysAgo(3)
+    getTimestampForDaysAgo(3),
   ),
 ];
