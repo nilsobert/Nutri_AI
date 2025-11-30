@@ -30,8 +30,9 @@ export class MealEntry {
     image?: string,
     transcription?: string,
     timestamp?: number,
+    id?: string,
   ) {
-    this._id = uuidv4();
+    this._id = id || uuidv4();
     this._timestamp = timestamp || Math.floor(Date.now() / MS_TO_S);
     this._category = category;
     this._mealQuality = mealQuality;
@@ -89,5 +90,29 @@ export class MealEntry {
 
   public setNutritionInfo(nutritionInfo: NutritionInfo): void {
     this._nutritionInfo = nutritionInfo;
+  }
+
+  public toJSON(): any {
+    return {
+      id: this._id,
+      timestamp: this._timestamp,
+      category: this._category,
+      image: this._image,
+      transcription: this._transcription,
+      mealQuality: this._mealQuality,
+      nutritionInfo: this._nutritionInfo,
+    };
+  }
+
+  public static fromJSON(json: any): MealEntry {
+    return new MealEntry(
+      json.category,
+      MealQuality.fromJSON(json.mealQuality),
+      NutritionInfo.fromJSON(json.nutritionInfo),
+      json.image,
+      json.transcription,
+      json.timestamp,
+      json.id,
+    );
   }
 }

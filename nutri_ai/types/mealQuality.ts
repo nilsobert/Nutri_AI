@@ -69,4 +69,20 @@ export class MealQuality {
     log.error("Invalid meal quality score value: must be between 1 and 10.");
     throw new RangeError("Meal quality score must be between 1 and 10.");
   }
+
+  public toJSON(): any {
+    return {
+      calorieDensity: this._calorieDensity,
+      goalFitPercentage: this._goalFitPercentage,
+      mealQualityScore: this._mealQualityScore,
+    };
+  }
+
+  public static fromJSON(json: any): MealQuality {
+    return new MealQuality(
+      json.calorieDensity,
+      json.goalFitPercentage,
+      json.mealQualityScore,
+    );
+  }
 }
