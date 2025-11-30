@@ -13,6 +13,8 @@ import {
   View,
   useWindowDimensions,
   Image,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -21,6 +23,11 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
+  useAnimatedScrollHandler,
+  interpolate,
+  interpolateColor,
+  Extrapolation,
+  SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -76,18 +83,199 @@ const NutrientPill: React.FC<NutrientPillProps> = ({
   </View>
 );
 
+interface PaginationDotProps {
+  index: number;
+  scrollX: SharedValue<number>;
+  contentWidth: number;
+  isDark: boolean;
+}
+
+const PaginationDot: React.FC<PaginationDotProps> = ({
+  index,
+  scrollX,
+  contentWidth,
+  isDark,
+}) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * contentWidth,
+      index * contentWidth,
+      (index + 1) * contentWidth,
+    ];
+
+    const width = interpolate(
+      scrollX.value,
+      inputRange,
+      [6, 16, 6],
+      Extrapolation.CLAMP,
+    );
+
+    const backgroundColor = interpolateColor(
+      scrollX.value,
+      inputRange,
+      [isDark ? "#444" : "#ddd", Colors.primary, isDark ? "#444" : "#ddd"],
+    );
+
+    return {
+      width,
+      backgroundColor,
+    };
+  });
+
+  return <Animated.View style={[styles.dot, animatedStyle]} />;
+};
+
+interface DayItemProps {
+  date: Date;
+  index: number;
+  currentDate: Date;
+  setCurrentDate: (date: Date) => void;
+  gap: number;
+  isLast: boolean;
+  isDark: boolean;
+  textColor: string;
+  secondaryText: string;
+  scrollX: SharedValue<number>;
+  snapOffset: number;
+  dynamicPadding: number;
+}
+
+const DayItem: React.FC<DayItemProps> = ({
+  date,
+  index,
+  currentDate,
+  setCurrentDate,
+  gap,
+  isLast,
+  isDark,
+  textColor,
+  secondaryText,
+  scrollX,
+  snapOffset,
+  dynamicPadding,
+}) => {
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
+  };
+
+  const isSelected = isSameDay(date, currentDate);
+  const isToday = isSameDay(date, new Date());
+
+  const animatedStyle = useAnimatedStyle(() => {
+    // snapOffset is the scroll position where this item is the first visible one
+    // When scrollX == snapOffset, the item is at dynamicPadding
+    // We want to calculate the item's visual position relative to the viewport left edge
+    // itemVisualX = dynamicPadding + (snapOffset - scrollX.value)
+    // Wait, snapOffset is the offset of the item start.
+    // itemAbsoluteX = snapOffset + dynamicPadding? No.
+    // snapOffsets in parent are calculated as `currentX`.
+    // `currentX` starts at 0.
+    // So `snapOffset` is the position of the item relative to content start (ignoring padding).
+    // But content has paddingLeft = dynamicPadding.
+    // So absolute position of item is `snapOffset + dynamicPadding`.
+    // Visual position `visualX = (snapOffset + dynamicPadding) - scrollX.value`.
+    
+    const visualX = (snapOffset + dynamicPadding) - scrollX.value;
+
+    // Fade out items that are to the left of the centered list start
+    // dynamicPadding: start of the list
+    // dynamicPadding - 20: fully transparent
+    const opacity = interpolate(
+      visualX,
+      [dynamicPadding - 20, dynamicPadding],
+      [0, 1],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      opacity,
+    };
+  });
+
+  return (
+    <AnimatedTouchableOpacity
+      style={[
+        styles.dateItem,
+        !isLast && { marginRight: gap },
+        animatedStyle,
+      ]}
+      onPress={() => setCurrentDate(date)}
+      activeOpacity={0.7}
+    >
+      <Text
+        style={[
+          styles.dayName,
+          {
+            color: isSelected
+              ? Colors.primary
+              : isToday
+                ? Colors.primary
+                : secondaryText,
+            fontWeight: isSelected ? "600" : "400",
+          },
+        ]}
+      >
+        {date.toLocaleDateString("en-US", { weekday: "short" })[0]}
+      </Text>
+      <View
+        style={[
+          styles.dayNumberContainer,
+          isSelected && { backgroundColor: Colors.primary },
+        ]}
+      >
+        <Text
+          style={[
+            styles.dayNumber,
+            {
+              color: isSelected
+                ? "white"
+                : isToday
+                  ? Colors.primary
+                  : textColor,
+            },
+          ]}
+        >
+          {date.getDate()}
+        </Text>
+      </View>
+    </AnimatedTouchableOpacity>
+  );
+};
+
 interface MealCardProps {
-  meal: MealEntry;
+  category: MealCategory;
+  meals: MealEntry[];
   isDark: boolean;
   isToday: boolean;
 }
 
-const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
+const MealCard: React.FC<MealCardProps> = ({
+  category,
+  meals,
+  isDark,
+  isToday,
+}) => {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
-  const nutrition = meal.getNutritionInfo();
-  const quality = meal.getMealQuality();
+  const scrollX = useSharedValue(0);
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Calculate content width for the slider
+  // Screen padding: Spacing.xl (20) * 2 = 40
+  // Card padding: Spacing.lg (16) * 2 = 32
+  // Total deduction: 72
+  const contentWidth = screenWidth - Spacing.xl * 2 - Spacing.lg * 2;
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
 
   const toggleExpand = () => {
     setExpanded(!expanded);
@@ -106,8 +294,8 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
     return "#FF3B30"; // Red
   };
 
-  const getMealIcon = (category: MealCategory) => {
-    switch (category) {
+  const getMealIcon = (cat: MealCategory) => {
+    switch (cat) {
       case MealCategory.Breakfast:
         return "sunny-outline";
       case MealCategory.Lunch:
@@ -128,14 +316,105 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
   const secondaryText = isDark ? "#999" : "#666";
   const borderColor = isDark ? "#333" : "#f0f0f0";
 
+  const totalCalories = meals.reduce(
+    (sum, meal) => sum + meal.getNutritionInfo().getCalories(),
+    0,
+  );
+
+  const renderMealDetails = (meal: MealEntry) => {
+    const nutrition = meal.getNutritionInfo();
+    const quality = meal.getMealQuality();
+
+    return (
+      <View style={{ width: contentWidth }}>
+        {meals.length > 1 && (
+          <View style={styles.slideHeader}>
+            <Text
+              style={[styles.slideTitle, { color: textColor }]}
+              numberOfLines={1}
+            >
+              {meal.getTranscription() || "Meal Item"}
+            </Text>
+            <Text style={[styles.slideCalories, { color: secondaryText }]}>
+              {nutrition.getCalories()} kcal
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.nutrientRow}>
+          <NutrientPill
+            label="Carbs"
+            value={`${nutrition.getCarbs()}g`}
+            color={Colors.secondary.carbs}
+            isDark={isDark}
+          />
+          <NutrientPill
+            label="Protein"
+            value={`${nutrition.getProtein()}g`}
+            color={Colors.secondary.protein}
+            isDark={isDark}
+          />
+          <NutrientPill
+            label="Fat"
+            value={`${nutrition.getFat()}g`}
+            color={Colors.secondary.fat}
+            isDark={isDark}
+          />
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={[styles.statLabel, { color: secondaryText }]}>
+              Quality
+            </Text>
+            <View
+              style={[
+                styles.qualityBadge,
+                {
+                  backgroundColor: getQualityColor(
+                    quality.getMealQualityScore(),
+                  ),
+                },
+              ]}
+            >
+              <Text style={styles.qualityScore}>
+                {quality.getMealQualityScore()}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statLabel, { color: secondaryText }]}>
+              Goal Fit
+            </Text>
+            <Text style={[styles.statValue, { color: textColor }]}>
+              {quality.getGoalFitPercentage()}%
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statLabel, { color: secondaryText }]}>
+              Density
+            </Text>
+            <Text style={[styles.statValue, { color: textColor }]}>
+              {quality.getCalorieDensity().toFixed(1)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <AnimatedTouchableOpacity
-      onPress={toggleExpand}
+    <Animated.View
       style={[styles.mealCard, { backgroundColor: cardBg }]}
-      activeOpacity={0.7}
       layout={LinearTransition}
     >
-      <View style={styles.mealCardHeader}>
+      <TouchableOpacity
+        onPress={toggleExpand}
+        activeOpacity={0.7}
+        style={styles.mealCardHeader}
+      >
         <View
           style={[
             styles.mealIcon,
@@ -143,7 +422,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
           ]}
         >
           <Ionicons
-            name={getMealIcon(meal.getCategory()) as any}
+            name={getMealIcon(category) as any}
             size={24}
             color={Colors.primary}
           />
@@ -152,10 +431,10 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
         <View style={styles.mealHeaderInfo}>
           <View style={styles.mealTitleRow}>
             <Text style={[styles.mealName, { color: textColor }]}>
-              {meal.getCategory()}
+              {category}
             </Text>
             <Text style={[styles.mealCalories, { color: textColor }]}>
-              {nutrition.getCalories()}{" "}
+              {totalCalories}{" "}
               <Text
                 style={{
                   fontSize: 14,
@@ -172,18 +451,16 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
               style={[styles.mealDescription, { color: secondaryText }]}
               numberOfLines={1}
             >
-              {meal.getTranscription() || "No description"}
+              {meals.length > 1
+                ? `${meals.length} items`
+                : meals[0]?.getTranscription() || "No description"}
             </Text>
             <Animated.View style={chevronStyle}>
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={secondaryText}
-              />
+              <Ionicons name="chevron-down" size={16} color={secondaryText} />
             </Animated.View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {expanded && (
         <Animated.View
@@ -191,66 +468,36 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
           entering={FadeIn}
           exiting={FadeOut}
         >
-          <View style={styles.nutrientRow}>
-            <NutrientPill
-              label="Carbs"
-              value={`${nutrition.getCarbs()}g`}
-              color={Colors.secondary.carbs}
-              isDark={isDark}
-            />
-            <NutrientPill
-              label="Protein"
-              value={`${nutrition.getProtein()}g`}
-              color={Colors.secondary.protein}
-              isDark={isDark}
-            />
-            <NutrientPill
-              label="Fat"
-              value={`${nutrition.getFat()}g`}
-              color={Colors.secondary.fat}
-              isDark={isDark}
-            />
-          </View>
-
-          <View style={[styles.divider, { backgroundColor: borderColor }]} />
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: secondaryText }]}>
-                Quality
-              </Text>
-              <View
-                style={[
-                  styles.qualityBadge,
-                  {
-                    backgroundColor: getQualityColor(
-                      quality.getMealQualityScore(),
-                    ),
-                  },
-                ]}
+          {meals.length > 1 ? (
+            <View>
+              <Animated.ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={scrollHandler}
+                scrollEventThrottle={16}
               >
-                <Text style={styles.qualityScore}>
-                  {quality.getMealQualityScore()}
-                </Text>
+                {meals.map((meal, index) => (
+                  <View key={meal.getId() || index}>
+                    {renderMealDetails(meal)}
+                  </View>
+                ))}
+              </Animated.ScrollView>
+              <View style={styles.dotsContainer}>
+                {meals.map((_, i) => (
+                  <PaginationDot
+                    key={i}
+                    index={i}
+                    scrollX={scrollX}
+                    contentWidth={contentWidth}
+                    isDark={isDark}
+                  />
+                ))}
               </View>
             </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: secondaryText }]}>
-                Goal Fit
-              </Text>
-              <Text style={[styles.statValue, { color: textColor }]}>
-                {quality.getGoalFitPercentage()}%
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statLabel, { color: secondaryText }]}>
-                Density
-              </Text>
-              <Text style={[styles.statValue, { color: textColor }]}>
-                {quality.getCalorieDensity().toFixed(1)}
-              </Text>
-            </View>
-          </View>
+          ) : (
+            renderMealDetails(meals[0])
+          )}
 
           {isToday && (
             <TouchableOpacity
@@ -275,7 +522,7 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isDark, isToday }) => {
           )}
         </Animated.View>
       )}
-    </AnimatedTouchableOpacity>
+    </Animated.View>
   );
 };
 
@@ -286,22 +533,67 @@ const IOSStyleHomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const scrollViewRef = React.useRef<ScrollView>(null);
+  const scrollViewRef = React.useRef<Animated.ScrollView>(null);
   const { profileImage } = useUser();
   const { meals: allMeals } = useMeals();
 
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const dateScrollX = useSharedValue(0);
+  const dateScrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      dateScrollX.value = event.contentOffset.x;
+    },
+  });
+
+  const dateStripAnimatedStyle = useAnimatedStyle(() => {
+    const height = interpolate(
+      scrollY.value,
+      [0, 100],
+      [60, 0],
+      Extrapolation.CLAMP,
+    );
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 80],
+      [1, 0],
+      Extrapolation.CLAMP,
+    );
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 100],
+      [0, -20],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      height,
+      opacity,
+      transform: [{ translateY }],
+      overflow: "hidden",
+    };
+  });
+
   // Layout calculations for date strip
   const itemWidth = 32;
-  const gap = 20;
-  const itemFullWidth = itemWidth + gap;
+  const normalGap = 14;
+  const weekGap = 40;
+  const itemFullWidth = itemWidth + normalGap;
   const basePadding = Spacing.xl;
   
   // Calculate dynamic padding to ensure integer number of items are visible
   const availableWidth = screenWidth - (basePadding * 2);
-  const numVisibleItems = Math.floor((availableWidth + gap) / itemFullWidth);
-  const totalItemWidth = numVisibleItems * itemFullWidth - gap;
+  // Force 7 items to be visible as requested
+  const numVisibleItems = 7;
+  const totalItemWidth = numVisibleItems * itemFullWidth - normalGap;
   const remainingSpace = availableWidth - totalItemWidth;
-  const dynamicPadding = basePadding + (remainingSpace / 2);
+  // Ensure padding doesn't go below basePadding if screen is too small (though 7 items fit on 375px+)
+  const dynamicPadding = Math.max(basePadding, basePadding + (remainingSpace / 2));
 
   // Generate 30 days of dates ending with today
   const days = Array.from({ length: 30 }, (_, i) => {
@@ -309,6 +601,38 @@ const IOSStyleHomeScreen: React.FC = () => {
     date.setDate(date.getDate() - (29 - i)); // 29 days ago to today
     return date;
   });
+
+  // Calculate snap offsets and gaps
+  const { snapOffsets, gaps } = React.useMemo(() => {
+    const offsets: number[] = [];
+    const gaps: number[] = [];
+    let currentX = 0; // Start at 0 relative to content (padding handled by container style)
+
+    days.forEach((_, index) => {
+      // Snap to the start of each item
+      // Note: contentContainerStyle adds paddingLeft, so the first item starts at dynamicPadding
+      // But snapToOffsets is relative to scroll offset 0.
+      // If scroll offset is 0, the view starts at dynamicPadding.
+      // We want to snap such that the item is at dynamicPadding?
+      // Yes, if we snap to 0, item 0 is at dynamicPadding.
+      // If we snap to X, the view starts at X.
+      // We want item i to be at dynamicPadding.
+      // Item i position = dynamicPadding + sum(widths + gaps before i).
+      // So we want scrollOffset = sum(widths + gaps before i).
+      
+      offsets.push(currentX);
+
+      const isLast = index === days.length - 1;
+      // Add larger gap every 7 days (counting from end)
+      // Index 29 is last. 29-22=7. So after 22.
+      const isWeekBreak = (days.length - 1 - index) % 7 === 0 && !isLast;
+      const currentGap = isWeekBreak ? weekGap : normalGap;
+      
+      gaps.push(currentGap);
+      currentX += itemWidth + currentGap;
+    });
+    return { snapOffsets: offsets, gaps };
+  }, [days, itemWidth, normalGap, weekGap]);
 
   React.useEffect(() => {
     // Scroll to end (today) on mount
@@ -335,6 +659,28 @@ const IOSStyleHomeScreen: React.FC = () => {
     const mealDate = new Date(meal.getTimestamp() * 1000);
     return isSameDay(mealDate, currentDate);
   });
+
+  // Group meals by category
+  const groupedMeals = React.useMemo(() => {
+    const groups = new Map<MealCategory, MealEntry[]>();
+    meals.forEach((meal) => {
+      const cat = meal.getCategory();
+      if (!groups.has(cat)) {
+        groups.set(cat, []);
+      }
+      groups.get(cat)?.push(meal);
+    });
+    return groups;
+  }, [meals]);
+
+  // Order of categories
+  const categoryOrder = [
+    MealCategory.Breakfast,
+    MealCategory.Lunch,
+    MealCategory.Dinner,
+    MealCategory.Snack,
+    MealCategory.Other,
+  ];
 
   const totalCalories = meals.reduce(
     (sum: number, meal: MealEntry) =>
@@ -374,7 +720,9 @@ const IOSStyleHomeScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView
+      <Animated.ScrollView
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
@@ -480,21 +828,26 @@ const IOSStyleHomeScreen: React.FC = () => {
             {isSameDay(currentDate, new Date()) ? "Today's Meals" : "Meals"}
           </Text>
           {meals.length > 0 ? (
-            meals.map((meal: MealEntry, index: number) => (
-              <MealCard
-                key={index}
-                meal={meal}
-                isDark={isDark}
-                isToday={isSameDay(currentDate, new Date())}
-              />
-            ))
+            categoryOrder.map((category) => {
+              const categoryMeals = groupedMeals.get(category);
+              if (!categoryMeals || categoryMeals.length === 0) return null;
+              return (
+                <MealCard
+                  key={category}
+                  category={category}
+                  meals={categoryMeals}
+                  isDark={isDark}
+                  isToday={isSameDay(currentDate, new Date())}
+                />
+              );
+            })
           ) : (
             <Text style={{ color: secondaryText, textAlign: "center" }}>
               No meals recorded for this day
             </Text>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Blur Header */}
       <BlurView
@@ -563,73 +916,42 @@ const IOSStyleHomeScreen: React.FC = () => {
         </View>
 
         {/* Date Strip */}
-        <View style={styles.dateStripContainer}>
-          <ScrollView
+        <Animated.View
+          style={[styles.dateStripContainer, dateStripAnimatedStyle]}
+        >
+          <Animated.ScrollView
             ref={scrollViewRef}
             horizontal
             showsHorizontalScrollIndicator={false}
+            onScroll={dateScrollHandler}
+            scrollEventThrottle={16}
             contentContainerStyle={[
               styles.dateStripContent,
               { paddingHorizontal: dynamicPadding },
             ]}
             style={styles.dateStrip}
-            snapToInterval={itemFullWidth}
+            snapToOffsets={snapOffsets}
             decelerationRate="fast"
           >
-            {days.map((day, index) => {
-              const isSelected = isSameDay(day, currentDate);
-              const isToday = isSameDay(day, new Date());
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.dateItem,
-                    index !== days.length - 1 && { marginRight: gap },
-                  ]}
-                  onPress={() => setCurrentDate(day)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.dayName,
-                      {
-                        color: isSelected
-                          ? Colors.primary
-                          : isToday
-                            ? Colors.primary
-                            : secondaryText,
-                        fontWeight: isSelected ? "600" : "400",
-                      },
-                    ]}
-                  >
-                    {day.toLocaleDateString("en-US", { weekday: "short" })[0]}
-                  </Text>
-                  <View
-                    style={[
-                      styles.dayNumberContainer,
-                      isSelected && { backgroundColor: Colors.primary },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.dayNumber,
-                        {
-                          color: isSelected
-                            ? "white"
-                            : isToday
-                              ? Colors.primary
-                              : textColor,
-                        },
-                      ]}
-                    >
-                      {day.getDate()}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+            {days.map((day, index) => (
+              <DayItem
+                key={index}
+                date={day}
+                index={index}
+                currentDate={currentDate}
+                setCurrentDate={setCurrentDate}
+                gap={gaps[index]}
+                isLast={index === days.length - 1}
+                isDark={isDark}
+                textColor={textColor}
+                secondaryText={secondaryText}
+                scrollX={dateScrollX}
+                snapOffset={snapOffsets[index]}
+                dynamicPadding={dynamicPadding}
+              />
+            ))}
+          </Animated.ScrollView>
+        </Animated.View>
       </BlurView>
 
       {/* Floating Action Button */}
@@ -942,6 +1264,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.large,
+  },
+  slideHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+  },
+  slideTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    flex: 1,
+    marginRight: Spacing.md,
+  },
+  slideCalories: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.medium,
+  },
+  dotsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: Spacing.md,
+    gap: 6,
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
   },
 });
 
