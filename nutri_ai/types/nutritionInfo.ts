@@ -71,4 +71,24 @@ export class NutritionInfo {
     validateNonNegative("fat", fat);
     this._fat = fat;
   }
+
+  public toJSON(): any {
+    return {
+      calories: this._calories,
+      carbs: this._carbs,
+      sugar: this._sugar,
+      protein: this._protein,
+      fat: this._fat,
+    };
+  }
+
+  public static fromJSON(json: any): NutritionInfo {
+    return new NutritionInfo({
+      calories: json.calories,
+      carbs: json.carbs,
+      sugar: json.sugar,
+      protein: json.protein,
+      fat: json.fat,
+    });
+  }
 }

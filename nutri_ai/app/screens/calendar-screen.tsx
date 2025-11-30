@@ -21,6 +21,8 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
+import { useMeals } from "../../context/MealContext";
+import { MealEntry, MealCategory } from "../../types/mealEntry";
 
 // Enable LayoutAnimation on Android
 if (
@@ -30,52 +32,30 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Dummy meal data
-const dummyMeals: Record<
-  string,
-  Record<string, Array<{ name: string; details: string }>>
-> = {
-  "2025-11-11": {
-    breakfast: [{ name: "Oatmeal", details: "Oats, banana, honey" }],
-    lunch: [{ name: "Chicken Salad", details: "Chicken, lettuce, tomato" }],
-    dinner: [{ name: "Pasta", details: "Pasta, tomato sauce, cheese" }],
-    snack: [{ name: "Apple", details: "Green apple" }],
-    other: [],
-  },
-  "2025-11-12": { breakfast: [], lunch: [], dinner: [], snack: [], other: [] },
-  "2025-11-13": {
-    breakfast: [{ name: "Toast", details: "Whole grain, butter" }],
-    lunch: [],
-    dinner: [],
-    snack: [],
-    other: [],
-  },
-};
-
 const mealCategories = [
-  "breakfast",
-  "lunch",
-  "dinner",
-  "snack",
-  "other",
+  "Breakfast",
+  "Lunch",
+  "Dinner",
+  "Snack",
+  "Other",
 ] as const;
 const categoryLabels: Record<string, string> = {
-  breakfast: "Breakfast",
-  lunch: "Lunch",
-  dinner: "Dinner",
-  snack: "Snack",
-  other: "Other",
+  Breakfast: "Breakfast",
+  Lunch: "Lunch",
+  Dinner: "Dinner",
+  Snack: "Snack",
+  Other: "Other",
 };
 
 const getMealIcon = (category: string) => {
   switch (category) {
-    case "breakfast":
+    case "Breakfast":
       return "sunny-outline";
-    case "lunch":
+    case "Lunch":
       return "restaurant-outline";
-    case "dinner":
+    case "Dinner":
       return "moon-outline";
-    case "snack":
+    case "Snack":
       return "cafe-outline";
     default:
       return "fast-food-outline";
@@ -83,6 +63,7 @@ const getMealIcon = (category: string) => {
 };
 
 export default function MergedCalendar() {
+  const { meals } = useMeals();
   const today = new Date();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -163,7 +144,10 @@ export default function MergedCalendar() {
 
   const handleDayPress = (day: number) => {
     const dateObj = new Date(year, month, day);
-    const dateStr = dateObj.toISOString().split("T")[0];
+    // Adjust for timezone offset to get correct local date string
+    const offset = dateObj.getTimezoneOffset();
+    const localDate = new Date(dateObj.getTime() - offset * 60 * 1000);
+    const dateStr = localDate.toISOString().split("T")[0];
     setSelectedDate(dateStr);
     setExpanded({});
   };
@@ -173,12 +157,45 @@ export default function MergedCalendar() {
     setExpanded((prev) => ({ ...prev, [category]: !prev[category] }));
   };
 
-  const mealsForSelected = dummyMeals[selectedDate] || {
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snack: [],
-    other: [],
+  // Group meals by date and category
+  const mealsByDate: Record<
+    string,
+    Record<string, Array<{ name: string; details: string }>>
+  > = {};
+
+  meals.forEach((meal) => {
+    const date = new Date(meal.getTimestamp() * 1000);
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    const dateStr = localDate.toISOString().split("T")[0];
+
+    if (!mealsByDate[dateStr]) {
+      mealsByDate[dateStr] = {
+        Breakfast: [],
+        Lunch: [],
+        Dinner: [],
+        Snack: [],
+        Other: [],
+      };
+    }
+
+    const category = meal.getCategory();
+    if (mealsByDate[dateStr][category]) {
+      mealsByDate[dateStr][category].push({
+        name: meal.getCategory(), // Or use transcription if available as name
+        details:
+          meal.getTranscription() ||
+          `${meal.getNutritionInfo().getCalories()} kcal`,
+      });
+    }
+  });
+
+  const mealsForSelected = mealsByDate[selectedDate] || {
+    Breakfast: [],
+    Lunch: [],
+    Dinner: [],
+    Snack: [],
+    Other: [],
   };
 
   return (
@@ -271,13 +288,20 @@ export default function MergedCalendar() {
                   const isToday =
                     day !== null &&
                     isSameDate(new Date(year, month, day), new Date());
-                  const dayStr = day
-                    ? new Date(year, month, day).toISOString().split("T")[0]
-                    : "";
+                  const dayObj = day ? new Date(year, month, day) : null;
+                  let dayStr = "";
+                  if (dayObj) {
+                    const offset = dayObj.getTimezoneOffset();
+                    const localDate = new Date(
+                      dayObj.getTime() - offset * 60 * 1000,
+                    );
+                    dayStr = localDate.toISOString().split("T")[0];
+                  }
+
                   const hasMeal =
                     dayStr &&
-                    dummyMeals[dayStr] &&
-                    Object.values(dummyMeals[dayStr]).some(
+                    mealsByDate[dayStr] &&
+                    Object.values(mealsByDate[dayStr]).some(
                       (arr) => arr.length > 0,
                     );
 

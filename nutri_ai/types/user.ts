@@ -112,4 +112,20 @@ export class User implements IUser {
   public set password(password: string) {
     this._password = password;
   }
+
+  public toJSON(): IUser {
+    return {
+      name: this._name,
+      age: this._age,
+      medicalCondition: this._medicalCondition,
+      weightKg: this._weightKg,
+      motivation: this._motivation,
+      email: this._email,
+      password: this._password,
+    };
+  }
+
+  public static fromJSON(json: IUser): User {
+    return new User(json);
+  }
 }
