@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+// CalendarScreen.tsx
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -7,9 +7,6 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
-  LayoutAnimation,
-  Platform,
-  UIManager,
 } from "react-native";
 import {
   BorderRadius,
@@ -18,56 +15,24 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
-
 import { Ionicons } from "@expo/vector-icons";
-import Feather from "@expo/vector-icons/Feather";
 
-// Enable LayoutAnimation on Android
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { MealTypes, generateYearMeals } from "../utils/generator";
 
-// Dummy meal data
-const dummyMeals: Record<
-  string,
-  Record<string, Array<{ name: string; details: string }>>
-> = {
-  "2025-11-11": {
-    breakfast: [{ name: "Oatmeal", details: "Oats, banana, honey" }],
-    lunch: [{ name: "Chicken Salad", details: "Chicken, lettuce, tomato" }],
-    dinner: [{ name: "Pasta", details: "Pasta, tomato sauce, cheese" }],
-    snack: [{ name: "Apple", details: "Green apple" }],
-    other: [],
-  },
-  "2025-11-12": { breakfast: [], lunch: [], dinner: [], snack: [], other: [] },
-  "2025-11-13": {
-    breakfast: [{ name: "Toast", details: "Whole grain, butter" }],
-    lunch: [],
-    dinner: [],
-    snack: [],
-    other: [],
-  },
-};
-
-const mealCategories = [
+const mealCategories: (keyof MealTypes)[] = [
   "breakfast",
   "lunch",
   "dinner",
   "snack",
-  "other",
-] as const;
-const categoryLabels: Record<string, string> = {
+];
+const categoryLabels: Record<keyof MealTypes, string> = {
   breakfast: "Breakfast",
   lunch: "Lunch",
   dinner: "Dinner",
   snack: "Snack",
-  other: "Other",
 };
 
-export default function MergedCalendar() {
+export default function CalendarScreen() {
   const today = new Date();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -77,33 +42,32 @@ export default function MergedCalendar() {
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
   const GREEN = Colors.primary;
 
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(
-    today.toISOString().split("T")[0],
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`,
   );
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [yearMeals, setYearMeals] = useState<
+    Record<
+      string,
+      Record<
+        keyof MealTypes,
+        { calories: number; protein: number; carbs: number; fat: number }
+      >
+    >
+  >({});
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
+  // Generate meals once
+  useEffect(() => {
+    const meals = generateYearMeals();
+    setYearMeals(meals);
+  }, []);
 
-  // Calendar calculations
+  // Month matrix
   const getMonthMatrix = () => {
     const firstDay = new Date(year, month, 1).getDay();
     const firstDayIndexMon = firstDay === 0 ? 6 : firstDay - 1;
@@ -125,6 +89,52 @@ export default function MergedCalendar() {
   const monthMatrix = getMonthMatrix();
   const yearGrid = Array.from({ length: 12 }, (_, i) => i);
 
+  const isSameDate = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const handleDayPress = (day: number) => {
+    const dateObj = new Date(year, month, day);
+    const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
+    setSelectedDate(dateStr);
+    setExpanded({});
+  };
+
+  const toggleExpand = (category: string) => {
+    setExpanded((prev) => ({ ...prev, [category]: !prev[category] }));
+  };
+
+  type GeneratedMeal = {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  const mealsForSelected: Record<keyof MealTypes, GeneratedMeal> = yearMeals[
+    selectedDate
+  ] || {
+    breakfast: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    lunch: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    dinner: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    snack: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  };
+
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
   const prevMonth = () => {
     if (month === 0) {
       setMonth(11);
@@ -139,31 +149,6 @@ export default function MergedCalendar() {
   };
   const prevYear = () => setYear((y) => y - 1);
   const nextYear = () => setYear((y) => y + 1);
-
-  const isSameDate = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate();
-
-  const handleDayPress = (day: number) => {
-    const dateObj = new Date(year, month, day);
-    const dateStr = dateObj.toISOString().split("T")[0];
-    setSelectedDate(dateStr);
-    setExpanded({});
-  };
-
-  const toggleExpand = (category: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((prev) => ({ ...prev, [category]: !prev[category] }));
-  };
-
-  const mealsForSelected = dummyMeals[selectedDate] || {
-    breakfast: [],
-    lunch: [],
-    dinner: [],
-    snack: [],
-    other: [],
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -229,15 +214,12 @@ export default function MergedCalendar() {
         )}
       </View>
 
-      {/* MONTH VIEW */}
+      {/* Month View */}
       {viewMode === "month" && (
         <View>
           <View style={styles.weekLabelsRow}>
             {["M", "T", "W", "T", "F", "S", "S"].map((ini, i) => (
-              <Text
-                key={i}
-                style={[styles.weekLabel, { color: secondaryText }]}
-              >
+              <Text key={i} style={[styles.weekLabel, { color: "#666" }]}>
                 {ini}
               </Text>
             ))}
@@ -251,12 +233,7 @@ export default function MergedCalendar() {
                 const dayStr = day
                   ? new Date(year, month, day).toISOString().split("T")[0]
                   : "";
-                const hasMeal =
-                  dayStr &&
-                  dummyMeals[dayStr] &&
-                  Object.values(dummyMeals[dayStr]).some(
-                    (arr) => arr.length > 0,
-                  );
+                const hasMeal = dayStr && yearMeals[dayStr];
 
                 return (
                   <View key={cIdx} style={styles.gridCell}>
@@ -267,25 +244,22 @@ export default function MergedCalendar() {
                           styles.dayCircle,
                           isToday && {
                             backgroundColor: GREEN,
-                            shadowColor: "#000",
-                            shadowOpacity: 0.15,
-                            shadowRadius: 4,
+                            borderRadius: 21,
                           },
-                          hasMeal &&
-                            !isToday && { borderWidth: 2, borderColor: GREEN },
                         ]}
                       >
                         <Text
                           style={[
                             styles.dayText,
-                            {
-                              color: isToday ? "white" : textColor,
-                              fontWeight: isToday ? "700" : "400",
-                            },
+                            { color: isToday ? "white" : textColor },
                           ]}
                         >
                           {day}
                         </Text>
+                        {/* Green dot for days with meal info (except today) */}
+                        {hasMeal && !isToday && (
+                          <View style={styles.greenDot} />
+                        )}
                       </TouchableOpacity>
                     ) : (
                       <View style={styles.dayEmpty} />
@@ -298,7 +272,7 @@ export default function MergedCalendar() {
         </View>
       )}
 
-      {/* YEAR VIEW */}
+      {/* Year View */}
       {viewMode === "year" && (
         <ScrollView contentContainerStyle={styles.yearGrid}>
           {yearGrid.map((m) => (
@@ -322,10 +296,9 @@ export default function MergedCalendar() {
         </ScrollView>
       )}
 
-      {/* Selected Date */}
       <Text style={[styles.dateTitle, { color: GREEN }]}>{selectedDate}</Text>
 
-      {/* Meal List */}
+      {/* Meal Nutritional Info */}
       <ScrollView style={styles.mealList}>
         {mealCategories.map((category) => (
           <View
@@ -350,16 +323,18 @@ export default function MergedCalendar() {
             </TouchableOpacity>
             {expanded[category] && (
               <View style={styles.mealDetails}>
-                {mealsForSelected[category].length === 0 ? (
-                  <Text style={styles.noMealText}>No meals recorded.</Text>
-                ) : (
-                  mealsForSelected[category].map((meal, idx) => (
-                    <View key={idx} style={styles.mealItem}>
-                      <Text style={styles.mealName}>{meal.name}</Text>
-                      <Text style={styles.mealDesc}>{meal.details}</Text>
-                    </View>
-                  ))
-                )}
+                <Text style={styles.nutritionText}>
+                  Calories: {mealsForSelected[category].calories}
+                </Text>
+                <Text style={styles.nutritionText}>
+                  Protein: {mealsForSelected[category].protein} g
+                </Text>
+                <Text style={styles.nutritionText}>
+                  Carbs: {mealsForSelected[category].carbs} g
+                </Text>
+                <Text style={styles.nutritionText}>
+                  Fat: {mealsForSelected[category].fat} g
+                </Text>
               </View>
             )}
           </View>
@@ -415,12 +390,18 @@ const styles = StyleSheet.create({
   dayCircle: {
     width: 42,
     height: 42,
-    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
   },
   dayText: { fontSize: Typography.sizes.base },
   dayEmpty: { width: 42, height: 42 },
+  greenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
+    marginTop: 2,
+  },
   yearGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -461,12 +442,5 @@ const styles = StyleSheet.create({
   },
   categoryTitle: { fontSize: Typography.sizes.base, fontWeight: "600" },
   mealDetails: { paddingHorizontal: 16, paddingVertical: 8 },
-  mealItem: { marginBottom: 8 },
-  mealName: { fontSize: Typography.sizes.base, fontWeight: "500" },
-  mealDesc: { fontSize: Typography.sizes.xs, opacity: 0.7 },
-  noMealText: {
-    fontSize: Typography.sizes.xs,
-    fontStyle: "italic",
-    opacity: 0.6,
-  },
+  nutritionText: { color: "white" },
 });
