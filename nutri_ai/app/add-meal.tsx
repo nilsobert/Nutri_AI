@@ -14,7 +14,6 @@ const AddMealScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState<MealCategory>(MealCategory.Lunch);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-  
   const handleAddTestMeal = async () => {
     const nutrition = new NutritionInfo({
       calories: 500,
