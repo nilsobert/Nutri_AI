@@ -251,14 +251,14 @@ interface MealCardProps {
   category: MealCategory;
   meals: MealEntry[];
   isDark: boolean;
-  isToday: boolean;
+  currentDate: Date;
 }
 
 const MealCard: React.FC<MealCardProps> = ({
   category,
   meals,
   isDark,
-  isToday,
+  currentDate,
 }) => {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -500,27 +500,28 @@ const MealCard: React.FC<MealCardProps> = ({
             renderMealDetails(meals[0])
           )}
 
-          {isToday && (
-            <TouchableOpacity
-              style={[
-                styles.addMealButton,
-                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
-              ]}
-              onPress={() => router.push("/add-meal")}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="add-circle-outline"
-                size={20}
-                color={Colors.primary}
-              />
-              <Text
-                style={[styles.addMealButtonText, { color: Colors.primary }]}
-              >
-                Add Item
-              </Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={[
+              styles.addMealButton,
+              { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: "/add-meal",
+                params: { date: currentDate.toISOString() },
+              })
+            }
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="add-circle-outline"
+              size={20}
+              color={Colors.primary}
+            />
+            <Text style={[styles.addMealButtonText, { color: Colors.primary }]}>
+              Add Item
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
       )}
     </Animated.View>
@@ -852,7 +853,7 @@ const IOSStyleHomeScreen: React.FC = () => {
                   category={category}
                   meals={categoryMeals}
                   isDark={isDark}
-                  isToday={isSameDay(currentDate, new Date())}
+                  currentDate={currentDate}
                 />
               );
             })
@@ -972,17 +973,20 @@ const IOSStyleHomeScreen: React.FC = () => {
       </BlurView>
 
       {/* Floating Action Button */}
-      {isSameDay(currentDate, new Date()) && (
-        <AnimatedTouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push("/add-meal")}
-          activeOpacity={0.8}
-          entering={FadeIn}
-          exiting={FadeOut}
-        >
-          <Ionicons name="add" size={28} color="white" />
-        </AnimatedTouchableOpacity>
-      )}
+      <AnimatedTouchableOpacity
+        style={styles.fab}
+        onPress={() =>
+          router.push({
+            pathname: "/add-meal",
+            params: { date: currentDate.toISOString() },
+          })
+        }
+        activeOpacity={0.8}
+        entering={FadeIn}
+        exiting={FadeOut}
+      >
+        <Ionicons name="add" size={28} color="white" />
+      </AnimatedTouchableOpacity>
     </View>
   );
 };
