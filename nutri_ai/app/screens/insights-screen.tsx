@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   useColorScheme,
+  Text,
 } from "react-native";
 import {
   Svg,
@@ -30,8 +31,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
-import { mockMeals } from "@/mock-data/meals";
-import { MS_TO_S } from "@/constants/values";
+import { useMeals } from "@/context/MealContext";
+import { MS_TO_S, DAILY_CALORIE_GOAL } from "@/constants/values";
 import {
   Colors,
   Spacing,
@@ -45,7 +46,6 @@ const CHART_HEIGHT = 250;
 const CHART_PADDING_X = 20;
 const RANGES = ["Day", "Week", "Month", "Year"];
 const TREND_METRICS = ["Calories", "Protein", "Carbs", "Fat"];
-const GOAL_CALORIES = 2000;
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
@@ -85,25 +85,33 @@ interface CalorieChartProps {
   data: any[];
   chartMax: number;
   barWidth: number;
-  barSpacing: number;
   width: number;
   axisLabels: { text: string; index: number }[];
   progress: SharedValue<number>;
   isDark: boolean;
   paddingX?: number;
+  goalCalories?: number;
+  onBarPress?: (index: number) => void;
 }
 
 const CalorieChart = ({
   data,
   chartMax,
   barWidth,
-  barSpacing,
   width,
   axisLabels,
   progress,
   isDark,
   paddingX = 0,
+  goalCalories,
+  onBarPress,
 }: CalorieChartProps) => {
+  const goalY = goalCalories
+    ? CHART_HEIGHT - 30 - (goalCalories / chartMax) * (CHART_HEIGHT - 50)
+    : null;
+
+  const step = (width - 2 * paddingX) / (data.length > 1 ? data.length - 1 : 1);
+
   return (
     <View style={{ width }}>
       <Svg width={width} height={CHART_HEIGHT}>
@@ -117,15 +125,26 @@ const CalorieChart = ({
           strokeWidth={1}
         />
 
+        {/* Goal Line */}
+        {goalY !== null && (
+          <Line
+            x1={0}
+            y1={goalY}
+            x2={width}
+            y2={goalY}
+            stroke={Colors.primary}
+            strokeWidth={2}
+            strokeDasharray="5, 5"
+            opacity={0.6}
+          />
+        )}
+
         {/* Stacked Bars */}
         <Defs>
           {data.map((d, i) => {
             if (d.calories === 0) return null;
             const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
-            // Center the bars within the allocated space (barWidth + barSpacing)
-            // x = paddingX + spacing/2 + i * (barWidth + spacing)
-            const x =
-              paddingX + barSpacing / 2 + i * (barWidth + barSpacing);
+            const x = paddingX + i * step - barWidth / 2;
             const yBase = CHART_HEIGHT - 30;
             return (
               <AnimatedBar
@@ -143,15 +162,18 @@ const CalorieChart = ({
         {data.map((d, i) => {
           if (d.calories === 0) return null;
           const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
-          const x =
-            paddingX + barSpacing / 2 + i * (barWidth + barSpacing);
+          const x = paddingX + i * step - barWidth / 2;
           const yBase = CHART_HEIGHT - 30;
           const carbH = ((d.carbs * 4) / d.calories) * totalHeight;
           const proteinH = ((d.protein * 4) / d.calories) * totalHeight;
           const fatH = ((d.fat * 9) / d.calories) * totalHeight;
 
           return (
-            <G key={`bar-${i}`} clipPath={`url(#clip-${i})`}>
+            <G
+              key={`bar-${i}`}
+              clipPath={`url(#clip-${i})`}
+              onPress={() => onBarPress && onBarPress(i)}
+            >
               <Rect
                 x={x}
                 y={yBase - totalHeight}
@@ -186,11 +208,7 @@ const CalorieChart = ({
 
         {/* X-Axis Labels */}
         {axisLabels.map((label, i) => {
-          const x =
-            paddingX +
-            barSpacing / 2 +
-            label.index * (barWidth + barSpacing) +
-            barWidth / 2;
+          const x = paddingX + label.index * step;
           return (
             <SvgText
               key={`label-${i}`}
@@ -313,8 +331,8 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   const baseDate = new Date(startDate);
 
   if (range === "Day") {
-    // Label every 6 hours starting from 6:00, plus 22:00
-    [0, 6, 12, 16].forEach((i) => {
+    // Label every 5 hours starting from 6:00
+    [0, 5, 10, 15].forEach((i) => {
       if (i < dataLength) labels.push({ text: `${i + 6}:00`, index: i });
     });
   } else if (range === "Week") {
@@ -346,7 +364,7 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   return labels;
 }
 
-function aggregateData(range: string, startDate?: Date) {
+function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
   const baseDate = startDate || new Date();
   let dataPoints = 0;
   if (range === "Day") dataPoints = 18;
@@ -365,7 +383,7 @@ function aggregateData(range: string, startDate?: Date) {
       quality: 0,
     }));
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
@@ -422,6 +440,7 @@ function getHistoricalData(
   count: number,
   resolution: "day" | "month",
   endDate?: Date,
+  meals: any[] = [],
 ) {
   const data = Array(count)
     .fill(null)
@@ -446,7 +465,7 @@ function getHistoricalData(
     data[i].date = d;
   }
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
@@ -478,13 +497,13 @@ function getHistoricalData(
   return data;
 }
 
-function calculateStreak() {
+function calculateStreak(meals: any[]) {
   const now = new Date();
   let streak = 0;
   let currentDay = new Date(now);
 
   for (let i = 0; i < 365; i++) {
-    const hasMeal = mockMeals.some((m) => {
+    const hasMeal = meals.some((m) => {
       const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === currentDay.getDate() &&
@@ -507,7 +526,7 @@ function calculateStreak() {
   return streak;
 }
 
-function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
+function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[]): number {
   let daysMet = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -515,7 +534,7 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
   end.setHours(23, 59, 59, 999);
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dayTotalCalories = mockMeals
+    const dayTotalCalories = meals
       .filter((m) => {
         const mealDate = new Date(m.getTimestamp() * MS_TO_S);
         return (
@@ -532,8 +551,8 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
       }, 0);
 
     if (
-      dayTotalCalories >= GOAL_CALORIES * 0.9 &&
-      dayTotalCalories <= GOAL_CALORIES * 1.1
+      dayTotalCalories >= DAILY_CALORIE_GOAL * 0.9 &&
+      dayTotalCalories <= DAILY_CALORIE_GOAL * 1.1
     ) {
       daysMet++;
     }
@@ -541,13 +560,13 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
   return daysMet;
 }
 
-function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
+function calculateStreakInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
   let streak = 0;
   let checkDay = new Date(endDate);
 
   // Go backwards from the end date to find the first day without a meal
   while (checkDay >= startDate) {
-    const hasMealOnThisDay = mockMeals.some((m) => {
+    const hasMealOnThisDay = meals.some((m) => {
       const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === checkDay.getDate() &&
@@ -556,20 +575,14 @@ function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
       );
     });
 
-    if (!hasMealOnThisDay) {
+    if (hasMealOnThisDay) {
+      streak++;
+      checkDay.setDate(checkDay.getDate() - 1);
+    } else {
       // This is the day the streak was broken.
-      // The streak is the number of days from the day *after* this one, until the end date.
-      const dayAfterBreak = new Date(checkDay);
-      dayAfterBreak.setDate(dayAfterBreak.getDate() + 1);
-
-      while (dayAfterBreak <= endDate) {
-        streak++;
-        dayAfterBreak.setDate(dayAfterBreak.getDate() + 1);
-      }
+      // Return the streak we've counted so far
       return streak;
     }
-
-    checkDay.setDate(checkDay.getDate() - 1);
   }
 
   // If we get here, it means every day in the period had a meal.
@@ -580,12 +593,12 @@ function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
   return totalDays;
 }
 
-function calculateLongestStreakOverall(): number {
-  if (mockMeals.length === 0) return 0;
+function calculateLongestStreakOverall(meals: any[]): number {
+  if (meals.length === 0) return 0;
 
   // Get all unique dates that have meals
   const mealDates = new Set<string>();
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const d = new Date(meal.getTimestamp() * MS_TO_S);
     const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     mealDates.add(dateKey);
@@ -628,14 +641,14 @@ function calculateLongestStreakOverall(): number {
   return longestStreak;
 }
 
-function getMaxMealInPeriod(startDate: Date, endDate: Date): number {
+function getMaxMealInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
   let maxCalories = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     if (mealDate >= start && mealDate <= end) {
       const info = meal.getNutritionInfo();
@@ -653,6 +666,7 @@ function getMaxMealInPeriod(startDate: Date, endDate: Date): number {
 export default function InsightsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { meals, isLoading } = useMeals();
   const [selectedRange, setSelectedRange] = useState("Week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleTrends, setVisibleTrends] = useState([
@@ -733,16 +747,16 @@ export default function InsightsScreen() {
   );
 
   const currentData = useMemo(
-    () => aggregateData(selectedRange, currentStartDate),
-    [selectedRange, currentStartDate],
+    () => aggregateData(selectedRange, currentStartDate, meals),
+    [selectedRange, currentStartDate, meals],
   );
   const prevPageData = useMemo(
-    () => aggregateData(selectedRange, prevStartDate),
-    [selectedRange, prevStartDate],
+    () => aggregateData(selectedRange, prevStartDate, meals),
+    [selectedRange, prevStartDate, meals],
   );
   const nextPageData = useMemo(
-    () => aggregateData(selectedRange, nextStartDate),
-    [selectedRange, nextStartDate],
+    () => aggregateData(selectedRange, nextStartDate, meals),
+    [selectedRange, nextStartDate, meals],
   );
 
   // Check if current date is today
@@ -771,7 +785,11 @@ export default function InsightsScreen() {
 
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
-    const maxVal = Math.max(...data.map((d) => d.calories), 10);
+    const maxVal = Math.max(
+      ...data.map((d) => d.calories),
+      DAILY_CALORIE_GOAL,
+      10,
+    );
     let step = 10;
     if (maxVal > 2000) step = 500;
     else if (maxVal > 1000) step = 200;
@@ -785,15 +803,9 @@ export default function InsightsScreen() {
       chartMax += 4 - (chartMax % 4);
     }
 
-    // Calculate spacing to fill the width
-    // width = n * barWidth + n * spacing
-    // spacing = (width - n * barWidth) / n
-    const availableWidth = chartScrollWidth - CHART_PADDING_X * 2;
-    const barSpacing =
-      (availableWidth - data.length * barWidth) / data.length;
     const axisLabels = getAxisLabels(selectedRange, data.length, startDate);
 
-    return { chartMax, barSpacing, axisLabels };
+    return { chartMax, axisLabels };
   };
 
   const currentChartProps = getChartProps(currentData, currentStartDate);
@@ -875,7 +887,7 @@ export default function InsightsScreen() {
     );
   }
 
-  const daysGoalMet = getDailyGoalMetCount(startDate, endDate);
+  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals);
 
   // Calculate for previous period (relative to current view)
   let prevPeriodStartDate, prevPeriodEndDate;
@@ -902,15 +914,16 @@ export default function InsightsScreen() {
   const prevDaysGoalMet = getDailyGoalMetCount(
     prevPeriodStartDate,
     prevPeriodEndDate,
+    meals,
   );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak
   const streak =
     selectedRange === "Year"
-      ? calculateLongestStreakOverall()
-      : calculateStreakInPeriod(startDate, endDate);
+      ? calculateLongestStreakOverall(meals)
+      : calculateStreakInPeriod(startDate, endDate, meals);
 
-  const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate);
+  const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate, meals);
 
   const toggleTrend = (metric: string) => {
     if (visibleTrends.includes(metric)) {
@@ -962,6 +975,51 @@ export default function InsightsScreen() {
   };
 
   const trendsChartWidth = getOptimalTrendsWidth();
+
+  const getDateRangeString = () => {
+    const start = getStartDate(selectedRange, currentDate);
+
+    if (selectedRange === "Day") {
+      return start.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+    } else if (selectedRange === "Week") {
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      if (start.getFullYear() === end.getFullYear()) {
+        return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      }
+      return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+    } else if (selectedRange === "Month") {
+      return start.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+    } else if (selectedRange === "Year") {
+      return start.getFullYear().toString();
+    }
+    return "";
+  };
+
+  const handleBarPress = (index: number, startDate: Date) => {
+    const date = new Date(startDate);
+
+    if (selectedRange === "Week") {
+      date.setDate(date.getDate() + index);
+      setCurrentDate(date);
+      setSelectedRange("Day");
+    } else if (selectedRange === "Month") {
+      date.setDate(date.getDate() + index);
+      setCurrentDate(date);
+      setSelectedRange("Day");
+    } else if (selectedRange === "Year") {
+      date.setMonth(date.getMonth() + index);
+      setCurrentDate(date);
+      setSelectedRange("Month");
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -1017,34 +1075,39 @@ export default function InsightsScreen() {
                   data={prevPageData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={prevChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={prevChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) => handleBarPress(index, prevStartDate)}
                 />
                 <CalorieChart
                   data={currentData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={currentChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={currentChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) =>
+                    handleBarPress(index, currentStartDate)
+                  }
                 />
                 <CalorieChart
                   data={nextPageData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={nextChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={nextChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) => handleBarPress(index, nextStartDate)}
                 />
               </ScrollView>
             </View>
@@ -1102,12 +1165,25 @@ export default function InsightsScreen() {
           >
             <ThemedText style={styles.metricTitle}>Avg Meal Quality</ThemedText>
             <View style={styles.metricValueContainer}>
-              <ThemedText style={[styles.metricValue, { color: textColor }]}>
-                {avgQuality}
-              </ThemedText>
-              <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
-                / 10
-              </ThemedText>
+              {totalMeals > 0 ? (
+                <>
+                  <ThemedText style={[styles.metricValue, { color: textColor }]}>
+                    {avgQuality}
+                  </ThemedText>
+                  <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
+                    / 10
+                  </ThemedText>
+                </>
+              ) : (
+                <View style={styles.metricValueContainer}>
+                  <ThemedText style={[styles.metricValue, { color: secondaryText }]}>
+                    No data
+                  </ThemedText>
+                  <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
+                    yet
+                  </ThemedText>
+                </View>
+              )}
             </View>
           </View>
 
@@ -1496,13 +1572,18 @@ export default function InsightsScreen() {
         tint={isDark ? "dark" : "light"}
         style={[
           styles.header,
-          { paddingTop: insets.top, borderBottomColor: borderColor },
+          { paddingTop: insets.top + Spacing.md, borderBottomColor: borderColor },
         ]}
       >
         <View style={styles.headerTopRow}>
-          <ThemedText style={[styles.headerTitle, { color: textColor }]}>
-            Insights
-          </ThemedText>
+          <View>
+            <Text style={[styles.headerDate, { color: secondaryText }]}>
+              {getDateRangeString().toUpperCase()}
+            </Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Insights
+            </Text>
+          </View>
           {!isCurrentDate &&
             (selectedRange === "Day" || selectedRange === "Week") && (
               <TouchableOpacity
@@ -1528,7 +1609,7 @@ export default function InsightsScreen() {
         <View
           style={[
             styles.segmentedControl,
-            { backgroundColor: segmentBg, marginTop: Spacing.sm },
+            { backgroundColor: segmentBg },
           ]}
         >
           {RANGES.map((range) => (
@@ -1575,7 +1656,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(0,0,0,0.1)",
@@ -1584,18 +1664,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
   },
   headerTitle: {
     fontSize: 34,
     fontWeight: "bold",
     color: "#000",
-    lineHeight: 41,
+    letterSpacing: 0.3,
+  },
+  headerDate: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
   },
   segmentedControl: {
     flexDirection: "row",
     backgroundColor: "rgba(118, 118, 128, 0.12)",
     borderRadius: 8,
     padding: 2,
+    marginHorizontal: Spacing.xl,
   },
   segment: {
     flex: 1,
