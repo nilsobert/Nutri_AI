@@ -42,6 +42,7 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_HEIGHT = 250;
+const CHART_PADDING_X = 20;
 const RANGES = ["Day", "Week", "Month", "Year"];
 const TREND_METRICS = ["Calories", "Protein", "Carbs", "Fat"];
 const GOAL_CALORIES = 2000;
@@ -89,6 +90,7 @@ interface CalorieChartProps {
   axisLabels: { text: string; index: number }[];
   progress: SharedValue<number>;
   isDark: boolean;
+  paddingX?: number;
 }
 
 const CalorieChart = ({
@@ -100,6 +102,7 @@ const CalorieChart = ({
   axisLabels,
   progress,
   isDark,
+  paddingX = 0,
 }: CalorieChartProps) => {
   return (
     <View style={{ width }}>
@@ -120,8 +123,9 @@ const CalorieChart = ({
             if (d.calories === 0) return null;
             const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
             // Center the bars within the allocated space (barWidth + barSpacing)
-            // x = spacing/2 + i * (barWidth + spacing)
-            const x = barSpacing / 2 + i * (barWidth + barSpacing);
+            // x = paddingX + spacing/2 + i * (barWidth + spacing)
+            const x =
+              paddingX + barSpacing / 2 + i * (barWidth + barSpacing);
             const yBase = CHART_HEIGHT - 30;
             return (
               <AnimatedBar
@@ -139,7 +143,8 @@ const CalorieChart = ({
         {data.map((d, i) => {
           if (d.calories === 0) return null;
           const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
-          const x = barSpacing / 2 + i * (barWidth + barSpacing);
+          const x =
+            paddingX + barSpacing / 2 + i * (barWidth + barSpacing);
           const yBase = CHART_HEIGHT - 30;
           const carbH = ((d.carbs * 4) / d.calories) * totalHeight;
           const proteinH = ((d.protein * 4) / d.calories) * totalHeight;
@@ -182,6 +187,7 @@ const CalorieChart = ({
         {/* X-Axis Labels */}
         {axisLabels.map((label, i) => {
           const x =
+            paddingX +
             barSpacing / 2 +
             label.index * (barWidth + barSpacing) +
             barWidth / 2;
@@ -307,9 +313,9 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   const baseDate = new Date(startDate);
 
   if (range === "Day") {
-    // Label every 6 hours: 0, 6, 12, 18
-    [0, 6, 12, 18].forEach((h) => {
-      if (h < dataLength) labels.push({ text: `${h}:00`, index: h });
+    // Label every 6 hours starting from 6:00, plus 22:00
+    [0, 6, 12, 16].forEach((i) => {
+      if (i < dataLength) labels.push({ text: `${i + 6}:00`, index: i });
     });
   } else if (range === "Week") {
     // Label every day using a fixed array for consistency
@@ -343,7 +349,7 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
 function aggregateData(range: string, startDate?: Date) {
   const baseDate = startDate || new Date();
   let dataPoints = 0;
-  if (range === "Day") dataPoints = 24;
+  if (range === "Day") dataPoints = 18;
   else if (range === "Week") dataPoints = 7;
   else if (range === "Month") dataPoints = 30;
   else if (range === "Year") dataPoints = 12;
@@ -369,7 +375,10 @@ function aggregateData(range: string, startDate?: Date) {
         mealDate.getMonth() === baseDate.getMonth() &&
         mealDate.getDate() === baseDate.getDate()
       ) {
-        index = mealDate.getHours();
+        const h = mealDate.getHours();
+        if (h >= 6) {
+          index = h - 6;
+        }
       }
     } else if (range === "Week") {
       const diff = Math.floor(
@@ -758,7 +767,7 @@ export default function InsightsScreen() {
         ? 4
         : selectedRange === "Week"
           ? 16
-          : 8;
+          : 10;
 
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
@@ -779,8 +788,9 @@ export default function InsightsScreen() {
     // Calculate spacing to fill the width
     // width = n * barWidth + n * spacing
     // spacing = (width - n * barWidth) / n
+    const availableWidth = chartScrollWidth - CHART_PADDING_X * 2;
     const barSpacing =
-      (chartScrollWidth - data.length * barWidth) / data.length;
+      (availableWidth - data.length * barWidth) / data.length;
     const axisLabels = getAxisLabels(selectedRange, data.length, startDate);
 
     return { chartMax, barSpacing, axisLabels };
@@ -1012,6 +1022,7 @@ export default function InsightsScreen() {
                   axisLabels={prevChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
                 />
                 <CalorieChart
                   data={currentData}
@@ -1022,6 +1033,7 @@ export default function InsightsScreen() {
                   axisLabels={currentChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
                 />
                 <CalorieChart
                   data={nextPageData}
@@ -1032,6 +1044,7 @@ export default function InsightsScreen() {
                   axisLabels={nextChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
                 />
               </ScrollView>
             </View>
