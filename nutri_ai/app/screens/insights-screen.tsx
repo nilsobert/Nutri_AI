@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   useColorScheme,
+  Text,
 } from "react-native";
 import {
   Svg,
@@ -16,11 +17,15 @@ import {
   Line,
   Text as SvgText,
   Polyline,
-  LinearGradient,
+  LinearGradient as SvgLinearGradient,
   Stop,
   Polygon,
+  Path,
+  Circle,
 } from "react-native-svg";
+import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -30,8 +35,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
-import { mockMeals } from "@/mock-data/meals";
-import { MS_TO_S } from "@/constants/values";
+import { useMeals } from "@/context/MealContext";
+import { MS_TO_S, DAILY_CALORIE_GOAL } from "@/constants/values";
 import {
   Colors,
   Spacing,
@@ -42,9 +47,9 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_HEIGHT = 250;
+const CHART_PADDING_X = 30;
 const RANGES = ["Day", "Week", "Month", "Year"];
 const TREND_METRICS = ["Calories", "Protein", "Carbs", "Fat"];
-const GOAL_CALORIES = 2000;
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
@@ -84,23 +89,33 @@ interface CalorieChartProps {
   data: any[];
   chartMax: number;
   barWidth: number;
-  barSpacing: number;
   width: number;
   axisLabels: { text: string; index: number }[];
   progress: SharedValue<number>;
   isDark: boolean;
+  paddingX?: number;
+  goalCalories?: number;
+  onBarPress?: (index: number) => void;
 }
 
 const CalorieChart = ({
   data,
   chartMax,
   barWidth,
-  barSpacing,
   width,
   axisLabels,
   progress,
   isDark,
+  paddingX = 0,
+  goalCalories,
+  onBarPress,
 }: CalorieChartProps) => {
+  const goalY = goalCalories
+    ? CHART_HEIGHT - 30 - (goalCalories / chartMax) * (CHART_HEIGHT - 50)
+    : null;
+
+  const step = (width - 2 * paddingX) / (data.length > 1 ? data.length - 1 : 1);
+
   return (
     <View style={{ width }}>
       <Svg width={width} height={CHART_HEIGHT}>
@@ -114,14 +129,26 @@ const CalorieChart = ({
           strokeWidth={1}
         />
 
+        {/* Goal Line */}
+        {goalY !== null && (
+          <Line
+            x1={0}
+            y1={goalY}
+            x2={width}
+            y2={goalY}
+            stroke={Colors.primary}
+            strokeWidth={2}
+            strokeDasharray="5, 5"
+            opacity={0.6}
+          />
+        )}
+
         {/* Stacked Bars */}
         <Defs>
           {data.map((d, i) => {
             if (d.calories === 0) return null;
             const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
-            // Center the bars within the allocated space (barWidth + barSpacing)
-            // x = spacing/2 + i * (barWidth + spacing)
-            const x = barSpacing / 2 + i * (barWidth + barSpacing);
+            const x = paddingX + i * step - barWidth / 2;
             const yBase = CHART_HEIGHT - 30;
             return (
               <AnimatedBar
@@ -139,14 +166,18 @@ const CalorieChart = ({
         {data.map((d, i) => {
           if (d.calories === 0) return null;
           const totalHeight = (d.calories / chartMax) * (CHART_HEIGHT - 50);
-          const x = barSpacing / 2 + i * (barWidth + barSpacing);
+          const x = paddingX + i * step - barWidth / 2;
           const yBase = CHART_HEIGHT - 30;
           const carbH = ((d.carbs * 4) / d.calories) * totalHeight;
           const proteinH = ((d.protein * 4) / d.calories) * totalHeight;
           const fatH = ((d.fat * 9) / d.calories) * totalHeight;
 
           return (
-            <G key={`bar-${i}`} clipPath={`url(#clip-${i})`}>
+            <G
+              key={`bar-${i}`}
+              clipPath={`url(#clip-${i})`}
+              onPress={() => onBarPress && onBarPress(i)}
+            >
               <Rect
                 x={x}
                 y={yBase - totalHeight}
@@ -181,10 +212,7 @@ const CalorieChart = ({
 
         {/* X-Axis Labels */}
         {axisLabels.map((label, i) => {
-          const x =
-            barSpacing / 2 +
-            label.index * (barWidth + barSpacing) +
-            barWidth / 2;
+          const x = paddingX + label.index * step;
           return (
             <SvgText
               key={`label-${i}`}
@@ -307,9 +335,9 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   const baseDate = new Date(startDate);
 
   if (range === "Day") {
-    // Label every 6 hours: 0, 6, 12, 18
-    [0, 6, 12, 18].forEach((h) => {
-      if (h < dataLength) labels.push({ text: `${h}:00`, index: h });
+    // Label every 5 hours starting from 6:00
+    [0, 5, 10, 15].forEach((i) => {
+      if (i < dataLength) labels.push({ text: `${i + 6}:00`, index: i });
     });
   } else if (range === "Week") {
     // Label every day using a fixed array for consistency
@@ -340,10 +368,10 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
   return labels;
 }
 
-function aggregateData(range: string, startDate?: Date) {
+function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
   const baseDate = startDate || new Date();
   let dataPoints = 0;
-  if (range === "Day") dataPoints = 24;
+  if (range === "Day") dataPoints = 18;
   else if (range === "Week") dataPoints = 7;
   else if (range === "Month") dataPoints = 30;
   else if (range === "Year") dataPoints = 12;
@@ -359,7 +387,7 @@ function aggregateData(range: string, startDate?: Date) {
       quality: 0,
     }));
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
@@ -369,7 +397,10 @@ function aggregateData(range: string, startDate?: Date) {
         mealDate.getMonth() === baseDate.getMonth() &&
         mealDate.getDate() === baseDate.getDate()
       ) {
-        index = mealDate.getHours();
+        const h = mealDate.getHours();
+        if (h >= 6) {
+          index = h - 6;
+        }
       }
     } else if (range === "Week") {
       const diff = Math.floor(
@@ -413,6 +444,7 @@ function getHistoricalData(
   count: number,
   resolution: "day" | "month",
   endDate?: Date,
+  meals: any[] = [],
 ) {
   const data = Array(count)
     .fill(null)
@@ -437,7 +469,7 @@ function getHistoricalData(
     data[i].date = d;
   }
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
@@ -469,13 +501,13 @@ function getHistoricalData(
   return data;
 }
 
-function calculateStreak() {
+function calculateStreak(meals: any[]) {
   const now = new Date();
   let streak = 0;
   let currentDay = new Date(now);
 
   for (let i = 0; i < 365; i++) {
-    const hasMeal = mockMeals.some((m) => {
+    const hasMeal = meals.some((m) => {
       const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === currentDay.getDate() &&
@@ -498,7 +530,7 @@ function calculateStreak() {
   return streak;
 }
 
-function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
+function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[]): number {
   let daysMet = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -506,7 +538,7 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
   end.setHours(23, 59, 59, 999);
 
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const dayTotalCalories = mockMeals
+    const dayTotalCalories = meals
       .filter((m) => {
         const mealDate = new Date(m.getTimestamp() * MS_TO_S);
         return (
@@ -523,8 +555,8 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
       }, 0);
 
     if (
-      dayTotalCalories >= GOAL_CALORIES * 0.9 &&
-      dayTotalCalories <= GOAL_CALORIES * 1.1
+      dayTotalCalories >= DAILY_CALORIE_GOAL * 0.9 &&
+      dayTotalCalories <= DAILY_CALORIE_GOAL * 1.1
     ) {
       daysMet++;
     }
@@ -532,13 +564,13 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date): number {
   return daysMet;
 }
 
-function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
+function calculateStreakInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
   let streak = 0;
   let checkDay = new Date(endDate);
 
   // Go backwards from the end date to find the first day without a meal
   while (checkDay >= startDate) {
-    const hasMealOnThisDay = mockMeals.some((m) => {
+    const hasMealOnThisDay = meals.some((m) => {
       const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === checkDay.getDate() &&
@@ -547,20 +579,14 @@ function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
       );
     });
 
-    if (!hasMealOnThisDay) {
+    if (hasMealOnThisDay) {
+      streak++;
+      checkDay.setDate(checkDay.getDate() - 1);
+    } else {
       // This is the day the streak was broken.
-      // The streak is the number of days from the day *after* this one, until the end date.
-      const dayAfterBreak = new Date(checkDay);
-      dayAfterBreak.setDate(dayAfterBreak.getDate() + 1);
-
-      while (dayAfterBreak <= endDate) {
-        streak++;
-        dayAfterBreak.setDate(dayAfterBreak.getDate() + 1);
-      }
+      // Return the streak we've counted so far
       return streak;
     }
-
-    checkDay.setDate(checkDay.getDate() - 1);
   }
 
   // If we get here, it means every day in the period had a meal.
@@ -571,12 +597,12 @@ function calculateStreakInPeriod(startDate: Date, endDate: Date): number {
   return totalDays;
 }
 
-function calculateLongestStreakOverall(): number {
-  if (mockMeals.length === 0) return 0;
+function calculateLongestStreakOverall(meals: any[]): number {
+  if (meals.length === 0) return 0;
 
   // Get all unique dates that have meals
   const mealDates = new Set<string>();
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const d = new Date(meal.getTimestamp() * MS_TO_S);
     const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     mealDates.add(dateKey);
@@ -619,14 +645,14 @@ function calculateLongestStreakOverall(): number {
   return longestStreak;
 }
 
-function getMaxMealInPeriod(startDate: Date, endDate: Date): number {
+function getMaxMealInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
   let maxCalories = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
 
-  mockMeals.forEach((meal) => {
+  meals.forEach((meal) => {
     const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     if (mealDate >= start && mealDate <= end) {
       const info = meal.getNutritionInfo();
@@ -641,9 +667,246 @@ function getMaxMealInPeriod(startDate: Date, endDate: Date): number {
   return maxCalories;
 }
 
+const generateSmoothPath = (
+  points: { x: number; y: number }[],
+  close: boolean = false,
+  height: number = 0,
+) => {
+  if (points.length < 2) return "";
+
+  let d = `M ${points[0].x},${points[0].y}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    const controlX1 = current.x + (next.x - current.x) / 2;
+    const controlY1 = current.y;
+    const controlX2 = current.x + (next.x - current.x) / 2;
+    const controlY2 = next.y;
+
+    d += ` C ${controlX1},${controlY1} ${controlX2},${controlY2} ${next.x},${next.y}`;
+  }
+
+  if (close) {
+    d += ` L ${points[points.length - 1].x},${height} L ${points[0].x},${height} Z`;
+  }
+
+  return d;
+};
+
+function roundScale(val: number) {
+  let s = 10;
+  if (val > 2000) s = 500;
+  else if (val > 1000) s = 200;
+  else if (val > 500) s = 100;
+  else if (val > 100) s = 50;
+  return Math.ceil(val / s) * s;
+}
+
+interface TrendsChartProps {
+  data: any[];
+  labels: { text: string; index: number }[];
+  width: number;
+  height: number;
+  visibleTrends: string[];
+  isDark: boolean;
+  range: string;
+  scaleCal: number;
+  scaleMacro: number;
+  pointsPerPage: number;
+}
+
+const TrendsChart = ({
+  data,
+  labels,
+  width,
+  height,
+  visibleTrends,
+  isDark,
+  range,
+  scaleCal,
+  scaleMacro,
+  pointsPerPage,
+}: TrendsChartProps) => {
+  const pX = 30;
+  const pR = 30;
+  const pageWidth = width / 3;
+  const drawW = pageWidth - pX - pR;
+  const stepX = drawW / (pointsPerPage - 1 || 1);
+
+  const getX = (i: number) => {
+    const pageIndex = Math.floor(i / pointsPerPage);
+    const localIndex = i % pointsPerPage;
+    return pageIndex * pageWidth + pX + localIndex * stepX;
+  };
+  const getYCal = (v: number) => height - 40 - (v / scaleCal) * (height - 60);
+  const getYMacro = (v: number) =>
+    height - 40 - (v / scaleMacro) * (height - 60);
+
+  const calPoints = data.map((d, i) => ({
+    x: getX(i),
+    y: getYCal(d.calories),
+  }));
+  const protPoints = data.map((d, i) => ({
+    x: getX(i),
+    y: getYMacro(d.protein),
+  }));
+  const carbPoints = data.map((d, i) => ({
+    x: getX(i),
+    y: getYMacro(d.carbs),
+  }));
+  const fatPoints = data.map((d, i) => ({
+    x: getX(i),
+    y: getYMacro(d.fat),
+  }));
+
+  return (
+    <View style={{ width }}>
+      <Svg width={width} height={height}>
+        <Defs>
+          <SvgLinearGradient id="gradCal" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.4" />
+            <Stop offset="1" stopColor={Colors.primary} stopOpacity="0" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="gradProt" x1="0" y1="0" x2="0" y2="1">
+            <Stop
+              offset="0"
+              stopColor={Colors.secondary.protein}
+              stopOpacity="0.4"
+            />
+            <Stop
+              offset="1"
+              stopColor={Colors.secondary.protein}
+              stopOpacity="0"
+            />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="gradCarb" x1="0" y1="0" x2="0" y2="1">
+            <Stop
+              offset="0"
+              stopColor={Colors.secondary.carbs}
+              stopOpacity="0.4"
+            />
+            <Stop
+              offset="1"
+              stopColor={Colors.secondary.carbs}
+              stopOpacity="0"
+            />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="gradFat" x1="0" y1="0" x2="0" y2="1">
+            <Stop
+              offset="0"
+              stopColor={Colors.secondary.fat}
+              stopOpacity="0.4"
+            />
+            <Stop offset="1" stopColor={Colors.secondary.fat} stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+
+        <G>
+          {/* Grid Lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = height - 40 - ratio * (height - 60);
+            return (
+              <G key={`grid-${ratio}`}>
+                <Line
+                  x1={pX}
+                  y1={y}
+                  x2={width - pR}
+                  y2={y}
+                  stroke={isDark ? "#444" : Colors.grey.light}
+                  strokeDasharray="4, 4"
+                  strokeWidth={1}
+                />
+              </G>
+            );
+          })}
+
+          {/* Data Areas & Lines */}
+          {visibleTrends.includes("Calories") && (
+            <>
+              <Path
+                d={generateSmoothPath(calPoints, true, height - 40)}
+                fill="url(#gradCal)"
+              />
+              <Path
+                d={generateSmoothPath(calPoints)}
+                fill="none"
+                stroke={Colors.primary}
+                strokeWidth={3}
+              />
+            </>
+          )}
+          {visibleTrends.includes("Protein") && (
+            <>
+              <Path
+                d={generateSmoothPath(protPoints, true, height - 40)}
+                fill="url(#gradProt)"
+              />
+              <Path
+                d={generateSmoothPath(protPoints)}
+                fill="none"
+                stroke={Colors.secondary.protein}
+                strokeWidth={2}
+              />
+            </>
+          )}
+          {visibleTrends.includes("Carbs") && (
+            <>
+              <Path
+                d={generateSmoothPath(carbPoints, true, height - 40)}
+                fill="url(#gradCarb)"
+              />
+              <Path
+                d={generateSmoothPath(carbPoints)}
+                fill="none"
+                stroke={Colors.secondary.carbs}
+                strokeWidth={2}
+              />
+            </>
+          )}
+          {visibleTrends.includes("Fat") && (
+            <>
+              <Path
+                d={generateSmoothPath(fatPoints, true, height - 40)}
+                fill="url(#gradFat)"
+              />
+              <Path
+                d={generateSmoothPath(fatPoints)}
+                fill="none"
+                stroke={Colors.secondary.fat}
+                strokeWidth={2}
+              />
+            </>
+          )}
+
+          {/* X-Axis Labels */}
+          {data.map((d, i) => {
+            const label = labels.find((l) => l.index === i)?.text;
+            if (!label) return null;
+
+            return (
+              <SvgText
+                key={`label-${i}`}
+                x={getX(i)}
+                y={height - 10}
+                fill={isDark ? "#999" : "#666"}
+                fontSize={Typography.sizes.sm}
+                textAnchor="middle"
+              >
+                {label}
+              </SvgText>
+            );
+          })}
+        </G>
+      </Svg>
+    </View>
+  );
+};
+
 export default function InsightsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { meals, isLoading } = useMeals();
   const [selectedRange, setSelectedRange] = useState("Week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleTrends, setVisibleTrends] = useState([
@@ -724,16 +987,16 @@ export default function InsightsScreen() {
   );
 
   const currentData = useMemo(
-    () => aggregateData(selectedRange, currentStartDate),
-    [selectedRange, currentStartDate],
+    () => aggregateData(selectedRange, currentStartDate, meals),
+    [selectedRange, currentStartDate, meals],
   );
   const prevPageData = useMemo(
-    () => aggregateData(selectedRange, prevStartDate),
-    [selectedRange, prevStartDate],
+    () => aggregateData(selectedRange, prevStartDate, meals),
+    [selectedRange, prevStartDate, meals],
   );
   const nextPageData = useMemo(
-    () => aggregateData(selectedRange, nextStartDate),
-    [selectedRange, nextStartDate],
+    () => aggregateData(selectedRange, nextStartDate, meals),
+    [selectedRange, nextStartDate, meals],
   );
 
   // Check if current date is today
@@ -758,11 +1021,15 @@ export default function InsightsScreen() {
         ? 4
         : selectedRange === "Week"
           ? 16
-          : 8;
+          : 10;
 
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
-    const maxVal = Math.max(...data.map((d) => d.calories), 10);
+    const maxVal = Math.max(
+      ...data.map((d) => d.calories),
+      DAILY_CALORIE_GOAL,
+      10,
+    );
     let step = 10;
     if (maxVal > 2000) step = 500;
     else if (maxVal > 1000) step = 200;
@@ -776,14 +1043,9 @@ export default function InsightsScreen() {
       chartMax += 4 - (chartMax % 4);
     }
 
-    // Calculate spacing to fill the width
-    // width = n * barWidth + n * spacing
-    // spacing = (width - n * barWidth) / n
-    const barSpacing =
-      (chartScrollWidth - data.length * barWidth) / data.length;
     const axisLabels = getAxisLabels(selectedRange, data.length, startDate);
 
-    return { chartMax, barSpacing, axisLabels };
+    return { chartMax, axisLabels };
   };
 
   const currentChartProps = getChartProps(currentData, currentStartDate);
@@ -793,42 +1055,48 @@ export default function InsightsScreen() {
   // Use current chart max for all to ensure consistency
   const unifiedChartMax = currentChartProps.chartMax;
 
-  // Get the correct data and labels based on current view
-  const getTrendDataAndLabels = () => {
-    switch (currentViewIndex) {
-      case 0: // Previous
-        return {
-          data: prevPageData,
-          labels: prevChartProps.axisLabels,
-          startDate: prevStartDate,
-        };
-      case 2: // Next
-        return {
-          data: nextPageData,
-          labels: nextChartProps.axisLabels,
-          startDate: nextStartDate,
-        };
-      default: // Current
-        return {
-          data: currentData,
-          labels: currentChartProps.axisLabels,
-          startDate: currentStartDate,
-        };
-    }
-  };
+  const maxCal = Math.max(...currentData.map((d) => d.calories), 100);
+  const maxMacro = Math.max(
+    ...currentData.map((d) => Math.max(d.protein, d.carbs, d.fat)),
+    10,
+  );
+  const trendScaleCal = roundScale(maxCal);
+  const trendScaleMacro = roundScale(maxMacro);
 
-  const {
-    data: trendData,
-    labels: trendLabels,
-    startDate: trendStartDate,
-  } = getTrendDataAndLabels();
+  const pointsPerPage = useMemo(() => {
+    if (selectedRange === "Day") return 18;
+    if (selectedRange === "Week") return 7;
+    if (selectedRange === "Month") return 30;
+    if (selectedRange === "Year") return 12;
+    return 7;
+  }, [selectedRange]);
 
-  useEffect(() => {
-    // Reset trends scroll to center when view changes
-    setTimeout(() => {
-      trendsScrollRef.current?.scrollTo({ x: 0, animated: true });
-    }, 100);
-  }, [trendData, visibleTrends, currentViewIndex]);
+  // Combine data for continuous chart
+  const combinedTrendData = useMemo(() => {
+    return [...prevPageData, ...currentData, ...nextPageData];
+  }, [prevPageData, currentData, nextPageData]);
+
+  const combinedTrendLabels = useMemo(() => {
+    const prevLabels = prevChartProps.axisLabels.map((l) => ({
+      ...l,
+      index: l.index,
+    }));
+    const currentLabels = currentChartProps.axisLabels.map((l) => ({
+      ...l,
+      index: l.index + prevPageData.length,
+    }));
+    const nextLabels = nextChartProps.axisLabels.map((l) => ({
+      ...l,
+      index: l.index + prevPageData.length + currentData.length,
+    }));
+    return [...prevLabels, ...currentLabels, ...nextLabels];
+  }, [
+    prevChartProps.axisLabels,
+    currentChartProps.axisLabels,
+    nextChartProps.axisLabels,
+    prevPageData.length,
+    currentData.length,
+  ]);
 
   // Metrics (based on currentData)
   const totalCalories = currentData.reduce((sum, d) => sum + d.calories, 0);
@@ -865,7 +1133,7 @@ export default function InsightsScreen() {
     );
   }
 
-  const daysGoalMet = getDailyGoalMetCount(startDate, endDate);
+  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals);
 
   // Calculate for previous period (relative to current view)
   let prevPeriodStartDate, prevPeriodEndDate;
@@ -892,15 +1160,31 @@ export default function InsightsScreen() {
   const prevDaysGoalMet = getDailyGoalMetCount(
     prevPeriodStartDate,
     prevPeriodEndDate,
+    meals,
   );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak
   const streak =
     selectedRange === "Year"
-      ? calculateLongestStreakOverall()
-      : calculateStreakInPeriod(startDate, endDate);
+      ? calculateLongestStreakOverall(meals)
+      : calculateStreakInPeriod(startDate, endDate, meals);
 
-  const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate);
+  const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate, meals);
+
+  const getMetricGradient = (metric: string) => {
+    switch (metric) {
+      case "Calories":
+        return [Colors.primary, "#4CAF50"];
+      case "Protein":
+        return [Colors.secondary.protein, "#20B2AA"];
+      case "Carbs":
+        return [Colors.secondary.carbs, "#32CD32"];
+      case "Fat":
+        return [Colors.secondary.fat, "#FF4500"];
+      default:
+        return [Colors.primary, Colors.primary];
+    }
+  };
 
   const toggleTrend = (metric: string) => {
     if (visibleTrends.includes(metric)) {
@@ -929,29 +1213,76 @@ export default function InsightsScreen() {
     }
   };
 
+  // Use fixed width for trends chart to fit in container
+  const trendsChartWidth = chartContainerWidth;
+
+  const handleTrendsScrollEnd = (e: any) => {
+    const x = e.nativeEvent.contentOffset.x;
+    if (x < trendsChartWidth / 2) {
+      // Scrolled to Prev
+      setCurrentDate(prevDate);
+      setCurrentViewIndex(0);
+    } else if (x > trendsChartWidth * 1.5) {
+      // Scrolled to Next
+      setCurrentDate(nextDate);
+      setCurrentViewIndex(2);
+    } else {
+      // In the middle - Current
+      setCurrentViewIndex(1);
+    }
+  };
+
   useEffect(() => {
     // Reset scroll to center whenever date changes
     chartScrollRef.current?.scrollTo({ x: chartScrollWidth, animated: false });
+    trendsScrollRef.current?.scrollTo({ x: trendsChartWidth, animated: false });
     setCurrentViewIndex(1); // Reset to current view
-  }, [currentDate, chartScrollWidth]);
+  }, [currentDate, chartScrollWidth, trendsChartWidth]);
 
-  // Calculate optimal chart width for trends
-  const getOptimalTrendsWidth = () => {
-    const baseWidth = SCREEN_WIDTH - Spacing.lg * 2; // Fit within card bounds
+  const getDateRangeString = () => {
+    const start = getStartDate(selectedRange, currentDate);
 
-    // Calculate reasonable width based on data points and range
-    let optimalWidth = baseWidth;
-    const minPointWidth = 30; // Minimum width per data point
-
-    if (trendData.length * minPointWidth > baseWidth) {
-      // Need to scroll, but limit the width
-      optimalWidth = Math.min(trendData.length * 35, baseWidth * 1.3);
+    if (selectedRange === "Day") {
+      return start.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+    } else if (selectedRange === "Week") {
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      if (start.getFullYear() === end.getFullYear()) {
+        return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+      }
+      return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+    } else if (selectedRange === "Month") {
+      return start.toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+    } else if (selectedRange === "Year") {
+      return start.getFullYear().toString();
     }
-
-    return Math.max(optimalWidth, baseWidth);
+    return "";
   };
 
-  const trendsChartWidth = getOptimalTrendsWidth();
+  const handleBarPress = (index: number, startDate: Date) => {
+    const date = new Date(startDate);
+
+    if (selectedRange === "Week") {
+      date.setDate(date.getDate() + index);
+      setCurrentDate(date);
+      setSelectedRange("Day");
+    } else if (selectedRange === "Month") {
+      date.setDate(date.getDate() + index);
+      setCurrentDate(date);
+      setSelectedRange("Day");
+    } else if (selectedRange === "Year") {
+      date.setMonth(date.getMonth() + index);
+      setCurrentDate(date);
+      setSelectedRange("Month");
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -1007,31 +1338,39 @@ export default function InsightsScreen() {
                   data={prevPageData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={prevChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={prevChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) => handleBarPress(index, prevStartDate)}
                 />
                 <CalorieChart
                   data={currentData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={currentChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={currentChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) =>
+                    handleBarPress(index, currentStartDate)
+                  }
                 />
                 <CalorieChart
                   data={nextPageData}
                   chartMax={unifiedChartMax}
                   barWidth={barWidth}
-                  barSpacing={nextChartProps.barSpacing}
                   width={chartScrollWidth}
                   axisLabels={nextChartProps.axisLabels}
                   progress={progress}
                   isDark={isDark}
+                  paddingX={CHART_PADDING_X}
+                  goalCalories={DAILY_CALORIE_GOAL}
+                  onBarPress={(index) => handleBarPress(index, nextStartDate)}
                 />
               </ScrollView>
             </View>
@@ -1074,69 +1413,129 @@ export default function InsightsScreen() {
           </View>
         </View>
 
-        {/* Analytics Cards */}
-        <ThemedText style={[styles.sectionTitle, { color: textColor }]}>
-          Highlights
-        </ThemedText>
-
-        <View style={styles.metricsGrid}>
-          <View
+        {/* Highlights Section */}
+        <View style={[styles.card, { backgroundColor: cardBg }]}>
+          <ThemedText
             style={[
-              styles.card,
-              styles.metricCard,
-              { backgroundColor: cardBg },
+              styles.cardTitle,
+              { color: textColor, marginBottom: Spacing.md },
             ]}
           >
-            <ThemedText style={styles.metricTitle}>Avg Meal Quality</ThemedText>
-            <View style={styles.metricValueContainer}>
-              <ThemedText style={[styles.metricValue, { color: textColor }]}>
-                {avgQuality}
+            Highlights
+          </ThemedText>
+
+          <View style={styles.insightsGrid}>
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons name="star-outline" size={24} color="#FFD700" />
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
+                {totalMeals > 0 ? avgQuality : "N/A"}
               </ThemedText>
-              <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
-                / 10
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                Avg Quality
               </ThemedText>
             </View>
-          </View>
 
-          <View
-            style={[
-              styles.card,
-              styles.metricCard,
-              { backgroundColor: cardBg },
-            ]}
-          >
-            <ThemedText style={styles.metricTitle}>
-              {selectedRange === "Year" ? "Longest Streak" : "Current Streak"}
-            </ThemedText>
-            <View style={styles.metricValueContainer}>
-              <ThemedText style={[styles.metricValue, { color: textColor }]}>
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons name="trophy-outline" size={24} color="#FF9500" />
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
                 {streak}
               </ThemedText>
-              <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
-                days
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                {selectedRange === "Year" ? "Longest Streak" : "Current Streak"}
               </ThemedText>
             </View>
           </View>
-        </View>
 
-        <View style={styles.metricsGrid}>
-          <View
-            style={[
-              styles.card,
-              styles.metricCard,
-              { backgroundColor: cardBg },
-            ]}
-          >
-            <ThemedText style={styles.metricTitle}>Goal Met</ThemedText>
-            <View style={styles.metricValueContainer}>
-              <ThemedText style={[styles.metricValue, { color: textColor }]}>
-                {daysGoalMet}
+          <View style={styles.insightsGrid}>
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={24}
+                color={Colors.primary}
+              />
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
+                {daysGoalMet}/{totalDaysInPeriod}
               </ThemedText>
-              <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
-                / {totalDaysInPeriod} days
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                Goal Met
               </ThemedText>
             </View>
-            <ThemedText style={[styles.insightText, { color: secondaryText }]}>
+
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons
+                name="restaurant-outline"
+                size={24}
+                color={Colors.secondary.fat}
+              />
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
+                {Math.round(maxCalorieMeal)}
+              </ThemedText>
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                Max Meal (kcal)
+              </ThemedText>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.insightTipBox,
+              {
+                backgroundColor: isDark
+                  ? "rgba(32, 150, 33, 0.15)"
+                  : "rgba(32, 150, 33, 0.08)",
+              },
+            ]}
+          >
+            <View style={styles.insightTipHeader}>
+              <Ionicons
+                name="trending-up-outline"
+                size={20}
+                color={Colors.primary}
+                style={{ marginRight: 8 }}
+              />
+              <ThemedText
+                style={[styles.insightTipTitle, { color: Colors.primary }]}
+              >
+                Progress
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.insightTipText, { color: textColor }]}>
               {daysGoalMet > prevDaysGoalMet
                 ? "Better than last period!"
                 : daysGoalMet < prevDaysGoalMet
@@ -1144,334 +1543,162 @@ export default function InsightsScreen() {
                   : "Consistent with last period."}
             </ThemedText>
           </View>
-
-          <View
-            style={[
-              styles.card,
-              styles.metricCard,
-              { backgroundColor: cardBg },
-            ]}
-          >
-            <ThemedText style={styles.metricTitle}>Max Meal</ThemedText>
-            <View style={styles.metricValueContainer}>
-              <ThemedText style={[styles.metricValue, { color: textColor }]}>
-                {Math.round(maxCalorieMeal)}
-              </ThemedText>
-              <ThemedText style={[styles.metricUnit, { color: secondaryText }]}>
-                kcal
-              </ThemedText>
-            </View>
-          </View>
         </View>
 
         {/* Trends Chart */}
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <View style={styles.cardHeader}>
+          <View style={[styles.cardHeader, { marginBottom: Spacing.sm }]}>
             <ThemedText style={[styles.cardTitle, { color: textColor }]}>
               Trends
             </ThemedText>
-            <View style={styles.metricSelector}>
-              {TREND_METRICS.map((m) => (
+          </View>
+
+          <View style={styles.metricSelector}>
+            {TREND_METRICS.map((m) => {
+              const isSelected = visibleTrends.includes(m);
+              const gradientColors = getMetricGradient(m);
+
+              return (
                 <TouchableOpacity
                   key={m}
                   style={[
                     styles.metricChip,
-                    visibleTrends.includes(m) && styles.metricChipSelected,
-                    {
-                      backgroundColor: visibleTrends.includes(m)
-                        ? Colors.primary
-                        : isDark
-                          ? "#333"
-                          : Colors.grey.light,
+                    !isSelected && {
+                      backgroundColor: isDark ? "#333" : Colors.grey.light,
                     },
                   ]}
                   onPress={() => toggleTrend(m)}
                 >
+                  {isSelected && (
+                    <LinearGradient
+                      colors={gradientColors as [string, string]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
                   <ThemedText
                     style={[
                       styles.metricChipText,
-                      visibleTrends.includes(m) &&
-                        styles.metricChipTextSelected,
+                      isSelected && styles.metricChipTextSelected,
                       {
-                        color: visibleTrends.includes(m)
-                          ? "#fff"
-                          : secondaryText,
+                        color: isSelected ? "#fff" : secondaryText,
+                        zIndex: 1,
                       },
                     ]}
                   >
                     {m}
                   </ThemedText>
                 </TouchableOpacity>
-              ))}
-            </View>
+              );
+            })}
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ref={trendsScrollRef}
-            contentContainerStyle={{ paddingHorizontal: Spacing.lg }}
-          >
-            <Svg width={trendsChartWidth} height={240}>
-              <Defs>
-                <LinearGradient id="gradCal" x1="0" y1="0" x2="0" y2="1">
-                  <Stop
-                    offset="0"
-                    stopColor={Colors.primary}
-                    stopOpacity="0.2"
-                  />
-                  <Stop offset="1" stopColor={Colors.primary} stopOpacity="0" />
-                </LinearGradient>
-                <LinearGradient id="gradProt" x1="0" y1="0" x2="0" y2="1">
-                  <Stop
-                    offset="0"
-                    stopColor={Colors.secondary.protein}
-                    stopOpacity="0.2"
-                  />
-                  <Stop
-                    offset="1"
-                    stopColor={Colors.secondary.protein}
-                    stopOpacity="0"
-                  />
-                </LinearGradient>
-                <LinearGradient id="gradCarb" x1="0" y1="0" x2="0" y2="1">
-                  <Stop
-                    offset="0"
-                    stopColor={Colors.secondary.carbs}
-                    stopOpacity="0.2"
-                  />
-                  <Stop
-                    offset="1"
-                    stopColor={Colors.secondary.carbs}
-                    stopOpacity="0"
-                  />
-                </LinearGradient>
-                <LinearGradient id="gradFat" x1="0" y1="0" x2="0" y2="1">
-                  <Stop
-                    offset="0"
-                    stopColor={Colors.secondary.fat}
-                    stopOpacity="0.2"
-                  />
-                  <Stop
-                    offset="1"
-                    stopColor={Colors.secondary.fat}
-                    stopOpacity="0"
-                  />
-                </LinearGradient>
-              </Defs>
-
-              {(() => {
-                const maxCal = Math.max(
-                  ...trendData.map((d) => d.calories),
-                  100,
-                );
-                const maxMacro = Math.max(
-                  ...trendData.map((d) => Math.max(d.protein, d.carbs, d.fat)),
-                  10,
-                );
-
-                // Round scales
-                const roundScale = (val: number) => {
-                  let s = 10;
-                  if (val > 2000) s = 500;
-                  else if (val > 1000) s = 200;
-                  else if (val > 500) s = 100;
-                  else if (val > 100) s = 50;
-                  return Math.ceil(val / s) * s;
-                };
-
-                const scaleCal = roundScale(maxCal);
-                const scaleMacro = roundScale(maxMacro);
-
-                const chartH = 240;
-                const chartW = trendsChartWidth;
-                const pX = 20; // Reduced padding for better space utilization
-                const pR = 20;
-                const drawW = chartW - pX - pR;
-                const stepX = drawW / (trendData.length - 1 || 1);
-
-                const getX = (i: number) => pX + i * stepX;
-                const getYCal = (v: number) =>
-                  chartH - 40 - (v / scaleCal) * (chartH - 60);
-                const getYMacro = (v: number) =>
-                  chartH - 40 - (v / scaleMacro) * (chartH - 60);
-
-                return (
-                  <G>
-                    {/* Grid Lines */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                      const y = chartH - 40 - ratio * (chartH - 60);
-                      return (
-                        <G key={`grid-${ratio}`}>
-                          <Line
-                            x1={pX}
-                            y1={y}
-                            x2={chartW - pR}
-                            y2={y}
-                            stroke={isDark ? "#444" : Colors.grey.light}
-                            strokeDasharray="4, 4"
-                            strokeWidth={1}
-                          />
-                        </G>
-                      );
-                    })}
-
-                    {/* Data Areas & Lines */}
-                    {visibleTrends.includes("Calories") && (
-                      <>
-                        <Polygon
-                          points={
-                            `${getX(0)},${chartH - 40} ` +
-                            trendData
-                              .map(
-                                (d, i) => `${getX(i)},${getYCal(d.calories)}`,
-                              )
-                              .join(" ") +
-                            ` ${getX(trendData.length - 1)},${chartH - 40}`
-                          }
-                          fill="url(#gradCal)"
-                        />
-                        <Polyline
-                          points={trendData
-                            .map((d, i) => `${getX(i)},${getYCal(d.calories)}`)
-                            .join(" ")}
-                          fill="none"
-                          stroke={Colors.primary}
-                          strokeWidth={3}
-                        />
-                      </>
-                    )}
-                    {visibleTrends.includes("Protein") && (
-                      <>
-                        <Polygon
-                          points={
-                            `${getX(0)},${chartH - 40} ` +
-                            trendData
-                              .map(
-                                (d, i) => `${getX(i)},${getYMacro(d.protein)}`,
-                              )
-                              .join(" ") +
-                            ` ${getX(trendData.length - 1)},${chartH - 40}`
-                          }
-                          fill="url(#gradProt)"
-                        />
-                        <Polyline
-                          points={trendData
-                            .map((d, i) => `${getX(i)},${getYMacro(d.protein)}`)
-                            .join(" ")}
-                          fill="none"
-                          stroke={Colors.secondary.protein}
-                          strokeWidth={2}
-                        />
-                      </>
-                    )}
-                    {visibleTrends.includes("Carbs") && (
-                      <>
-                        <Polygon
-                          points={
-                            `${getX(0)},${chartH - 40} ` +
-                            trendData
-                              .map((d, i) => `${getX(i)},${getYMacro(d.carbs)}`)
-                              .join(" ") +
-                            ` ${getX(trendData.length - 1)},${chartH - 40}`
-                          }
-                          fill="url(#gradCarb)"
-                        />
-                        <Polyline
-                          points={trendData
-                            .map((d, i) => `${getX(i)},${getYMacro(d.carbs)}`)
-                            .join(" ")}
-                          fill="none"
-                          stroke={Colors.secondary.carbs}
-                          strokeWidth={2}
-                        />
-                      </>
-                    )}
-                    {visibleTrends.includes("Fat") && (
-                      <>
-                        <Polygon
-                          points={
-                            `${getX(0)},${chartH - 40} ` +
-                            trendData
-                              .map((d, i) => `${getX(i)},${getYMacro(d.fat)}`)
-                              .join(" ") +
-                            ` ${getX(trendData.length - 1)},${chartH - 40}`
-                          }
-                          fill="url(#gradFat)"
-                        />
-                        <Polyline
-                          points={trendData
-                            .map((d, i) => `${getX(i)},${getYMacro(d.fat)}`)
-                            .join(" ")}
-                          fill="none"
-                          stroke={Colors.secondary.fat}
-                          strokeWidth={2}
-                        />
-                      </>
-                    )}
-
-                    {/* X-Axis Labels */}
-                    {trendData.map((d, i) => {
-                      // Use trendLabels to get correct labels for the current view
-                      const label = trendLabels.find(
-                        (l) => l.index === i,
-                      )?.text;
-                      if (!label) return null;
-
-                      // Show fewer labels if too many data points
-                      const labelInterval = Math.ceil(trendData.length / 6); // Max 6 labels for better readability
-                      if (i % labelInterval !== 0 && i !== trendData.length - 1)
-                        return null;
-
-                      return (
-                        <SvgText
-                          key={`label-${i}`}
-                          x={getX(i)}
-                          y={chartH - 10}
-                          fill={secondaryText}
-                          fontSize={Typography.sizes.sm}
-                          textAnchor="middle"
-                        >
-                          {label}
-                        </SvgText>
-                      );
-                    })}
-                  </G>
-                );
-              })()}
-            </Svg>
-          </ScrollView>
+          <View style={{ height: 240, width: trendsChartWidth }}>
+            <ScrollView
+              ref={trendsScrollRef}
+              horizontal
+              pagingEnabled={false}
+              snapToInterval={trendsChartWidth}
+              decelerationRate="fast"
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ width: trendsChartWidth * 3 }}
+              contentOffset={{ x: trendsChartWidth, y: 0 }}
+              onMomentumScrollEnd={handleTrendsScrollEnd}
+              scrollEventThrottle={16}
+            >
+              <TrendsChart
+                data={combinedTrendData}
+                labels={combinedTrendLabels}
+                width={trendsChartWidth * 3}
+                height={240}
+                visibleTrends={visibleTrends}
+                isDark={isDark}
+                range={selectedRange}
+                scaleCal={trendScaleCal}
+                scaleMacro={trendScaleMacro}
+                pointsPerPage={pointsPerPage}
+              />
+            </ScrollView>
+          </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <ThemedText style={[styles.cardTitle, { color: textColor }]}>
-            Insights
+          <ThemedText
+            style={[
+              styles.cardTitle,
+              { color: textColor, marginBottom: Spacing.md },
+            ]}
+          >
+            Overview
           </ThemedText>
-          <View style={[styles.insightRow, { borderBottomColor: borderColor }]}>
-            <ThemedText style={[styles.insightLabel, { color: textColor }]}>
-              Days Tracked:
-            </ThemedText>
-            <ThemedText style={[styles.insightValue, { color: secondaryText }]}>
-              {daysTracked} days
-            </ThemedText>
+          <View style={styles.insightsGrid}>
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons
+                name="calendar-outline"
+                size={24}
+                color={Colors.primary}
+              />
+              <ThemedText style={[styles.insightBoxValue, { color: textColor }]}>
+                {daysTracked}
+              </ThemedText>
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                Days Tracked
+              </ThemedText>
+            </View>
+
+            <View
+              style={[
+                styles.insightBox,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons name="flame-outline" size={24} color="#FF9500" />
+              <ThemedText style={[styles.insightBoxValue, { color: textColor }]}>
+                {daysTracked > 0 ? Math.round(totalCalories / daysTracked) : 0}
+              </ThemedText>
+              <ThemedText
+                style={[styles.insightBoxLabel, { color: secondaryText }]}
+              >
+                Avg Calories
+              </ThemedText>
+            </View>
           </View>
-          <View style={[styles.insightRow, { borderBottomColor: borderColor }]}>
-            <ThemedText style={[styles.insightLabel, { color: textColor }]}>
-              Avg Calories:
-            </ThemedText>
-            <ThemedText style={[styles.insightValue, { color: secondaryText }]}>
-              {daysTracked > 0 ? Math.round(totalCalories / daysTracked) : 0}{" "}
-              kcal
-            </ThemedText>
-          </View>
-          <View style={[styles.insightRow, { borderBottomColor: borderColor }]}>
-            <ThemedText style={[styles.insightLabel, { color: textColor }]}>
-              Comparison:
-            </ThemedText>
-            <ThemedText style={[styles.insightValue, { color: secondaryText }]}>
+
+          <View
+            style={[
+              styles.insightTipBox,
+              {
+                backgroundColor: isDark
+                  ? "rgba(32, 150, 33, 0.15)"
+                  : "rgba(32, 150, 33, 0.08)",
+              },
+            ]}
+          >
+            <View style={styles.insightTipHeader}>
+              <Ionicons
+                name="bulb-outline"
+                size={20}
+                color={Colors.primary}
+                style={{ marginRight: 8 }}
+              />
+              <ThemedText
+                style={[styles.insightTipTitle, { color: Colors.primary }]}
+              >
+                Did you know?
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.insightTipText, { color: textColor }]}>
               {daysGoalMet > prevDaysGoalMet
-                ? `You met your goal ${daysGoalMet - prevDaysGoalMet} more times than last ${selectedRange.toLowerCase()}.`
-                : "Track more to see improvements!"}
+                ? `You're doing great! You met your goal ${daysGoalMet - prevDaysGoalMet} more times than last ${selectedRange.toLowerCase()}.`
+                : "Consistency is key. Try to log your meals every day to get better insights!"}
             </ThemedText>
           </View>
         </View>
@@ -1483,13 +1710,18 @@ export default function InsightsScreen() {
         tint={isDark ? "dark" : "light"}
         style={[
           styles.header,
-          { paddingTop: insets.top, borderBottomColor: borderColor },
+          { paddingTop: insets.top + Spacing.md, borderBottomColor: borderColor },
         ]}
       >
         <View style={styles.headerTopRow}>
-          <ThemedText style={[styles.headerTitle, { color: textColor }]}>
-            Insights
-          </ThemedText>
+          <View>
+            <Text style={[styles.headerDate, { color: secondaryText }]}>
+              {getDateRangeString().toUpperCase()}
+            </Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Insights
+            </Text>
+          </View>
           {!isCurrentDate &&
             (selectedRange === "Day" || selectedRange === "Week") && (
               <TouchableOpacity
@@ -1515,7 +1747,7 @@ export default function InsightsScreen() {
         <View
           style={[
             styles.segmentedControl,
-            { backgroundColor: segmentBg, marginTop: Spacing.sm },
+            { backgroundColor: segmentBg },
           ]}
         >
           {RANGES.map((range) => (
@@ -1562,7 +1794,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(0,0,0,0.1)",
@@ -1571,18 +1802,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
   },
   headerTitle: {
     fontSize: 34,
     fontWeight: "bold",
     color: "#000",
-    lineHeight: 41,
+    letterSpacing: 0.3,
+  },
+  headerDate: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
   },
   segmentedControl: {
     flexDirection: "row",
     backgroundColor: "rgba(118, 118, 128, 0.12)",
     borderRadius: 8,
     padding: 2,
+    marginHorizontal: Spacing.xl,
   },
   segment: {
     flex: 1,
@@ -1636,18 +1876,22 @@ const styles = StyleSheet.create({
   },
   metricSelector: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: Spacing.sm,
+    justifyContent: "space-between",
+    gap: 4,
+    marginBottom: Spacing.lg,
   },
   metricChip: {
-    paddingHorizontal: 12,
+    flex: 1,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: Colors.grey.light,
+    marginHorizontal: 2,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: BorderRadius.full,
+    overflow: "hidden",
+    ...Shadows.small,
   },
   metricChipSelected: {
-    backgroundColor: Colors.primary,
+    // Handled by LinearGradient
   },
   metricChipText: {
     fontSize: Typography.sizes.sm,
@@ -1683,48 +1927,6 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
     fontWeight: "500",
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: Spacing.md,
-    color: "#000",
-  },
-  metricsGrid: {
-    flexDirection: "row",
-    gap: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  metricCard: {
-    flex: 1,
-    padding: Spacing.lg,
-    marginBottom: 0,
-  },
-  metricTitle: {
-    fontSize: Typography.sizes.sm,
-    fontWeight: "600",
-    color: Colors.primary,
-    marginBottom: Spacing.xs,
-  },
-  metricValueContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 4,
-  },
-  metricValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  metricUnit: {
-    fontSize: Typography.sizes.sm,
-    color: "#8E8E93",
-    fontWeight: "500",
-  },
-  insightText: {
-    fontSize: Typography.sizes.sm,
-    color: "#8E8E93",
-    marginTop: Spacing.xs,
-  },
   insightRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1743,5 +1945,43 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     maxWidth: "60%",
     textAlign: "right",
+  },
+  insightsGrid: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  insightBox: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  insightBoxValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginTop: Spacing.xs,
+  },
+  insightBoxLabel: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  insightTipBox: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  insightTipHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.xs,
+  },
+  insightTipTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  insightTipText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

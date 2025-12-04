@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { useUser } from "../context/UserContext";
 import { useMeals } from "../context/MealContext";
+import { DAILY_CALORIE_GOAL } from "../constants/values";
 import {
   BorderRadius,
   Colors,
@@ -704,7 +705,7 @@ const IOSStyleHomeScreen: React.FC = () => {
     0,
   );
 
-  const calorieGoal = 2500;
+  const calorieGoal = DAILY_CALORIE_GOAL;
   const carbsGoal = 300;
   const proteinGoal = 150;
   const fatGoal = 80;
