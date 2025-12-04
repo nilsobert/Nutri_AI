@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Button, ScrollView } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { useMeals } from "../context/MealContext";
@@ -11,10 +11,14 @@ import { MS_TO_S } from "../constants/values";
 /* this is just a placeholder screen */
 const AddMealScreen = () => {
   const { addMeal } = useMeals();
-  const [selectedCategory, setSelectedCategory] = useState<MealCategory>(MealCategory.Lunch);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const { date } = useLocalSearchParams();
+  const [selectedCategory, setSelectedCategory] = useState<MealCategory>(
+    MealCategory.Lunch,
+  );
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    date ? new Date(date as string) : new Date(),
+  );
 
-  
   const handleAddTestMeal = async () => {
     const nutrition = new NutritionInfo({
       calories: 500,
