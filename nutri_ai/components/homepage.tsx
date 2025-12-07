@@ -536,7 +536,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollViewRef = React.useRef<Animated.ScrollView>(null);
-  const { profileImage } = useUser();
+  const { profileImage, goals } = useUser();
   const { meals: allMeals } = useMeals();
 
   const scrollY = useSharedValue(0);
@@ -706,10 +706,10 @@ const IOSStyleHomeScreen: React.FC = () => {
     0,
   );
 
-  const calorieGoal = DAILY_CALORIE_GOAL;
-  const carbsGoal = 300;
-  const proteinGoal = 150;
-  const fatGoal = 80;
+  const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
+  const carbsGoal = goals?.carbs || 300;
+  const proteinGoal = goals?.protein || 150;
+  const fatGoal = goals?.fat || 80;
 
   const remainingCalories = calorieGoal - totalCalories;
 
