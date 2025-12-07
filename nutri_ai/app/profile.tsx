@@ -28,17 +28,6 @@ import {
 } from "@/types/user";
 import { useUser } from "@/context/UserContext";
 
-// Mock User Data
-const mockUser: IUser = {
-  name: "John Doe",
-  age: 30,
-  medicalCondition: MedicalCondition.None,
-  weightKg: 75,
-  motivation: MotivationToTrackCalories.LeadAHealthyLife,
-  email: "john.doe@example.com",
-  password: "password123",
-};
-
 interface InfoRowProps {
   label: string;
   value: string;
@@ -87,7 +76,7 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-  const { profileImage, setProfileImage } = useUser();
+  const { profileImage, setProfileImage, user } = useUser();
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
@@ -114,6 +103,14 @@ export default function ProfileScreen() {
     }
   };
 
+  if (!user) {
+    return (
+      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: textColor }}>Please log in to view profile</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
@@ -135,7 +132,7 @@ export default function ProfileScreen() {
                   />
                 ) : (
                   <Text style={styles.avatarText}>
-                    {mockUser.name
+                    {user.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
@@ -148,10 +145,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.profileHeaderText}>
               <Text style={[styles.userName, { color: textColor }]}>
-                {mockUser.name}
+                {user.name}
               </Text>
               <Text style={[styles.userEmail, { color: secondaryText }]}>
-                {mockUser.email}
+                {user.email}
               </Text>
             </View>
           </View>
@@ -164,19 +161,31 @@ export default function ProfileScreen() {
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
           <InfoRow
             label="Age"
-            value={`${mockUser.age} years`}
+            value={`${user.age} years`}
             icon="calendar-outline"
             isDark={isDark}
           />
           <InfoRow
+            label="Gender"
+            value={user.gender}
+            icon="person-outline"
+            isDark={isDark}
+          />
+          <InfoRow
+            label="Height"
+            value={`${user.heightCm} cm`}
+            icon="resize-outline"
+            isDark={isDark}
+          />
+          <InfoRow
             label="Weight"
-            value={`${mockUser.weightKg} kg`}
+            value={`${user.weightKg} kg`}
             icon="scale-outline"
             isDark={isDark}
           />
           <InfoRow
             label="Email"
-            value={mockUser.email}
+            value={user.email}
             icon="mail-outline"
             isLast
             isDark={isDark}
@@ -190,13 +199,19 @@ export default function ProfileScreen() {
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
           <InfoRow
             label="Motivation"
-            value={formatMotivation(mockUser.motivation)}
+            value={formatMotivation(user.motivation)}
             icon="trophy-outline"
             isDark={isDark}
           />
           <InfoRow
+            label="Activity Level"
+            value={user.activityLevel}
+            icon="walk-outline"
+            isDark={isDark}
+          />
+          <InfoRow
             label="Medical Condition"
-            value={mockUser.medicalCondition}
+            value={user.medicalCondition}
             icon="medical-outline"
             isLast
             isDark={isDark}
