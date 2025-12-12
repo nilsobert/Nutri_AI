@@ -16,9 +16,12 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../constants/theme";
+import { useUser } from "../context/UserContext";
+import { User, MedicalCondition, MotivationToTrackCalories } from "../types/user";
 
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
+  const { saveUser } = useUser();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -55,6 +58,19 @@ const IOSStyleLoginScreen = () => {
         router.push("/screens/bad_credentials");
         return;
       }
+
+      const userObj = new User({
+        name: user.username,
+        email: user.email,
+        password: user.passwordHash,
+        age: user.age || 0,
+        weightKg: user.weightKg || 0,
+        medicalCondition: user.medicalCondition || MedicalCondition.None,
+        motivation:
+          user.motivation || MotivationToTrackCalories.LeadAHealthyLife,
+      });
+
+      await saveUser(userObj);
 
       router.push("/(tabs)");
     } catch (err) {
