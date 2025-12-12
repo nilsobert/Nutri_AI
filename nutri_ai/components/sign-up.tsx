@@ -16,9 +16,16 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../constants/theme";
+import {
+  MedicalCondition,
+  MotivationToTrackCalories,
+  User,
+} from "../types/user";
+import { useUser } from "../context/UserContext";
 
 export default function SignUp() {
   const router = useRouter();
+  const { saveUser } = useUser();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -34,6 +41,10 @@ export default function SignUp() {
     username: string;
     email: string;
     passwordHash: string;
+    age?: number;
+    weightKg?: number;
+    medicalCondition?: string;
+    motivation?: string;
   }) => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -44,7 +55,15 @@ export default function SignUp() {
           (u.username || "").toLowerCase() === user.username.toLowerCase(),
       );
       if (!exists) {
-        list.push(user);
+        // Add default values for fields not collected in sign up
+        const userWithDefaults = {
+          ...user,
+          age: user.age || 0,
+          weightKg: user.weightKg || 0,
+          medicalCondition: user.medicalCondition || MedicalCondition.None,
+          motivation: user.motivation || MotivationToTrackCalories.LeadAHealthyLife,
+        };
+        list.push(userWithDefaults);
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list));
       }
     } catch (err) {
@@ -79,7 +98,24 @@ export default function SignUp() {
       passwordHash,
     });
 
-    Alert.alert("Account created", "Your account has been saved.");
+    const userObj = new User({
+      name: usernameTrim,
+      email: emailTrim,
+      password: passwordHash,
+      age: 0,
+      weightKg: 0,
+      medicalCondition: MedicalCondition.None,
+      motivation: MotivationToTrackCalories.LeadAHealthyLife,
+    });
+
+    await saveUser(userObj);
+
+    Alert.alert("Account created", "Your account has been saved.", [
+      {
+        text: "OK",
+        onPress: () => router.push("/(tabs)"),
+      },
+    ]);
   };
 
   // --- Dynamic colors for dark/light mode ---
