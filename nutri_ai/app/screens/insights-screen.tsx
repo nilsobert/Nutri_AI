@@ -36,6 +36,7 @@ import Animated, {
 
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
+import { useUser } from "@/context/UserContext";
 import { MS_TO_S, DAILY_CALORIE_GOAL } from "@/constants/values";
 import {
   Colors,
@@ -530,7 +531,7 @@ function calculateStreak(meals: any[]) {
   return streak;
 }
 
-function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[]): number {
+function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calorieGoal: number): number {
   let daysMet = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -555,8 +556,8 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[]): num
       }, 0);
 
     if (
-      dayTotalCalories >= DAILY_CALORIE_GOAL * 0.9 &&
-      dayTotalCalories <= DAILY_CALORIE_GOAL * 1.1
+      dayTotalCalories >= calorieGoal * 0.9 &&
+      dayTotalCalories <= calorieGoal * 1.1
     ) {
       daysMet++;
     }
@@ -907,6 +908,8 @@ export default function InsightsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { meals, isLoading } = useMeals();
+  const { goals } = useUser();
+  const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
   const [selectedRange, setSelectedRange] = useState("Week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [visibleTrends, setVisibleTrends] = useState([
@@ -1027,7 +1030,7 @@ export default function InsightsScreen() {
   const getChartProps = (data: any[], startDate: Date) => {
     const maxVal = Math.max(
       ...data.map((d) => d.calories),
-      DAILY_CALORIE_GOAL,
+      calorieGoal,
       10,
     );
     let step = 10;
@@ -1133,7 +1136,7 @@ export default function InsightsScreen() {
     );
   }
 
-  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals);
+  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals, calorieGoal);
 
   // Calculate for previous period (relative to current view)
   let prevPeriodStartDate, prevPeriodEndDate;
@@ -1161,6 +1164,7 @@ export default function InsightsScreen() {
     prevPeriodStartDate,
     prevPeriodEndDate,
     meals,
+    calorieGoal
   );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak
@@ -1343,7 +1347,7 @@ export default function InsightsScreen() {
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
-                  goalCalories={DAILY_CALORIE_GOAL}
+                  goalCalories={calorieGoal}
                   onBarPress={(index) => handleBarPress(index, prevStartDate)}
                 />
                 <CalorieChart
@@ -1355,7 +1359,7 @@ export default function InsightsScreen() {
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
-                  goalCalories={DAILY_CALORIE_GOAL}
+                  goalCalories={calorieGoal}
                   onBarPress={(index) =>
                     handleBarPress(index, currentStartDate)
                   }
@@ -1369,7 +1373,7 @@ export default function InsightsScreen() {
                   progress={progress}
                   isDark={isDark}
                   paddingX={CHART_PADDING_X}
-                  goalCalories={DAILY_CALORIE_GOAL}
+                  goalCalories={calorieGoal}
                   onBarPress={(index) => handleBarPress(index, nextStartDate)}
                 />
               </ScrollView>

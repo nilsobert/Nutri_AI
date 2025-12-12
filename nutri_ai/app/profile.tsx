@@ -223,6 +223,35 @@ export default function ProfileScreen() {
           SETTINGS
         </Text>
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push("/screens/edit-goals" as any)}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="nutrition-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Nutrition Goals
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+            ]}
+          />
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemContent}>
               <View

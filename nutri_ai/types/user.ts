@@ -61,6 +61,13 @@ export interface IUser {
   
   // Dietary preferences
   proteinPreference?: "low" | "moderate" | "high"; // Affects macro split
+
+  // Custom goal overrides
+  customCalories?: number;
+  customProtein?: number;
+  customCarbs?: number;
+  customFat?: number;
+  isCustomGoals?: boolean;
 }
 
 export class User implements IUser {
@@ -87,6 +94,13 @@ export class User implements IUser {
   // Dietary preferences
   private _proteinPreference?: "low" | "moderate" | "high";
 
+  // Custom goal overrides
+  private _customCalories?: number;
+  private _customProtein?: number;
+  private _customCarbs?: number;
+  private _customFat?: number;
+  private _isCustomGoals?: boolean;
+
   constructor(params: {
     name: string;
     age: number;
@@ -104,6 +118,11 @@ export class User implements IUser {
     targetDate?: Date;
     bodyFatPercentage?: number;
     proteinPreference?: "low" | "moderate" | "high";
+    customCalories?: number;
+    customProtein?: number;
+    customCarbs?: number;
+    customFat?: number;
+    isCustomGoals?: boolean;
   }) {
     validateNonNegative("age", params.age);
     validateNonNegative("weightKg", params.weightKg);
@@ -127,6 +146,11 @@ export class User implements IUser {
     this._targetDate = params.targetDate;
     this._bodyFatPercentage = params.bodyFatPercentage;
     this._proteinPreference = params.proteinPreference;
+    this._customCalories = params.customCalories;
+    this._customProtein = params.customProtein;
+    this._customCarbs = params.customCarbs;
+    this._customFat = params.customFat;
+    this._isCustomGoals = params.isCustomGoals;
   }
 
   /**
@@ -260,6 +284,45 @@ export class User implements IUser {
     this._proteinPreference = proteinPreference;
   }
 
+  public get customCalories(): number | undefined {
+    return this._customCalories;
+  }
+  public set customCalories(customCalories: number | undefined) {
+    if (customCalories !== undefined) validateNonNegative("customCalories", customCalories);
+    this._customCalories = customCalories;
+  }
+
+  public get customProtein(): number | undefined {
+    return this._customProtein;
+  }
+  public set customProtein(customProtein: number | undefined) {
+    if (customProtein !== undefined) validateNonNegative("customProtein", customProtein);
+    this._customProtein = customProtein;
+  }
+
+  public get customCarbs(): number | undefined {
+    return this._customCarbs;
+  }
+  public set customCarbs(customCarbs: number | undefined) {
+    if (customCarbs !== undefined) validateNonNegative("customCarbs", customCarbs);
+    this._customCarbs = customCarbs;
+  }
+
+  public get customFat(): number | undefined {
+    return this._customFat;
+  }
+  public set customFat(customFat: number | undefined) {
+    if (customFat !== undefined) validateNonNegative("customFat", customFat);
+    this._customFat = customFat;
+  }
+
+  public get isCustomGoals(): boolean | undefined {
+    return this._isCustomGoals;
+  }
+  public set isCustomGoals(isCustomGoals: boolean | undefined) {
+    this._isCustomGoals = isCustomGoals;
+  }
+
   public toJSON(): IUser {
     return {
       name: this._name,
@@ -278,6 +341,11 @@ export class User implements IUser {
       targetDate: this._targetDate,
       bodyFatPercentage: this._bodyFatPercentage,
       proteinPreference: this._proteinPreference,
+      customCalories: this._customCalories,
+      customProtein: this._customProtein,
+      customCarbs: this._customCarbs,
+      customFat: this._customFat,
+      isCustomGoals: this._isCustomGoals,
     };
   }
 

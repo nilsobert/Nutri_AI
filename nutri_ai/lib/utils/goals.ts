@@ -261,6 +261,21 @@ export const calculateGoals = (user: IUser): NutritionGoals => {
     : calculateBMR(user);
   
   const tdee = calculateTDEE(user);
+
+  // If user has custom goals enabled, use them
+  if (user.isCustomGoals) {
+    return {
+      calories: user.customCalories || Math.round(tdee),
+      protein: user.customProtein || 150,
+      carbs: user.customCarbs || 250,
+      fat: user.customFat || 70,
+      bmr: Math.round(bmr),
+      tdee: Math.round(tdee),
+      estimatedWeeklyWeightChange: 0, // Cannot estimate without knowing the deficit/surplus logic
+      estimatedTimeToGoal: undefined,
+      recommendedCalorieAdjustment: 0,
+    };
+  }
   
   // Determine calorie target based on goals
   let targetCalories = tdee;
