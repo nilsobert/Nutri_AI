@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta, date
 from typing import Optional
@@ -79,6 +79,46 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 class UserCreate(BaseModel):
     email: str
     password: str
+    name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height_cm: Optional[int] = None
+    activity_level: Optional[str] = None
+    medical_condition: Optional[str] = None
+    weight_kg: Optional[int] = None
+    motivation: Optional[str] = None
+    target_weight_kg: Optional[int] = None
+    weight_goal_type: Optional[str] = None
+    weight_loss_rate: Optional[str] = None
+    target_date: Optional[date] = None
+    body_fat_percentage: Optional[int] = None
+    protein_preference: Optional[str] = None
+    custom_calories: Optional[int] = None
+    custom_protein: Optional[int] = None
+    custom_carbs: Optional[int] = None
+    custom_fat: Optional[int] = None
+    is_custom_goals: Optional[bool] = None
+
+class UserProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height_cm: Optional[int] = None
+    activity_level: Optional[str] = None
+    medical_condition: Optional[str] = None
+    weight_kg: Optional[int] = None
+    motivation: Optional[str] = None
+    target_weight_kg: Optional[int] = None
+    weight_goal_type: Optional[str] = None
+    weight_loss_rate: Optional[str] = None
+    target_date: Optional[date] = None
+    body_fat_percentage: Optional[int] = None
+    protein_preference: Optional[str] = None
+    custom_calories: Optional[int] = None
+    custom_protein: Optional[int] = None
+    custom_carbs: Optional[int] = None
+    custom_fat: Optional[int] = None
+    is_custom_goals: Optional[bool] = None
 
 class Token(BaseModel):
     access_token: str
@@ -98,13 +138,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    user_id: int = payload.get("sub")
+    user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    try:
+        user_id = int(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -121,7 +170,26 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         password_hash=hashed_password,
         quota_count=0,
-        last_reset_date=date.today()
+        last_reset_date=date.today(),
+        name=user.name,
+        age=user.age,
+        gender=user.gender,
+        height_cm=user.height_cm,
+        activity_level=user.activity_level,
+        medical_condition=user.medical_condition,
+        weight_kg=user.weight_kg,
+        motivation=user.motivation,
+        target_weight_kg=user.target_weight_kg,
+        weight_goal_type=user.weight_goal_type,
+        weight_loss_rate=user.weight_loss_rate,
+        target_date=user.target_date,
+        body_fat_percentage=user.body_fat_percentage,
+        protein_preference=user.protein_preference,
+        custom_calories=user.custom_calories,
+        custom_protein=user.custom_protein,
+        custom_carbs=user.custom_carbs,
+        custom_fat=user.custom_fat,
+        is_custom_goals=1 if user.is_custom_goals else 0
     )
     db.add(new_user)
     db.commit()
@@ -129,9 +197,89 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": new_user.id}, expires_delta=access_token_expires
+        data={"sub": str(new_user.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.put("/profile")
+def update_profile(profile: UserProfileUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if profile.name is not None: current_user.name = profile.name
+    if profile.age is not None: current_user.age = profile.age
+    if profile.gender is not None: current_user.gender = profile.gender
+    if profile.height_cm is not None: current_user.height_cm = profile.height_cm
+    if profile.activity_level is not None: current_user.activity_level = profile.activity_level
+    if profile.medical_condition is not None: current_user.medical_condition = profile.medical_condition
+    if profile.weight_kg is not None: current_user.weight_kg = profile.weight_kg
+    if profile.motivation is not None: current_user.motivation = profile.motivation
+    if profile.target_weight_kg is not None: current_user.target_weight_kg = profile.target_weight_kg
+    if profile.weight_goal_type is not None: current_user.weight_goal_type = profile.weight_goal_type
+    if profile.weight_loss_rate is not None: current_user.weight_loss_rate = profile.weight_loss_rate
+    if profile.target_date is not None: current_user.target_date = profile.target_date
+    if profile.body_fat_percentage is not None: current_user.body_fat_percentage = profile.body_fat_percentage
+    if profile.protein_preference is not None: current_user.protein_preference = profile.protein_preference
+    if profile.custom_calories is not None: current_user.custom_calories = profile.custom_calories
+    if profile.custom_protein is not None: current_user.custom_protein = profile.custom_protein
+    if profile.custom_carbs is not None: current_user.custom_carbs = profile.custom_carbs
+    if profile.custom_fat is not None: current_user.custom_fat = profile.custom_fat
+    if profile.is_custom_goals is not None: current_user.is_custom_goals = 1 if profile.is_custom_goals else 0
+    
+    db.commit()
+    return {"message": "Profile updated successfully"}
+
+@app.get("/profile")
+def get_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "email": current_user.email,
+        "name": current_user.name,
+        "age": current_user.age,
+        "gender": current_user.gender,
+        "height_cm": current_user.height_cm,
+        "activity_level": current_user.activity_level,
+        "medical_condition": current_user.medical_condition,
+        "weight_kg": current_user.weight_kg,
+        "motivation": current_user.motivation,
+        "target_weight_kg": current_user.target_weight_kg,
+        "weight_goal_type": current_user.weight_goal_type,
+        "weight_loss_rate": current_user.weight_loss_rate,
+        "target_date": current_user.target_date,
+        "body_fat_percentage": current_user.body_fat_percentage,
+        "protein_preference": current_user.protein_preference,
+        "custom_calories": current_user.custom_calories,
+        "custom_protein": current_user.custom_protein,
+        "custom_carbs": current_user.custom_carbs,
+        "custom_fat": current_user.custom_fat,
+        "is_custom_goals": bool(current_user.is_custom_goals) if current_user.is_custom_goals is not None else False,
+    }
+
+@app.post("/profile/image")
+async def upload_profile_image(
+    image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Ensure directory exists
+    os.makedirs("data/images", exist_ok=True)
+    
+    file_path = f"data/images/{current_user.id}.jpg"
+    
+    with open(file_path, "wb") as buffer:
+        content = await image.read()
+        buffer.write(content)
+        
+    current_user.profile_image_path = file_path
+    db.commit()
+    
+    return {"message": "Profile image uploaded successfully"}
+
+@app.get("/profile/image")
+def get_profile_image(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not current_user.profile_image_path or not os.path.exists(current_user.profile_image_path):
+        raise HTTPException(status_code=404, detail="Profile image not found")
+        
+    return FileResponse(current_user.profile_image_path)
 
 @app.post("/login", response_model=Token)
 def login(user: UserCreate, db: Session = Depends(get_db)):
@@ -145,7 +293,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": db_user.id}, expires_delta=access_token_expires
+        data={"sub": str(db_user.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

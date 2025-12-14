@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { Colors } from "../constants/theme";
 import { useUser } from "../context/UserContext";
@@ -26,13 +28,14 @@ import { API_BASE_URL } from "../constants/values";
 
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
-  const { saveUser } = useUser();
+  const { saveUser, fetchUser } = useUser();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     const emailTrim = (email || "").trim().toLowerCase();
@@ -43,8 +46,11 @@ const IOSStyleLoginScreen = () => {
     }
 
     console.log(`[Login] Attempting to login user: ${emailTrim}`);
+    console.log(`[Login] Server URL: ${API_BASE_URL}/login`);
 
+    setIsLoading(true);
     try {
+      console.log("[Login] Sending login request...");
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
@@ -61,6 +67,7 @@ const IOSStyleLoginScreen = () => {
       console.log(`[Login] Response data:`, data);
 
       if (!response.ok) {
+        console.error("[Login] Login failed:", data.detail);
         Alert.alert(
           "Login Failed",
           data.detail || "Incorrect email or password",
@@ -69,32 +76,27 @@ const IOSStyleLoginScreen = () => {
       }
 
       // Store token
+      console.log("[Login] Storing auth token...");
       await AsyncStorage.setItem("auth_token", data.access_token);
+      console.log("[Login] Auth token stored successfully");
 
-      // Create local user object
-      // Note: Server doesn't return profile data yet, so we use defaults
-      const nameFromEmail = emailTrim.split("@")[0];
-      const passwordHash = CryptoJS.SHA256(password).toString();
+      // Fetch user profile from server
+      console.log("[Login] Fetching user profile from server...");
+      await fetchUser();
+      console.log("[Login] User profile fetched successfully");
 
-      const userObj = new User({
-        name: nameFromEmail,
-        email: emailTrim,
-        password: passwordHash,
-        age: 0,
-        weightKg: 0,
-        medicalCondition: MedicalCondition.None,
-        motivation: MotivationToTrackCalories.LeadAHealthyLife,
-      });
-
-      await saveUser(userObj);
-
+      console.log("[Login] Login successful, navigating to home...");
       router.push("/(tabs)");
     } catch (err: any) {
       console.error("[Login] Error:", err);
+      console.error("[Login] Error message:", err.message);
+      console.error("[Login] Error stack:", err.stack);
       Alert.alert(
         "Connection Error",
         `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -107,6 +109,14 @@ const IOSStyleLoginScreen = () => {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
+      <Modal transparent={true} animationType="fade" visible={isLoading}>
+        <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? "#333" : "white" }]}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={[styles.loadingText, { color: mainText }]}>Logging in...</Text>
+          </View>
+        </View>
+      </Modal>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -313,6 +323,31 @@ const styles = StyleSheet.create({
   smallText: { fontSize: 12 },
   linkAccent: { color: Colors.primary, fontSize: 12, fontWeight: "700" },
   welcomeLink: { fontWeight: "700", fontSize: 13 },
+
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingContainer: {
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
 
 export default IOSStyleLoginScreen;
