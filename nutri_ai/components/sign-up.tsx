@@ -18,6 +18,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 import { Colors } from "../constants/theme";
 import {
+  ActivityLevel,
+  Gender,
   MedicalCondition,
   MotivationToTrackCalories,
   User,
@@ -62,6 +64,15 @@ export default function SignUp() {
     console.log(`[SignUp] URL: ${url}`);
 
     try {
+      // Default values for new user
+      const defaultAge = 25;
+      const defaultHeight = 175;
+      const defaultWeight = 70;
+      const defaultGender = Gender.Male;
+      const defaultActivityLevel = ActivityLevel.Sedentary;
+      const defaultMedicalCondition = MedicalCondition.None;
+      const defaultMotivation = MotivationToTrackCalories.LeadAHealthyLife;
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -70,6 +81,14 @@ export default function SignUp() {
         body: JSON.stringify({
           email: emailTrim,
           password: password,
+          name: usernameTrim,
+          age: defaultAge,
+          height_cm: defaultHeight,
+          weight_kg: defaultWeight,
+          gender: defaultGender,
+          activity_level: defaultActivityLevel,
+          medical_condition: defaultMedicalCondition,
+          motivation: defaultMotivation,
         }),
       });
 
@@ -91,10 +110,13 @@ export default function SignUp() {
         name: usernameTrim,
         email: emailTrim,
         password: passwordHash,
-        age: 0,
-        weightKg: 0,
-        medicalCondition: MedicalCondition.None,
-        motivation: MotivationToTrackCalories.LeadAHealthyLife,
+        age: defaultAge,
+        heightCm: defaultHeight,
+        weightKg: defaultWeight,
+        gender: defaultGender,
+        activityLevel: defaultActivityLevel,
+        medicalCondition: defaultMedicalCondition,
+        motivation: defaultMotivation,
       });
 
       await saveUser(userObj);

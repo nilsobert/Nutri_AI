@@ -26,7 +26,7 @@ import { API_BASE_URL } from "../constants/values";
 
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
-  const { saveUser } = useUser();
+  const { saveUser, fetchUser } = useUser();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -71,22 +71,8 @@ const IOSStyleLoginScreen = () => {
       // Store token
       await AsyncStorage.setItem("auth_token", data.access_token);
 
-      // Create local user object
-      // Note: Server doesn't return profile data yet, so we use defaults
-      const nameFromEmail = emailTrim.split("@")[0];
-      const passwordHash = CryptoJS.SHA256(password).toString();
-
-      const userObj = new User({
-        name: nameFromEmail,
-        email: emailTrim,
-        password: passwordHash,
-        age: 0,
-        weightKg: 0,
-        medicalCondition: MedicalCondition.None,
-        motivation: MotivationToTrackCalories.LeadAHealthyLife,
-      });
-
-      await saveUser(userObj);
+      // Fetch user profile from server
+      await fetchUser();
 
       router.push("/(tabs)");
     } catch (err: any) {
