@@ -15,6 +15,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 import { Colors } from "../constants/theme";
 import {
   MedicalCondition,
@@ -35,6 +36,7 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [remember, setRemember] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const handleSignUp = async () => {
     const usernameTrim = username.trim();
@@ -97,16 +99,11 @@ export default function SignUp() {
 
       await saveUser(userObj);
 
-      Alert.alert(
-        "Account created",
-        "Your account has been created successfully.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.push("/(tabs)"),
-          },
-        ],
-      );
+      setShowSuccessAlert(true);
+      setTimeout(() => {
+        setShowSuccessAlert(false);
+        router.push("/(tabs)");
+      }, 2000);
     } catch (error: any) {
       console.error("[SignUp] Error:", error);
       Alert.alert(
@@ -125,6 +122,7 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
+      <AppleStyleAlert visible={showSuccessAlert} text="Sign-up successful" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
