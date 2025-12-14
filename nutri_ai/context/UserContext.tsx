@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { StorageService } from "../services/storage";
 import { User } from "../types/user";
+import { calculateGoals, NutritionGoals } from "../lib/utils/goals";
 
 interface UserContextType {
   profileImage: string | null;
@@ -10,6 +11,7 @@ interface UserContextType {
   saveUser: (user: User) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  goals: NutritionGoals | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -67,6 +69,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // await StorageService.clearAll();
   };
 
+  const goals = useMemo(() => {
+    if (!user) return null;
+    return calculateGoals(user);
+  }, [user]);
+
   return (
     <UserContext.Provider
       value={{
@@ -77,6 +84,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         saveUser,
         logout,
         isLoading,
+        goals,
       }}
     >
       {children}

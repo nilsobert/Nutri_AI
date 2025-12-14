@@ -10,14 +10,17 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { useMeals } from "../context/MealContext";
+import { useUser } from "../context/UserContext";
 import { MealEntry, MealCategory } from "../types/mealEntry";
 import { MealQuality } from "../types/mealQuality";
 import { NutritionInfo } from "../types/nutritionInfo";
 import { MS_TO_S } from "../constants/values";
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../constants/theme";
 
 /* this is just a placeholder screen */
 const AddMealScreen = () => {
-  const { addMeal } = useMeals();
+  const { addMeal, meals } = useMeals();
+  const { goals } = useUser();
   const { date } = useLocalSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<MealCategory>(
     MealCategory.Lunch,
@@ -25,6 +28,18 @@ const AddMealScreen = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(
     date ? new Date(date as string) : new Date(),
   );
+
+  // Calculate remaining calories
+  const todaysMeals = meals.filter(m => {
+    const d = new Date(m.getTimestamp() * 1000);
+    return d.getDate() === selectedDate.getDate() && 
+           d.getMonth() === selectedDate.getMonth() && 
+           d.getFullYear() === selectedDate.getFullYear();
+  });
+  
+  const totalCalories = todaysMeals.reduce((sum, m) => sum + m.getNutritionInfo().getCalories(), 0);
+  const calorieGoal = goals?.calories || 2000;
+  const remaining = calorieGoal - totalCalories;
 
   const handleAddTestMeal = async () => {
     const nutrition = new NutritionInfo({
@@ -65,7 +80,20 @@ const AddMealScreen = () => {
       <Text style={styles.title}>Add a Meal</Text>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.placeholderText}>Debug: Select Meal Details</Text>
+        {/* Goal Context Card */}
+        <View style={styles.goalCard}>
+          <Text style={styles.goalLabel}>Calories Remaining</Text>
+          <Text style={[styles.goalValue, { color: remaining < 0 ? Colors.secondary.fat : Colors.primary }]}>
+            {remaining}
+          </Text>
+          <Text style={styles.goalSubtext}>
+            Goal: {calorieGoal} • Eaten: {totalCalories}
+          </Text>
+        </View>
+
+        <Text style={styles.placeholderText}>
+          Debug: Select Meal Details
+        </Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Date</Text>
@@ -172,6 +200,32 @@ const styles = StyleSheet.create({
   },
   selectedCategoryText: {
     color: "white",
+  },
+  goalCard: {
+    width: '100%',
+    backgroundColor: '#f8f9fa',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  goalLabel: {
+    fontSize: Typography.sizes.sm,
+    color: '#6c757d',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  goalValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  goalSubtext: {
+    fontSize: Typography.sizes.sm,
+    color: '#adb5bd',
   },
 });
 
