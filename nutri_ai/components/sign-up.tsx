@@ -15,6 +15,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 import { Colors } from "../constants/theme";
 import {
   MedicalCondition,
@@ -22,6 +23,7 @@ import {
   User,
 } from "../types/user";
 import { useUser } from "../context/UserContext";
+import { API_BASE_URL } from "../constants/values";
 
 export default function SignUp() {
   const router = useRouter();
@@ -34,42 +36,7 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [remember, setRemember] = useState(false);
-
-  const STORAGE_KEY = "registered_users";
-
-  const saveRegisteredUser = async (user: {
-    username: string;
-    email: string;
-    passwordHash: string;
-    age?: number;
-    weightKg?: number;
-    medicalCondition?: string;
-    motivation?: string;
-  }) => {
-    try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
-      const list = raw ? JSON.parse(raw) : [];
-      const exists = list.some(
-        (u: any) =>
-          (u.email || "").toLowerCase() === user.email.toLowerCase() ||
-          (u.username || "").toLowerCase() === user.username.toLowerCase(),
-      );
-      if (!exists) {
-        // Add default values for fields not collected in sign up
-        const userWithDefaults = {
-          ...user,
-          age: user.age || 0,
-          weightKg: user.weightKg || 0,
-          medicalCondition: user.medicalCondition || MedicalCondition.None,
-          motivation: user.motivation || MotivationToTrackCalories.LeadAHealthyLife,
-        };
-        list.push(userWithDefaults);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      }
-    } catch (err) {
-      console.warn("saveRegisteredUser error", err);
-    }
-  };
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const handleSignUp = async () => {
     const usernameTrim = username.trim();
@@ -90,32 +57,60 @@ export default function SignUp() {
       return;
     }
 
-    const passwordHash = CryptoJS.SHA256(password).toString();
+    console.log(`[SignUp] Attempting to sign up user: ${emailTrim}`);
+    const url = `${API_BASE_URL}/signup`;
+    console.log(`[SignUp] URL: ${url}`);
 
-    await saveRegisteredUser({
-      username: usernameTrim,
-      email: emailTrim,
-      passwordHash,
-    });
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: emailTrim,
+          password: password,
+        }),
+      });
 
-    const userObj = new User({
-      name: usernameTrim,
-      email: emailTrim,
-      password: passwordHash,
-      age: 0,
-      weightKg: 0,
-      medicalCondition: MedicalCondition.None,
-      motivation: MotivationToTrackCalories.LeadAHealthyLife,
-    });
+      console.log(`[SignUp] Response status: ${response.status}`);
+      const data = await response.json();
+      console.log(`[SignUp] Response data:`, data);
 
-    await saveUser(userObj);
+      if (!response.ok) {
+        Alert.alert("Sign Up Failed", data.detail || "An error occurred");
+        return;
+      }
 
-    Alert.alert("Account created", "Your account has been saved.", [
-      {
-        text: "OK",
-        onPress: () => router.push("/(tabs)"),
-      },
-    ]);
+      // Store token
+      await AsyncStorage.setItem("auth_token", data.access_token);
+
+      // Create local user object (using hash for compatibility, though not used for auth anymore)
+      const passwordHash = CryptoJS.SHA256(password).toString();
+      const userObj = new User({
+        name: usernameTrim,
+        email: emailTrim,
+        password: passwordHash,
+        age: 0,
+        weightKg: 0,
+        medicalCondition: MedicalCondition.None,
+        motivation: MotivationToTrackCalories.LeadAHealthyLife,
+      });
+
+      await saveUser(userObj);
+
+      setShowSuccessAlert(true);
+      setTimeout(() => {
+        setShowSuccessAlert(false);
+        router.push("/(tabs)");
+      }, 2000);
+    } catch (error: any) {
+      console.error("[SignUp] Error:", error);
+      Alert.alert(
+        "Connection Error",
+        `Could not connect to the server. ${error.message || "Please check your internet connection."}`,
+      );
+    }
   };
 
   // --- Dynamic colors for dark/light mode ---
@@ -127,6 +122,7 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
+      <AppleStyleAlert visible={showSuccessAlert} text="Sign-up successful" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
