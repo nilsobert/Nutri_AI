@@ -327,4 +327,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     logger.info("Starting server with SSL enabled")
-    uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
+    uvicorn.run(app, host="0.0.0.0", port=7770, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
