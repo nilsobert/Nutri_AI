@@ -43,8 +43,10 @@ const IOSStyleLoginScreen = () => {
     }
 
     console.log(`[Login] Attempting to login user: ${emailTrim}`);
+    console.log(`[Login] Server URL: ${API_BASE_URL}/login`);
 
     try {
+      console.log("[Login] Sending login request...");
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
@@ -61,6 +63,7 @@ const IOSStyleLoginScreen = () => {
       console.log(`[Login] Response data:`, data);
 
       if (!response.ok) {
+        console.error("[Login] Login failed:", data.detail);
         Alert.alert(
           "Login Failed",
           data.detail || "Incorrect email or password",
@@ -69,14 +72,21 @@ const IOSStyleLoginScreen = () => {
       }
 
       // Store token
+      console.log("[Login] Storing auth token...");
       await AsyncStorage.setItem("auth_token", data.access_token);
+      console.log("[Login] Auth token stored successfully");
 
       // Fetch user profile from server
+      console.log("[Login] Fetching user profile from server...");
       await fetchUser();
+      console.log("[Login] User profile fetched successfully");
 
+      console.log("[Login] Login successful, navigating to home...");
       router.push("/(tabs)");
     } catch (err: any) {
       console.error("[Login] Error:", err);
+      console.error("[Login] Error message:", err.message);
+      console.error("[Login] Error stack:", err.stack);
       Alert.alert(
         "Connection Error",
         `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
