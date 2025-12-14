@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Secret key for JWT encoding/decoding
-SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkeyforpoc")
+SECRET_KEY = os.getenv("SECRET_KEY", "IFBWEOIFNQPWEF8632798UJHRGNI83hfe4f2") # we load the key from .env anyway
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
