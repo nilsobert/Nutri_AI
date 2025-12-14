@@ -3,7 +3,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import date
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./users.db"
+import os
+
+# Ensure data directory exists
+os.makedirs("./data", exist_ok=True)
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./data/users.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}

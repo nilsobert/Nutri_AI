@@ -9,7 +9,7 @@ services:
       - default
       - pangolin_net
     volumes:
-      - ./users.db:/app/users.db
+      - ./data:/app/data
     env_file:
       - .env
     restart: unless-stopped
