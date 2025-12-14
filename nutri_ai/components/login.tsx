@@ -82,9 +82,9 @@ const IOSStyleLoginScreen = () => {
       await saveUser(userObj);
 
       router.push("/(tabs)");
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Login] Error:", err);
-      Alert.alert("Connection Error", "Could not connect to the server. Please check your internet connection.");
+      Alert.alert("Connection Error", `Could not connect to the server. ${err.message || "Please check your internet connection."}`);
     }
   };
 
