@@ -349,12 +349,29 @@ export class User implements IUser {
     };
   }
 
-  public static fromJSON(json: IUser): User {
+  public static fromJSON(json: any): User {
     return new User({
-      ...json,
+      name: json.name,
+      age: json.age,
       gender: json.gender ?? Gender.Male,
-      heightCm: json.heightCm ?? 175,
-      activityLevel: json.activityLevel ?? ActivityLevel.Sedentary,
+      heightCm: json.heightCm ?? json.height_cm ?? 175,
+      activityLevel: json.activityLevel ?? json.activity_level ?? ActivityLevel.Sedentary,
+      medicalCondition: json.medicalCondition ?? json.medical_condition ?? MedicalCondition.None,
+      weightKg: json.weightKg ?? json.weight_kg,
+      motivation: json.motivation,
+      email: json.email,
+      password: json.password ?? "", // Password is not returned by API
+      targetWeightKg: json.targetWeightKg ?? json.target_weight_kg,
+      weightGoalType: json.weightGoalType ?? json.weight_goal_type,
+      weightLossRate: json.weightLossRate ?? json.weight_loss_rate,
+      targetDate: json.targetDate ? new Date(json.targetDate) : (json.target_date ? new Date(json.target_date) : undefined),
+      bodyFatPercentage: json.bodyFatPercentage ?? json.body_fat_percentage,
+      proteinPreference: json.proteinPreference ?? json.protein_preference,
+      customCalories: json.customCalories ?? json.custom_calories,
+      customProtein: json.customProtein ?? json.custom_protein,
+      customCarbs: json.customCarbs ?? json.custom_carbs,
+      customFat: json.customFat ?? json.custom_fat,
+      isCustomGoals: json.isCustomGoals ?? json.is_custom_goals,
     });
   }
 }

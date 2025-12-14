@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { Colors } from "../constants/theme";
 import { useUser } from "../context/UserContext";
@@ -33,6 +35,7 @@ const IOSStyleLoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
     const emailTrim = (email || "").trim().toLowerCase();
@@ -45,6 +48,7 @@ const IOSStyleLoginScreen = () => {
     console.log(`[Login] Attempting to login user: ${emailTrim}`);
     console.log(`[Login] Server URL: ${API_BASE_URL}/login`);
 
+    setIsLoading(true);
     try {
       console.log("[Login] Sending login request...");
       const response = await fetch(`${API_BASE_URL}/login`, {
@@ -91,6 +95,8 @@ const IOSStyleLoginScreen = () => {
         "Connection Error",
         `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -103,6 +109,14 @@ const IOSStyleLoginScreen = () => {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
+      <Modal transparent={true} animationType="fade" visible={isLoading}>
+        <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingContainer, { backgroundColor: isDark ? "#333" : "white" }]}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={[styles.loadingText, { color: mainText }]}>Logging in...</Text>
+          </View>
+        </View>
+      </Modal>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
@@ -309,6 +323,31 @@ const styles = StyleSheet.create({
   smallText: { fontSize: 12 },
   linkAccent: { color: Colors.primary, fontSize: 12, fontWeight: "700" },
   welcomeLink: { fontWeight: "700", fontSize: 13 },
+
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingContainer: {
+    padding: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
 
 export default IOSStyleLoginScreen;
