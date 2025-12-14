@@ -56,9 +56,11 @@ export default function SignUp() {
     }
 
     console.log(`[SignUp] Attempting to sign up user: ${emailTrim}`);
+    const url = `${API_BASE_URL}/signup`;
+    console.log(`[SignUp] URL: ${url}`);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/signup`, {
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
