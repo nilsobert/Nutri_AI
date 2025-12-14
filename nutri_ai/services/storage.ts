@@ -107,12 +107,16 @@ export const StorageService = {
       console.error("Failed to remove profile image", e);
     }
   },
-  
+
   async clearAll(): Promise<void> {
-      try {
-          await AsyncStorage.multiRemove([STORAGE_KEYS.USER, STORAGE_KEYS.MEALS, STORAGE_KEYS.PROFILE_IMAGE]);
-      } catch (e) {
-          console.error("Failed to clear all data", e);
-      }
-  }
+    try {
+      await AsyncStorage.multiRemove([
+        STORAGE_KEYS.USER,
+        STORAGE_KEYS.MEALS,
+        STORAGE_KEYS.PROFILE_IMAGE,
+      ]);
+    } catch (e) {
+      console.error("Failed to clear all data", e);
+    }
+  },
 };

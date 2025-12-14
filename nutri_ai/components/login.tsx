@@ -17,7 +17,11 @@ import {
 } from "react-native";
 import { Colors } from "../constants/theme";
 import { useUser } from "../context/UserContext";
-import { User, MedicalCondition, MotivationToTrackCalories } from "../types/user";
+import {
+  User,
+  MedicalCondition,
+  MotivationToTrackCalories,
+} from "../types/user";
 import { API_BASE_URL } from "../constants/values";
 
 const IOSStyleLoginScreen = () => {
@@ -57,7 +61,10 @@ const IOSStyleLoginScreen = () => {
       console.log(`[Login] Response data:`, data);
 
       if (!response.ok) {
-        Alert.alert("Login Failed", data.detail || "Incorrect email or password");
+        Alert.alert(
+          "Login Failed",
+          data.detail || "Incorrect email or password",
+        );
         return;
       }
 
@@ -68,7 +75,7 @@ const IOSStyleLoginScreen = () => {
       // Note: Server doesn't return profile data yet, so we use defaults
       const nameFromEmail = emailTrim.split("@")[0];
       const passwordHash = CryptoJS.SHA256(password).toString();
-      
+
       const userObj = new User({
         name: nameFromEmail,
         email: emailTrim,
@@ -84,7 +91,10 @@ const IOSStyleLoginScreen = () => {
       router.push("/(tabs)");
     } catch (err: any) {
       console.error("[Login] Error:", err);
-      Alert.alert("Connection Error", `Could not connect to the server. ${err.message || "Please check your internet connection."}`);
+      Alert.alert(
+        "Connection Error",
+        `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
+      );
     }
   };
 
