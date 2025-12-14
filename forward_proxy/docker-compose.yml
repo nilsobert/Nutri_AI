@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  forward-proxy:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./users.db:/app/users.db
+    env_file:
+      - .env
+    restart: unless-stopped
