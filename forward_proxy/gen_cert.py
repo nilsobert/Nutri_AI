@@ -50,6 +50,9 @@ def generate_self_signed_cert():
             # Add other IPs if needed, e.g. local LAN IP
         ]),
         critical=False,
+    ).add_extension(
+        x509.BasicConstraints(ca=True, path_length=None),
+        critical=True,
     ).sign(key, hashes.SHA256(), default_backend())
 
     # Write certificate to file
