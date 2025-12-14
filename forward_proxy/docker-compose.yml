@@ -4,9 +4,16 @@ services:
   forward-proxy:
     build: .
     ports:
-      - "8000:8000"
+      - "7770:7770"
+    networks:
+      - default
+      - pangolin_net
     volumes:
       - ./users.db:/app/users.db
     env_file:
       - .env
     restart: unless-stopped
+networks:
+  default:
+  pangolin_net:
+    external: true
