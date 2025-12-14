@@ -25,7 +25,6 @@ import {
 } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -1568,27 +1567,23 @@ export default function InsightsScreen() {
           <View style={styles.metricSelector}>
             {TREND_METRICS.map((m) => {
               const isSelected = visibleTrends.includes(m);
-              const gradientColors = getMetricGradient(m);
+              const color = getMetricGradient(m)[0];
 
               return (
                 <TouchableOpacity
                   key={m}
                   style={[
                     styles.metricChip,
-                    !isSelected && {
-                      backgroundColor: isDark ? "#333" : Colors.grey.light,
+                    {
+                      backgroundColor: isSelected
+                        ? color
+                        : isDark
+                          ? "#333"
+                          : Colors.grey.light,
                     },
                   ]}
                   onPress={() => toggleTrend(m)}
                 >
-                  {isSelected && (
-                    <LinearGradient
-                      colors={gradientColors as [string, string]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
                   <ThemedText
                     style={[
                       styles.metricChipText,
@@ -1902,7 +1897,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: BorderRadius.full,
     overflow: "hidden",
-    ...Shadows.small,
   },
   metricChipSelected: {
     // Handled by LinearGradient
