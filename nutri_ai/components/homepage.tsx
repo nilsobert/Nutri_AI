@@ -15,7 +15,10 @@ import {
   Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  ActionSheetIOS,
+  Alert,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -996,10 +999,66 @@ const IOSStyleHomeScreen: React.FC = () => {
         style={[styles.fab, !isConnected && { opacity: 0.5 }]}
         onPress={() => {
           if (isConnected) {
-            router.push({
-              pathname: "/add-meal",
-              params: { date: currentDate.toISOString() },
-            });
+            const options = ['Cancel', 'Choose from Gallery', 'Take Photo & Record'];
+            const cancelButtonIndex = 0;
+
+            if (Platform.OS === 'ios') {
+              ActionSheetIOS.showActionSheetWithOptions(
+                {
+                  options,
+                  cancelButtonIndex,
+                },
+                async (buttonIndex) => {
+                  if (buttonIndex === 1) {
+                    // Gallery
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                      allowsEditing: true,
+                      aspect: [4, 3],
+                      quality: 1,
+                    });
+
+                    if (!result.canceled) {
+                      router.push({
+                        pathname: '/record-audio',
+                        params: { imageUri: result.assets[0].uri }
+                      });
+                    }
+                  } else if (buttonIndex === 2) {
+                    // Camera
+                    router.push('/capture-meal');
+                  }
+                }
+              );
+            } else {
+              // Android fallback
+              Alert.alert(
+                'Log Meal',
+                'Choose an option',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Gallery', 
+                    onPress: async () => {
+                      const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                        allowsEditing: true,
+                        aspect: [4, 3],
+                        quality: 1,
+                      });
+
+                      if (!result.canceled) {
+                        router.push({
+                          pathname: '/record-audio',
+                          params: { imageUri: result.assets[0].uri }
+                        });
+                      }
+                    }
+                  },
+                  { text: 'Camera', onPress: () => router.push('/capture-meal') },
+                ]
+              );
+            }
           }
         }}
         activeOpacity={isConnected ? 0.8 : 1}

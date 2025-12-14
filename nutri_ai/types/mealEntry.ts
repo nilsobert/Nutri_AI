@@ -1,5 +1,3 @@
-import "react-native-get-random-values";
-import { v4 as uuidv4 } from "uuid";
 import { NutritionInfo } from "./nutritionInfo";
 import { MS_TO_S } from "../constants/values";
 import { MealQuality } from "./mealQuality";
@@ -19,6 +17,8 @@ export class MealEntry {
   private _category: MealCategory;
   // Path to stored image
   private _image?: string;
+  // Path to stored audio
+  private _audio?: string;
   private _transcription?: string;
   private _mealQuality: MealQuality;
   private _nutritionInfo: NutritionInfo;
@@ -28,16 +28,18 @@ export class MealEntry {
     mealQuality: MealQuality,
     nutritionInfo: NutritionInfo,
     image?: string,
+    audio?: string,
     transcription?: string,
     timestamp?: number,
     id?: string,
   ) {
-    this._id = id || uuidv4();
+    this._id = id || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     this._timestamp = timestamp || Math.floor(Date.now() / MS_TO_S);
     this._category = category;
     this._mealQuality = mealQuality;
     this._nutritionInfo = nutritionInfo;
     this._image = image;
+    this._audio = audio;
     this._transcription = transcription;
   }
 
@@ -66,6 +68,14 @@ export class MealEntry {
 
   public setImage(image: string | undefined): void {
     this._image = image;
+  }
+
+  public getAudio(): string | undefined {
+    return this._audio;
+  }
+
+  public setAudio(audio: string | undefined): void {
+    this._audio = audio;
   }
 
   public getTranscription(): string | undefined {
@@ -98,6 +108,7 @@ export class MealEntry {
       timestamp: this._timestamp,
       category: this._category,
       image: this._image,
+      audio: this._audio,
       transcription: this._transcription,
       mealQuality: this._mealQuality,
       nutritionInfo: this._nutritionInfo,
@@ -110,6 +121,7 @@ export class MealEntry {
       MealQuality.fromJSON(json.mealQuality),
       NutritionInfo.fromJSON(json.nutritionInfo),
       json.image,
+      json.audio,
       json.transcription,
       json.timestamp,
       json.id,
