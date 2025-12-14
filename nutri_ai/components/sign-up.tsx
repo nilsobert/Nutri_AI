@@ -73,23 +73,27 @@ export default function SignUp() {
       const defaultMedicalCondition = MedicalCondition.None;
       const defaultMotivation = MotivationToTrackCalories.LeadAHealthyLife;
 
+      console.log("[SignUp] Sending signup request with default profile data...");
+      const signupPayload = {
+        email: emailTrim,
+        password: password,
+        name: usernameTrim,
+        age: defaultAge,
+        height_cm: defaultHeight,
+        weight_kg: defaultWeight,
+        gender: defaultGender,
+        activity_level: defaultActivityLevel,
+        medical_condition: defaultMedicalCondition,
+        motivation: defaultMotivation,
+      };
+      console.log("[SignUp] Signup payload:", signupPayload);
+
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: emailTrim,
-          password: password,
-          name: usernameTrim,
-          age: defaultAge,
-          height_cm: defaultHeight,
-          weight_kg: defaultWeight,
-          gender: defaultGender,
-          activity_level: defaultActivityLevel,
-          medical_condition: defaultMedicalCondition,
-          motivation: defaultMotivation,
-        }),
+        body: JSON.stringify(signupPayload),
       });
 
       console.log(`[SignUp] Response status: ${response.status}`);
@@ -97,12 +101,15 @@ export default function SignUp() {
       console.log(`[SignUp] Response data:`, data);
 
       if (!response.ok) {
+        console.error("[SignUp] Signup failed:", data.detail);
         Alert.alert("Sign Up Failed", data.detail || "An error occurred");
         return;
       }
 
       // Store token
+      console.log("[SignUp] Storing auth token...");
       await AsyncStorage.setItem("auth_token", data.access_token);
+      console.log("[SignUp] Auth token stored successfully");
 
       // Create local user object (using hash for compatibility, though not used for auth anymore)
       const passwordHash = CryptoJS.SHA256(password).toString();
@@ -119,15 +126,20 @@ export default function SignUp() {
         motivation: defaultMotivation,
       });
 
+      console.log("[SignUp] Saving user locally and syncing to server...");
       await saveUser(userObj);
+      console.log("[SignUp] User saved and synced successfully");
 
       setShowSuccessAlert(true);
       setTimeout(() => {
         setShowSuccessAlert(false);
+        console.log("[SignUp] Navigating to home...");
         router.push("/(tabs)");
       }, 2000);
     } catch (error: any) {
       console.error("[SignUp] Error:", error);
+      console.error("[SignUp] Error message:", error.message);
+      console.error("[SignUp] Error stack:", error.stack);
       Alert.alert(
         "Connection Error",
         `Could not connect to the server. ${error.message || "Please check your internet connection."}`,
