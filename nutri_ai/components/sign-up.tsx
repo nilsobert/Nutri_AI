@@ -6,7 +6,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 import { Colors } from "../constants/theme";
 import {

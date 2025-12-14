@@ -109,6 +109,14 @@ export default function ProfileScreen() {
     }
   };
 
+  if (!user) {
+    return (
+      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: textColor }}>Please log in to view profile</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
@@ -164,6 +172,18 @@ export default function ProfileScreen() {
             isDark={isDark}
           />
           <InfoRow
+            label="Gender"
+            value={user.gender}
+            icon="person-outline"
+            isDark={isDark}
+          />
+          <InfoRow
+            label="Height"
+            value={`${user.heightCm} cm`}
+            icon="resize-outline"
+            isDark={isDark}
+          />
+          <InfoRow
             label="Weight"
             value={`${user?.weightKg} kg`}
             icon="scale-outline"
@@ -185,10 +205,14 @@ export default function ProfileScreen() {
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
           <InfoRow
             label="Motivation"
-            value={formatMotivation(
-              user?.motivation || MotivationToTrackCalories.LeadAHealthyLife,
-            )}
+            value={formatMotivation(user.motivation)}
             icon="trophy-outline"
+            isDark={isDark}
+          />
+          <InfoRow
+            label="Activity Level"
+            value={user.activityLevel}
+            icon="walk-outline"
             isDark={isDark}
           />
           <InfoRow
@@ -205,6 +229,35 @@ export default function ProfileScreen() {
           SETTINGS
         </Text>
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push("/screens/edit-goals" as any)}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="nutrition-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Nutrition Goals
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+            ]}
+          />
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemContent}>
               <View

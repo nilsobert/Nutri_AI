@@ -3,11 +3,11 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Easing,
-  SafeAreaView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { BorderRadius, Shadows, Spacing, TextStyles } from "../constants/theme";
 
 export default function FirstPage() {
