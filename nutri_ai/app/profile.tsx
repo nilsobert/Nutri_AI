@@ -76,7 +76,13 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-  const { profileImage, setProfileImage, user } = useUser();
+  const { profileImage, setProfileImage, user, logout } = useUser();
+
+  const handleLogout = async () => {
+    await logout();
+    router.dismissAll();
+    router.replace("/");
+  };
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
@@ -132,7 +138,7 @@ export default function ProfileScreen() {
                   />
                 ) : (
                   <Text style={styles.avatarText}>
-                    {user.name
+                    {user?.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
@@ -145,10 +151,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={styles.profileHeaderText}>
               <Text style={[styles.userName, { color: textColor }]}>
-                {user.name}
+                {user?.name}
               </Text>
               <Text style={[styles.userEmail, { color: secondaryText }]}>
-                {user.email}
+                {user?.email}
               </Text>
             </View>
           </View>
@@ -161,7 +167,7 @@ export default function ProfileScreen() {
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
           <InfoRow
             label="Age"
-            value={`${user.age} years`}
+            value={`${user?.age} years`}
             icon="calendar-outline"
             isDark={isDark}
           />
@@ -179,13 +185,13 @@ export default function ProfileScreen() {
           />
           <InfoRow
             label="Weight"
-            value={`${user.weightKg} kg`}
+            value={`${user?.weightKg} kg`}
             icon="scale-outline"
             isDark={isDark}
           />
           <InfoRow
             label="Email"
-            value={user.email}
+            value={user?.email || ""}
             icon="mail-outline"
             isLast
             isDark={isDark}
@@ -211,7 +217,7 @@ export default function ProfileScreen() {
           />
           <InfoRow
             label="Medical Condition"
-            value={user.medicalCondition}
+            value={user?.medicalCondition || MedicalCondition.None}
             icon="medical-outline"
             isLast
             isDark={isDark}
@@ -278,7 +284,7 @@ export default function ProfileScreen() {
               { backgroundColor: isDark ? "#333" : "#f0f0f0" },
             ]}
           />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
             <View style={styles.menuItemContent}>
               <View
                 style={[

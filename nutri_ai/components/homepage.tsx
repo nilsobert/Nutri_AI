@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { useUser } from "../context/UserContext";
 import { useMeals } from "../context/MealContext";
+import { useNetwork } from "../context/NetworkContext";
 import { DAILY_CALORIE_GOAL } from "../constants/values";
 import {
   BorderRadius,
@@ -111,11 +112,11 @@ const PaginationDot: React.FC<PaginationDotProps> = ({
       Extrapolation.CLAMP,
     );
 
-    const backgroundColor = interpolateColor(
-      scrollX.value,
-      inputRange,
-      [isDark ? "#444" : "#ddd", Colors.primary, isDark ? "#444" : "#ddd"],
-    );
+    const backgroundColor = interpolateColor(scrollX.value, inputRange, [
+      isDark ? "#444" : "#ddd",
+      Colors.primary,
+      isDark ? "#444" : "#ddd",
+    ]);
 
     return {
       width,
@@ -179,8 +180,8 @@ const DayItem: React.FC<DayItemProps> = ({
     // But content has paddingLeft = dynamicPadding.
     // So absolute position of item is `snapOffset + dynamicPadding`.
     // Visual position `visualX = (snapOffset + dynamicPadding) - scrollX.value`.
-    
-    const visualX = (snapOffset + dynamicPadding) - scrollX.value;
+
+    const visualX = snapOffset + dynamicPadding - scrollX.value;
 
     // Fade out items that are to the left of the centered list start
     // dynamicPadding: start of the list
@@ -199,11 +200,7 @@ const DayItem: React.FC<DayItemProps> = ({
 
   return (
     <AnimatedTouchableOpacity
-      style={[
-        styles.dateItem,
-        !isLast && { marginRight: gap },
-        animatedStyle,
-      ]}
+      style={[styles.dateItem, !isLast && { marginRight: gap }, animatedStyle]}
       onPress={() => setCurrentDate(date)}
       activeOpacity={0.7}
     >
@@ -260,6 +257,7 @@ const MealCard: React.FC<MealCardProps> = ({
   isDark,
   currentDate,
 }) => {
+  const { isConnected } = useNetwork();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
@@ -503,23 +501,34 @@ const MealCard: React.FC<MealCardProps> = ({
           <TouchableOpacity
             style={[
               styles.addMealButton,
-              { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              {
+                backgroundColor: isDark ? "#333" : "#f5f5f5",
+                opacity: isConnected ? 1 : 0.5,
+              },
             ]}
-            onPress={() =>
-              router.push({
-                pathname: "/add-meal",
-                params: { date: currentDate.toISOString() },
-              })
-            }
-            activeOpacity={0.7}
+            onPress={() => {
+              if (isConnected) {
+                router.push({
+                  pathname: "/add-meal",
+                  params: { date: currentDate.toISOString() },
+                });
+              }
+            }}
+            activeOpacity={isConnected ? 0.7 : 1}
+            disabled={!isConnected}
           >
             <Ionicons
               name="add-circle-outline"
               size={20}
-              color={Colors.primary}
+              color={isConnected ? Colors.primary : "#999"}
             />
-            <Text style={[styles.addMealButtonText, { color: Colors.primary }]}>
-              Add Item
+            <Text
+              style={[
+                styles.addMealButtonText,
+                { color: isConnected ? Colors.primary : "#999" },
+              ]}
+            >
+              {isConnected ? "Add Item" : "Offline"}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -529,6 +538,7 @@ const MealCard: React.FC<MealCardProps> = ({
 };
 
 const IOSStyleHomeScreen: React.FC = () => {
+  const { isConnected } = useNetwork();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -589,13 +599,16 @@ const IOSStyleHomeScreen: React.FC = () => {
   const basePadding = Spacing.xl;
 
   // Calculate dynamic padding to ensure integer number of items are visible
-  const availableWidth = screenWidth - (basePadding * 2);
+  const availableWidth = screenWidth - basePadding * 2;
   // Force 7 items to be visible as requested
   const numVisibleItems = 7;
   const totalItemWidth = numVisibleItems * itemFullWidth - normalGap;
   const remainingSpace = availableWidth - totalItemWidth;
   // Ensure padding doesn't go below basePadding if screen is too small (though 7 items fit on 375px+)
-  const dynamicPadding = Math.max(basePadding, basePadding + (remainingSpace / 2));
+  const dynamicPadding = Math.max(
+    basePadding,
+    basePadding + remainingSpace / 2,
+  );
 
   // Generate 30 days of dates ending with today
   const days = Array.from({ length: 30 }, (_, i) => {
@@ -621,7 +634,7 @@ const IOSStyleHomeScreen: React.FC = () => {
       // We want item i to be at dynamicPadding.
       // Item i position = dynamicPadding + sum(widths + gaps before i).
       // So we want scrollOffset = sum(widths + gaps before i).
-      
+
       offsets.push(currentX);
 
       const isLast = index === days.length - 1;
@@ -629,7 +642,7 @@ const IOSStyleHomeScreen: React.FC = () => {
       // Index 29 is last. 29-22=7. So after 22.
       const isWeekBreak = (days.length - 1 - index) % 7 === 0 && !isLast;
       const currentGap = isWeekBreak ? weekGap : normalGap;
-      
+
       gaps.push(currentGap);
       currentX += itemWidth + currentGap;
     });
@@ -929,6 +942,12 @@ const IOSStyleHomeScreen: React.FC = () => {
               ) : (
                 <Ionicons name="person" size={20} color={Colors.primary} />
               )}
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: isConnected ? "#34C759" : "#FF3B30" },
+                ]}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -974,16 +993,19 @@ const IOSStyleHomeScreen: React.FC = () => {
 
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
-        style={styles.fab}
-        onPress={() =>
-          router.push({
-            pathname: "/add-meal",
-            params: { date: currentDate.toISOString() },
-          })
-        }
-        activeOpacity={0.8}
+        style={[styles.fab, !isConnected && { opacity: 0.5 }]}
+        onPress={() => {
+          if (isConnected) {
+            router.push({
+              pathname: "/add-meal",
+              params: { date: currentDate.toISOString() },
+            });
+          }
+        }}
+        activeOpacity={isConnected ? 0.8 : 1}
         entering={FadeIn}
         exiting={FadeOut}
+        disabled={!isConnected}
       >
         <Ionicons name="add" size={28} color="white" />
       </AnimatedTouchableOpacity>
@@ -1033,11 +1055,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.small,
-    overflow: "hidden",
+    // overflow: "hidden", // Removed to allow dot to overflow if needed, but dot is inside
   },
   profileImage: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+  },
+  statusDot: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "white",
   },
   todayButton: {
     height: 40,

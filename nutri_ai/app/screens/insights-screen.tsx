@@ -565,7 +565,11 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calo
   return daysMet;
 }
 
-function calculateStreakInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
+function calculateStreakInPeriod(
+  startDate: Date,
+  endDate: Date,
+  meals: any[],
+): number {
   let streak = 0;
   let checkDay = new Date(endDate);
 
@@ -646,7 +650,11 @@ function calculateLongestStreakOverall(meals: any[]): number {
   return longestStreak;
 }
 
-function getMaxMealInPeriod(startDate: Date, endDate: Date, meals: any[]): number {
+function getMaxMealInPeriod(
+  startDate: Date,
+  endDate: Date,
+  meals: any[],
+): number {
   let maxCalories = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -1648,7 +1656,9 @@ export default function InsightsScreen() {
                 size={24}
                 color={Colors.primary}
               />
-              <ThemedText style={[styles.insightBoxValue, { color: textColor }]}>
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
                 {daysTracked}
               </ThemedText>
               <ThemedText
@@ -1665,7 +1675,9 @@ export default function InsightsScreen() {
               ]}
             >
               <Ionicons name="flame-outline" size={24} color="#FF9500" />
-              <ThemedText style={[styles.insightBoxValue, { color: textColor }]}>
+              <ThemedText
+                style={[styles.insightBoxValue, { color: textColor }]}
+              >
                 {daysTracked > 0 ? Math.round(totalCalories / daysTracked) : 0}
               </ThemedText>
               <ThemedText
@@ -1714,7 +1726,10 @@ export default function InsightsScreen() {
         tint={isDark ? "dark" : "light"}
         style={[
           styles.header,
-          { paddingTop: insets.top + Spacing.md, borderBottomColor: borderColor },
+          {
+            paddingTop: insets.top + Spacing.md,
+            borderBottomColor: borderColor,
+          },
         ]}
       >
         <View style={styles.headerTopRow}>
@@ -1748,12 +1763,7 @@ export default function InsightsScreen() {
             )}
         </View>
         {/* Segmented Control */}
-        <View
-          style={[
-            styles.segmentedControl,
-            { backgroundColor: segmentBg },
-          ]}
-        >
+        <View style={[styles.segmentedControl, { backgroundColor: segmentBg }]}>
           {RANGES.map((range) => (
             <TouchableOpacity
               key={range}
