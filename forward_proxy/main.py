@@ -316,4 +316,15 @@ Return *only* the JSON object and nothing else."""
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Force SSL as requested
+    if not os.path.exists("key.pem"):
+        logger.critical("SSL Error: key.pem not found in application directory. Please ensure key.pem is present.")
+        sys.exit(1)
+        
+    if not os.path.exists("cert.pem"):
+        logger.critical("SSL Error: cert.pem not found in application directory. Please ensure cert.pem is present.")
+        sys.exit(1)
+
+    logger.info("Starting server with SSL enabled")
     uvicorn.run(app, host="0.0.0.0", port=8000, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
