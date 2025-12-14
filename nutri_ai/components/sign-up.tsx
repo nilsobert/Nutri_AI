@@ -97,16 +97,22 @@ export default function SignUp() {
 
       await saveUser(userObj);
 
-      Alert.alert("Account created", "Your account has been created successfully.", [
-        {
-          text: "OK",
-          onPress: () => router.push("/(tabs)"),
-        },
-      ]);
-
+      Alert.alert(
+        "Account created",
+        "Your account has been created successfully.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/(tabs)"),
+          },
+        ],
+      );
     } catch (error: any) {
       console.error("[SignUp] Error:", error);
-      Alert.alert("Connection Error", `Could not connect to the server. ${error.message || "Please check your internet connection."}`);
+      Alert.alert(
+        "Connection Error",
+        `Could not connect to the server. ${error.message || "Please check your internet connection."}`,
+      );
     }
   };
 
