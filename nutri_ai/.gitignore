@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+../node_modules/
 
 # Expo
 .expo/
@@ -42,4 +43,6 @@ app-example
 /ios
 /android
 
-nutri_ai/package-lock.json
+# package-locks
+../package-lock.json
+./package-lock.json
