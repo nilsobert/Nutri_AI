@@ -16,50 +16,85 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../constants/theme";
+import { useUser } from "../context/UserContext";
+import {
+  User,
+  MedicalCondition,
+  MotivationToTrackCalories,
+} from "../types/user";
+import { API_BASE_URL } from "../constants/values";
 
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
+  const { saveUser } = useUser();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const [nameOrEmail, setNameOrEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
 
   const handleLogin = async () => {
-    const keyRaw = (nameOrEmail || "").trim();
-    const key = keyRaw.toLowerCase();
+    const emailTrim = (email || "").trim().toLowerCase();
 
-    if (!keyRaw || !password) {
-      Alert.alert("Missing fields", "Please enter username/email and password");
+    if (!emailTrim || !password) {
+      Alert.alert("Missing fields", "Please enter email and password");
       return;
     }
 
+    console.log(`[Login] Attempting to login user: ${emailTrim}`);
+
     try {
-      const raw = await AsyncStorage.getItem("registered_users");
-      const list = raw ? JSON.parse(raw) : [];
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: emailTrim,
+          password: password,
+        }),
+      });
 
-      const user = list.find(
-        (u: any) =>
-          (u.email || "").toLowerCase() === key ||
-          (u.username || "").toLowerCase() === key,
-      );
+      console.log(`[Login] Response status: ${response.status}`);
+      const data = await response.json();
+      console.log(`[Login] Response data:`, data);
 
-      if (!user) {
-        router.push("/screens/notfound-screen");
+      if (!response.ok) {
+        Alert.alert(
+          "Login Failed",
+          data.detail || "Incorrect email or password",
+        );
         return;
       }
 
+      // Store token
+      await AsyncStorage.setItem("auth_token", data.access_token);
+
+      // Create local user object
+      // Note: Server doesn't return profile data yet, so we use defaults
+      const nameFromEmail = emailTrim.split("@")[0];
       const passwordHash = CryptoJS.SHA256(password).toString();
-      if (passwordHash !== user.passwordHash) {
-        router.push("/screens/bad_credentials");
-        return;
-      }
+
+      const userObj = new User({
+        name: nameFromEmail,
+        email: emailTrim,
+        password: passwordHash,
+        age: 0,
+        weightKg: 0,
+        medicalCondition: MedicalCondition.None,
+        motivation: MotivationToTrackCalories.LeadAHealthyLife,
+      });
+
+      await saveUser(userObj);
 
       router.push("/(tabs)");
-    } catch (err) {
-      console.warn("login error", err);
-      Alert.alert("Login error", "An unexpected error occurred. Try again.");
+    } catch (err: any) {
+      console.error("[Login] Error:", err);
+      Alert.alert(
+        "Connection Error",
+        `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
+      );
     }
   };
 
@@ -89,14 +124,16 @@ const IOSStyleLoginScreen = () => {
 
           <View style={styles.form}>
             <TextInput
-              value={nameOrEmail}
-              onChangeText={setNameOrEmail}
-              placeholder="Username or Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Email"
               placeholderTextColor={placeholderColor}
               style={[
                 styles.input,
                 { backgroundColor: inputBg, color: mainText },
               ]}
+              keyboardType="email-address"
+              autoCapitalize="none"
               returnKeyType="next"
             />
 

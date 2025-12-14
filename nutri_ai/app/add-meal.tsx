@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, Button, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Button,
+  ScrollView,
+} from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -43,7 +50,7 @@ const AddMealScreen = () => {
       fat: 20,
     });
     const quality = new MealQuality(1.2, 80, 8);
-    
+
     const timestamp = Math.floor(selectedDate.getTime() / MS_TO_S);
 
     const meal = new MealEntry(
@@ -52,7 +59,7 @@ const AddMealScreen = () => {
       nutrition,
       undefined,
       "Test Meal",
-      timestamp
+      timestamp,
     );
 
     await addMeal(meal);
@@ -71,7 +78,7 @@ const AddMealScreen = () => {
         <Ionicons name="arrow-back" size={24} color="black" />
       </TouchableOpacity>
       <Text style={styles.title}>Add a Meal</Text>
-      
+
       <ScrollView contentContainerStyle={styles.content}>
         {/* Goal Context Card */}
         <View style={styles.goalCard}>
@@ -89,33 +96,37 @@ const AddMealScreen = () => {
         </Text>
 
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Date</Text>
-            <View style={styles.dateControl}>
-                <Button title="-1 Day" onPress={() => changeDate(-1)} />
-                <Text>{selectedDate.toDateString()}</Text>
-                <Button title="+1 Day" onPress={() => changeDate(1)} />
-            </View>
+          <Text style={styles.sectionTitle}>Date</Text>
+          <View style={styles.dateControl}>
+            <Button title="-1 Day" onPress={() => changeDate(-1)} />
+            <Text>{selectedDate.toDateString()}</Text>
+            <Button title="+1 Day" onPress={() => changeDate(1)} />
+          </View>
         </View>
 
         <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Category</Text>
-            <View style={styles.categoryContainer}>
-                {Object.values(MealCategory).map((cat) => (
-                    <TouchableOpacity 
-                        key={cat} 
-                        style={[
-                            styles.categoryButton, 
-                            selectedCategory === cat && styles.selectedCategory
-                        ]}
-                        onPress={() => setSelectedCategory(cat)}
-                    >
-                        <Text style={[
-                            styles.categoryText,
-                            selectedCategory === cat && styles.selectedCategoryText
-                        ]}>{cat}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
+          <Text style={styles.sectionTitle}>Category</Text>
+          <View style={styles.categoryContainer}>
+            {Object.values(MealCategory).map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === cat && styles.selectedCategory,
+                ]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    selectedCategory === cat && styles.selectedCategoryText,
+                  ]}
+                >
+                  {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <Button title="Add Test Meal" onPress={handleAddTestMeal} />
@@ -154,41 +165,41 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   section: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
     gap: 10,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dateControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     gap: 10,
   },
   categoryButton: {
     padding: 10,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
   },
   selectedCategory: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
   },
   categoryText: {
-    color: 'black',
+    color: "black",
   },
   selectedCategoryText: {
-    color: 'white',
+    color: "white",
   },
   goalCard: {
     width: '100%',

@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+../node_modules/
 
 # Expo
 .expo/
@@ -32,6 +33,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -42,4 +44,7 @@ app-example
 /ios
 /android
 
+# package-locks
+../package-lock.json
+./package-lock.json
 nutri_ai/package-lock.json

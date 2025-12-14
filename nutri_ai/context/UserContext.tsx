@@ -66,7 +66,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     await StorageService.clearUser();
     await StorageService.removeProfileImage();
     // Optionally clear meals too if they are user-specific and we want to wipe data on logout
-    // await StorageService.clearAll(); 
+    // await StorageService.clearAll();
   };
 
   const goals = useMemo(() => {
