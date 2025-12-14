@@ -2,11 +2,12 @@ import { Platform } from "react-native";
 
 // Colors
 export const Colors = {
-  primary: "#209621", // replaced blue with dark green
+  primary: "#3498DB", // replaced green with blue
   secondary: {
-    protein: "#4ECDC4",
-    carbs: "#3bd445",
-    fat: "#FF6B6B",
+    protein: "#2ECC71",
+    carbs: "#F39C12",
+    fat: "#EC407A",
+    calories: "#3498DB",
   },
   background: {
     light: "#fff",
@@ -31,8 +32,8 @@ export const Colors = {
     dark: "#333",
   },
   floatingButton: {
-    light: "#1E8E3E", // replaced blue with dark green
-    dark: "#1E8E3E",
+    light: "#3498DB", // replaced green with blue
+    dark: "#3498DB",
   },
   grey: {
     light: "#f0f0f0",

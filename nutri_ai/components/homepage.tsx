@@ -1054,7 +1054,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    ...Shadows.small,
     // overflow: "hidden", // Removed to allow dot to overflow if needed, but dot is inside
   },
   profileImage: {
@@ -1078,7 +1077,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    ...Shadows.small,
   },
   todayButtonText: {
     fontSize: 13,
