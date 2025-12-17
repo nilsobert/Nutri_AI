@@ -1,0 +1,10 @@
+.prettierignore
+
+# Ignore build output and caches
+dist
+.expo/
+.next/
+coverage/
+
+# Ignore documentation files
+*.md
