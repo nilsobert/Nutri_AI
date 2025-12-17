@@ -111,6 +111,11 @@ export default function SignUp() {
       await AsyncStorage.setItem("auth_token", data.access_token);
       console.log("[SignUp] Auth token stored successfully");
 
+      // Store user_id (email) to track user changes in MealContext
+      console.log("[SignUp] Storing user_id...");
+      await AsyncStorage.setItem("user_id", emailTrim);
+      console.log("[SignUp] User_id stored successfully");
+
       // Create local user object (using hash for compatibility, though not used for auth anymore)
       const passwordHash = CryptoJS.SHA256(password).toString();
       const userObj = new User({
