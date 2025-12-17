@@ -530,7 +530,12 @@ function calculateStreak(meals: any[]) {
   return streak;
 }
 
-function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calorieGoal: number): number {
+function getDailyGoalMetCount(
+  startDate: Date,
+  endDate: Date,
+  meals: any[],
+  calorieGoal: number,
+): number {
   let daysMet = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -1035,11 +1040,7 @@ export default function InsightsScreen() {
 
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
-    const maxVal = Math.max(
-      ...data.map((d) => d.calories),
-      calorieGoal,
-      10,
-    );
+    const maxVal = Math.max(...data.map((d) => d.calories), calorieGoal, 10);
     let step = 10;
     if (maxVal > 2000) step = 500;
     else if (maxVal > 1000) step = 200;
@@ -1143,7 +1144,12 @@ export default function InsightsScreen() {
     );
   }
 
-  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals, calorieGoal);
+  const daysGoalMet = getDailyGoalMetCount(
+    startDate,
+    endDate,
+    meals,
+    calorieGoal,
+  );
 
   // Calculate for previous period (relative to current view)
   let prevPeriodStartDate, prevPeriodEndDate;
@@ -1171,7 +1177,7 @@ export default function InsightsScreen() {
     prevPeriodStartDate,
     prevPeriodEndDate,
     meals,
-    calorieGoal
+    calorieGoal,
   );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak

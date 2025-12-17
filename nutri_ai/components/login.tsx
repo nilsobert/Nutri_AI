@@ -111,9 +111,16 @@ const IOSStyleLoginScreen = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
       <Modal transparent={true} animationType="fade" visible={isLoading}>
         <View style={styles.loadingOverlay}>
-          <View style={[styles.loadingContainer, { backgroundColor: isDark ? "#333" : "white" }]}>
+          <View
+            style={[
+              styles.loadingContainer,
+              { backgroundColor: isDark ? "#333" : "white" },
+            ]}
+          >
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={[styles.loadingText, { color: mainText }]}>Logging in...</Text>
+            <Text style={[styles.loadingText, { color: mainText }]}>
+              Logging in...
+            </Text>
           </View>
         </View>
       </Modal>
