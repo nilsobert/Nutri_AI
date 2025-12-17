@@ -113,7 +113,7 @@ export default function SignUp() {
 
       // Create local user object (using hash for compatibility, though not used for auth anymore)
       const passwordHash = CryptoJS.SHA256(password).toString();
-      const userObj = new User({
+      const userObj: User = {
         name: usernameTrim,
         email: emailTrim,
         password: passwordHash,
@@ -124,7 +124,7 @@ export default function SignUp() {
         activityLevel: defaultActivityLevel,
         medicalCondition: defaultMedicalCondition,
         motivation: defaultMotivation,
-      });
+      };
 
       console.log("[SignUp] Saving user locally and syncing to server...");
       await saveUser(userObj);

@@ -164,7 +164,7 @@ export default function MergedCalendar() {
   > = {};
 
   meals.forEach((meal) => {
-    const date = new Date(meal.getTimestamp() * 1000);
+    const date = new Date(meal.timestamp * 1000);
     const offset = date.getTimezoneOffset();
     const localDate = new Date(date.getTime() - offset * 60 * 1000);
     const dateStr = localDate.toISOString().split("T")[0];
@@ -179,13 +179,13 @@ export default function MergedCalendar() {
       };
     }
 
-    const category = meal.getCategory();
+    const category = meal.category;
     if (mealsByDate[dateStr][category]) {
       mealsByDate[dateStr][category].push({
-        name: meal.getCategory(), // Or use transcription if available as name
+        name: meal.category, // Or use transcription if available as name
         details:
-          meal.getTranscription() ||
-          `${meal.getNutritionInfo().getCalories()} kcal`,
+          meal.transcription ||
+          `${meal.nutritionInfo.calories} kcal`,
       });
     }
   });

@@ -316,13 +316,13 @@ const MealCard: React.FC<MealCardProps> = ({
   const borderColor = isDark ? "#333" : "#f0f0f0";
 
   const totalCalories = meals.reduce(
-    (sum, meal) => sum + meal.getNutritionInfo().getCalories(),
+    (sum, meal) => sum + meal.nutritionInfo.calories,
     0,
   );
 
   const renderMealDetails = (meal: MealEntry) => {
-    const nutrition = meal.getNutritionInfo();
-    const quality = meal.getMealQuality();
+    const nutrition = meal.nutritionInfo;
+    const quality = meal.mealQuality;
 
     return (
       <View style={{ width: contentWidth }}>
@@ -332,10 +332,10 @@ const MealCard: React.FC<MealCardProps> = ({
               style={[styles.slideTitle, { color: textColor }]}
               numberOfLines={1}
             >
-              {meal.getTranscription() || "Meal Item"}
+              {meal.transcription || "Meal Item"}
             </Text>
             <Text style={[styles.slideCalories, { color: secondaryText }]}>
-              {nutrition.getCalories()} kcal
+              {nutrition.calories} kcal
             </Text>
           </View>
         )}
@@ -343,19 +343,19 @@ const MealCard: React.FC<MealCardProps> = ({
         <View style={styles.nutrientRow}>
           <NutrientPill
             label="Carbs"
-            value={`${nutrition.getCarbs()}g`}
+            value={`${nutrition.carbs}g`}
             color={Colors.secondary.carbs}
             isDark={isDark}
           />
           <NutrientPill
             label="Protein"
-            value={`${nutrition.getProtein()}g`}
+            value={`${nutrition.protein}g`}
             color={Colors.secondary.protein}
             isDark={isDark}
           />
           <NutrientPill
             label="Fat"
-            value={`${nutrition.getFat()}g`}
+            value={`${nutrition.fat}g`}
             color={Colors.secondary.fat}
             isDark={isDark}
           />
@@ -373,13 +373,13 @@ const MealCard: React.FC<MealCardProps> = ({
                 styles.qualityBadge,
                 {
                   backgroundColor: getQualityColor(
-                    quality.getMealQualityScore(),
+                    quality.mealQualityScore,
                   ),
                 },
               ]}
             >
               <Text style={styles.qualityScore}>
-                {quality.getMealQualityScore()}
+                {quality.mealQualityScore}
               </Text>
             </View>
           </View>
@@ -388,7 +388,7 @@ const MealCard: React.FC<MealCardProps> = ({
               Goal Fit
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.getGoalFitPercentage()}%
+              {quality.goalFitPercentage}%
             </Text>
           </View>
           <View style={styles.statItem}>
@@ -396,7 +396,7 @@ const MealCard: React.FC<MealCardProps> = ({
               Density
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.getCalorieDensity().toFixed(1)}
+              {quality.calorieDensity.toFixed(1)}
             </Text>
           </View>
         </View>
@@ -452,7 +452,7 @@ const MealCard: React.FC<MealCardProps> = ({
             >
               {meals.length > 1
                 ? `${meals.length} items`
-                : meals[0]?.getTranscription() || "No description"}
+                : meals[0]?.transcription || "No description"}
             </Text>
             <Animated.View style={chevronStyle}>
               <Ionicons name="chevron-down" size={16} color={secondaryText} />
@@ -477,7 +477,7 @@ const MealCard: React.FC<MealCardProps> = ({
                 scrollEventThrottle={16}
               >
                 {meals.map((meal, index) => (
-                  <View key={meal.getId() || index}>
+                  <View key={meal.id || index}>
                     {renderMealDetails(meal)}
                   </View>
                 ))}
@@ -671,7 +671,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   };
 
   const meals: MealEntry[] = allMeals.filter((meal) => {
-    const mealDate = new Date(meal.getTimestamp() * 1000);
+    const mealDate = new Date(meal.timestamp * 1000);
     return isSameDay(mealDate, currentDate);
   });
 
@@ -679,7 +679,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const groupedMeals = React.useMemo(() => {
     const groups = new Map<MealCategory, MealEntry[]>();
     meals.forEach((meal) => {
-      const cat = meal.getCategory();
+      const cat = meal.category;
       if (!groups.has(cat)) {
         groups.set(cat, []);
       }
@@ -699,23 +699,23 @@ const IOSStyleHomeScreen: React.FC = () => {
 
   const totalCalories = meals.reduce(
     (sum: number, meal: MealEntry) =>
-      sum + meal.getNutritionInfo().getCalories(),
+      sum + meal.nutritionInfo.calories,
     0,
   );
 
   const totalCarbs = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
+    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.carbs,
     0,
   );
 
   const totalProtein = meals.reduce(
     (sum: number, meal: MealEntry) =>
-      sum + meal.getNutritionInfo().getProtein(),
+      sum + meal.nutritionInfo.protein,
     0,
   );
 
   const totalFat = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
+    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.fat,
     0,
   );
 
