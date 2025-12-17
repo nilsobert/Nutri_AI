@@ -23,6 +23,8 @@ from auth import (
     decode_access_token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
+from ai_meal_analysis import analyze_meal_image
+from audio_service import transcribe_audio
 from pydantic import BaseModel
 
 load_dotenv()
@@ -536,134 +538,30 @@ async def track_meal(
     # 1. Handle Audio (Whisper)
     if audio:
         logger.info("Audio file provided, attempting transcription")
-        whisper_url = os.getenv("WHISPER_API_URL", "http://pangolin.7cc.xyz:10303/transcribe")
-        whisper_key = os.getenv("WHISPER_API_KEY", "1234")
-        
         try:
             audio_content = await audio.read()
-            files = {'file': (audio.filename, audio_content, audio.content_type)}
-            headers = {"X-API-Key": whisper_key}
-            
-            logger.info(f"Calling Whisper API at {whisper_url}")
-            async with httpx.AsyncClient() as client:
-                response = await client.post(whisper_url, headers=headers, files=files, data={"language": "en"})
-                
-            if response.status_code == 200:
-                result = response.json()
-                transcript = result.get("text", "")
-                logger.info(f"Transcription successful: {transcript[:50]}...")
-            else:
-                logger.error(f"Whisper API Error: {response.status_code} - {response.text}")
-                # We continue even if whisper fails, just without transcript
+            transcript = await transcribe_audio(audio_content, audio.filename)
+            logger.info(f"Transcription successful: {transcript[:50]}...")
         except Exception as e:
             logger.error(f"Whisper Exception: {e}", exc_info=True)
+            # We continue even if whisper fails, just without transcript
 
     # 2. Handle Image (VLM)
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
-    
-    if not openai_api_key or not openai_base_url:
-         logger.critical("Missing OpenAI credentials")
-         raise HTTPException(status_code=500, detail="Server misconfiguration: Missing AI credentials")
-
     try:
         logger.info("Processing image for VLM analysis")
         image_content = await image.read()
-        base64_image = base64.b64encode(image_content).decode('utf-8')
         
-        json_schema_template = """
-        {
-          "success": true,
-          "requestId": "img_analysis_...",
-          "items": [
-            {
-              "name": "Grilled Chicken Breast",
-              "confidence": 0.9,
-              "serving_size_grams": 150,
-              "nutrition": {
-                "calories": 248,
-                "protein_g": 46.5,
-                "fat_g": 5.4,
-                "carbohydrates_g": 0,
-                "sugar_g": 0,
-                "fiber_g": 0
-              }
-            }
-          ],
-          "errorMessage": null
-        }
-        """
-        
-        prompt_text = f"""Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts.
-
-Return a JSON object matching this exact schema:
-{json_schema_template}
-
-RULES:
-- `success`: Set to `true` if food is found, `false` otherwise.
-- `requestId`: Generate a unique ID for this analysis.
-- `items`: Create one object for *each* distinct food item in the image.
-- `confidence`: Your confidence (0.0 to 1.0).
-- `serving_size_grams`: Your best estimate of the item's weight in grams.
-- `nutrition`: The nutritional info for that *single item*.
-- `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
-
-Return *only* the JSON object and nothing else."""
-
+        text_context = None
         if transcript:
-            prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
-
-        headers = {
-            "Authorization": f"Bearer {openai_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": "Qwen2.5-VL-72B-Instruct",
-            "messages": [
-                {
-                    "role": "system", 
-                    "content": "You are an expert nutrition assistant. Respond only with the requested JSON object."
-                },
-                {
-                    "role": "user", 
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt_text
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            "temperature": 0.0,
-            "max_tokens": 2048
-        }
-        
-        logger.info(f"Calling VLM API at {openai_base_url}")
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"{openai_base_url}/chat/completions", headers=headers, json=payload, timeout=60.0)
+            text_context = f"Additional Context from Audio Note: {transcript}"
             
-        if response.status_code != 200:
-             logger.error(f"AI Provider Error: {response.status_code} - {response.text}")
-             raise HTTPException(status_code=500, detail=f"AI Provider Error: {response.text}")
-             
-        ai_result = response.json()
-        content = ai_result["choices"][0]["message"]["content"]
-        logger.info("VLM response received")
+        result = await analyze_meal_image(image_content, text_context)
         
-        # Parse JSON from content (it might be wrapped in markdown code blocks)
-        if "```json" in content:
-            content = content.split("```json")[1].split("```")[0].strip()
-        elif "```" in content:
-            content = content.split("```")[1].split("```")[0].strip()
+        # Inject transcript into result if successful
+        if result.get("success"):
+            result["transcript"] = transcript
             
-        return json.loads(content)
+        return result
 
     except Exception as e:
         logger.error(f"VLM Exception: {e}", exc_info=True)
