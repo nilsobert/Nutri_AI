@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StorageService } from "../services/storage";
-import { User } from "../types/user";
+import { User, parseUser } from "../types/user";
 import { calculateGoals, NutritionGoals } from "../lib/utils/goals";
 import { API_BASE_URL } from "../constants/values";
 
@@ -76,9 +76,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         console.log("[UserContext] Profile data received:", profileData);
-        const userObj = User.fromJSON(profileData);
-        setUserState(userObj);
+        const userObj = parseUser(profileData);
         await StorageService.saveUser(userObj);
+        // Store user email as user_id for meal context tracking
+        await AsyncStorage.setItem("user_id", profileData.email);
+        setUserState(userObj);
         console.log("[UserContext] Profile saved locally");
       } else {
         console.error(`[UserContext] Failed to fetch profile: ${profileResponse.status}`);
@@ -219,12 +221,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    console.log("[UserContext] Logging out...");
+    await AsyncStorage.removeItem("auth_token");
+    await AsyncStorage.removeItem("user_id");
+    await StorageService.clearAll();
     setUserState(null);
     setProfileImage(null);
-    await StorageService.clearUser();
-    await StorageService.removeProfileImage();
-    // Optionally clear meals too if they are user-specific and we want to wipe data on logout
-    // await StorageService.clearAll();
+    console.log("[UserContext] Logout complete");
   };
 
   const goals = useMemo(() => {
