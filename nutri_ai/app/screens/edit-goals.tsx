@@ -162,8 +162,8 @@ export default function EditGoalsScreen() {
     if (!user) return;
 
     // Create a temporary user object to calculate goals
-    const tempUser = new User({
-      ...user.toJSON(), // Copy existing user props
+    const tempUser: User = {
+      ...user, // Copy existing user props
       motivation,
       activityLevel,
       weightKg: parseFloat(weight) || user.weightKg,
@@ -175,7 +175,7 @@ export default function EditGoalsScreen() {
       customProtein: parseFloat(customProtein) || undefined,
       customCarbs: parseFloat(customCarbs) || undefined,
       customFat: parseFloat(customFat) || undefined,
-    });
+    };
 
     setPreviewGoals(calculateGoals(tempUser));
   }, [
@@ -197,8 +197,8 @@ export default function EditGoalsScreen() {
     if (!user) return;
 
     try {
-      const updatedUser = new User({
-        ...user.toJSON(),
+      const updatedUser: User = {
+        ...user,
         motivation,
         activityLevel,
         weightKg: parseFloat(weight) || user.weightKg,
@@ -210,7 +210,7 @@ export default function EditGoalsScreen() {
         customProtein: isCustomGoals ? parseFloat(customProtein) : undefined,
         customCarbs: isCustomGoals ? parseFloat(customCarbs) : undefined,
         customFat: isCustomGoals ? parseFloat(customFat) : undefined,
-      });
+      };
 
       await saveUser(updatedUser);
       router.back();

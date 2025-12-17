@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { useMeals } from "../context/MealContext";
 import { useUser } from "../context/UserContext";
-import { MealEntry, MealCategory } from "../types/mealEntry";
+import { MealEntry, MealCategory, createMealEntry } from "../types/mealEntry";
 import { MealQuality } from "../types/mealQuality";
 import { NutritionInfo } from "../types/nutritionInfo";
 import { MS_TO_S } from "../constants/values";
@@ -31,37 +31,39 @@ const AddMealScreen = () => {
 
   // Calculate remaining calories
   const todaysMeals = meals.filter(m => {
-    const d = new Date(m.getTimestamp() * 1000);
+    const d = new Date(m.timestamp * 1000);
     return d.getDate() === selectedDate.getDate() && 
            d.getMonth() === selectedDate.getMonth() && 
            d.getFullYear() === selectedDate.getFullYear();
   });
   
-  const totalCalories = todaysMeals.reduce((sum, m) => sum + m.getNutritionInfo().getCalories(), 0);
+  const totalCalories = todaysMeals.reduce((sum, m) => sum + m.nutritionInfo.calories, 0);
   const calorieGoal = goals?.calories || 2000;
   const remaining = calorieGoal - totalCalories;
 
   const handleAddTestMeal = async () => {
-    const nutrition = new NutritionInfo({
+    const nutrition = {
       calories: 500,
       carbs: 50,
       sugar: 10,
       protein: 30,
       fat: 20,
-    });
-    const quality = new MealQuality(1.2, 80, 8);
+    };
+    const quality = {
+      calorieDensity: 1.2,
+      goalFitPercentage: 80,
+      mealQualityScore: 8,
+    };
 
     const timestamp = Math.floor(selectedDate.getTime() / MS_TO_S);
 
-    const meal = new MealEntry(
-      selectedCategory,
-      quality,
-      nutrition,
-      undefined,
-      undefined,
-      "Test Meal",
-      timestamp,
-    );
+    const meal = createMealEntry({
+      category: selectedCategory,
+      mealQuality: quality,
+      nutritionInfo: nutrition,
+      transcription: "Test Meal",
+      timestamp: timestamp,
+    });
 
     await addMeal(meal);
     router.back();

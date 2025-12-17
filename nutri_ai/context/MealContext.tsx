@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StorageService } from "../services/storage";
-import { MealEntry } from "../types/mealEntry";
+import { MealEntry, parseMealEntry } from "../types/mealEntry";
 import { API_BASE_URL } from "../constants/values";
+import { useUser } from "./UserContext";
 
 interface MealContextType {
   meals: MealEntry[];
@@ -16,17 +17,26 @@ interface MealContextType {
 const MealContext = createContext<MealContextType | undefined>(undefined);
 
 export function MealProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastSyncedUserId, setLastSyncedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     refreshMeals();
-  }, []);
+  }, [user]);
 
   const refreshMeals = async () => {
     setIsLoading(true);
     try {
+      if (!user) {
+        console.log("[MealContext] User logged out (context), clearing meals");
+        setMeals([]);
+        setLastSyncedUserId(null);
+        setIsLoading(false);
+        return;
+      }
+
       const token = await AsyncStorage.getItem("auth_token");
       const currentUserId = await AsyncStorage.getItem("user_id");
 
@@ -47,7 +57,13 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
         setLastSyncedUserId(currentUserId);
       }
 
-      // Sync with server (always fetch from server, don't rely on local cache for user changes)
+      // Load from local storage first (only if same user)
+      if (currentUserId === lastSyncedUserId) {
+        const loadedMeals = await StorageService.loadMeals();
+        setMeals(loadedMeals);
+      }
+
+      // Sync with server
       console.log("[MealContext] Fetching meals from server...");
       const response = await fetch(`${API_BASE_URL}/meals`, {
         headers: { "Authorization": `Bearer ${token}` },
@@ -59,7 +75,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
         const serverMeals = serverMealsData.map((m: any) => {
           const imageUrl = m.image ? `${API_BASE_URL}/static/${m.image}` : undefined;
           const audioUrl = m.audio ? `${API_BASE_URL}/static/${m.audio}` : undefined;
-          return MealEntry.fromJSON({
+          return parseMealEntry({
             ...m,
             image: imageUrl,
             audio: audioUrl,
@@ -84,20 +100,20 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
   const addMeal = async (meal: MealEntry) => {
     try {
-      console.log(`[MealContext] Adding meal ${meal.getId()}`);
+      console.log(`[MealContext] Adding meal ${meal.id}`);
       const token = await AsyncStorage.getItem("auth_token");
       let serverImagePath = undefined;
       let serverAudioPath = undefined;
-      let displayImage = meal.getImage();
-      let displayAudio = meal.getAudio();
+      let displayImage = meal.image;
+      let displayAudio = meal.audio;
 
       // Upload image if it's a local file
-      if (token && meal.getImage() && meal.getImage()?.startsWith("file://")) {
+      if (token && meal.image && meal.image?.startsWith("file://")) {
         console.log("[MealContext] Uploading meal image to server...");
         const formData = new FormData();
         // @ts-ignore
         formData.append("image", {
-          uri: meal.getImage(),
+          uri: meal.image,
           name: "meal.jpg",
           type: "image/jpeg",
         });
@@ -122,12 +138,12 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Upload audio if it's a local file
-      if (token && meal.getAudio() && meal.getAudio()?.startsWith("file://")) {
+      if (token && meal.audio && meal.audio?.startsWith("file://")) {
         console.log("[MealContext] Uploading meal audio to server...");
         const formData = new FormData();
         // @ts-ignore
         formData.append("audio", {
-          uri: meal.getAudio(),
+          uri: meal.audio,
           name: "meal.m4a",
           type: "audio/m4a",
         });
@@ -153,10 +169,10 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
       // Update meal with server URLs for local display/storage
       if (displayImage) {
-          meal.setImage(displayImage);
+          meal.image = displayImage;
       }
       if (displayAudio) {
-          meal.setAudio(displayAudio);
+          meal.audio = displayAudio;
       }
 
       // Save to local
@@ -167,7 +183,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       // Send to server
       if (token) {
         console.log("[MealContext] Syncing meal to server...");
-        const mealData = meal.toJSON();
+        const mealData = { ...meal };
         // Use relative path for server storage
         if (serverImagePath) {
             mealData.image = serverImagePath;
@@ -206,15 +222,15 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       const token = await AsyncStorage.getItem("auth_token");
       let serverImagePath = undefined;
       let serverAudioPath = undefined;
-      let displayImage = meal.getImage();
-      let displayAudio = meal.getAudio();
+      let displayImage = meal.image;
+      let displayAudio = meal.audio;
 
       // Upload image if it's a local file
-      if (token && meal.getImage() && meal.getImage()?.startsWith("file://")) {
+      if (token && meal.image && meal.image?.startsWith("file://")) {
         const formData = new FormData();
         // @ts-ignore
         formData.append("image", {
-          uri: meal.getImage(),
+          uri: meal.image,
           name: "meal.jpg",
           type: "image/jpeg",
         });
@@ -236,11 +252,11 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Upload audio if it's a local file
-      if (token && meal.getAudio() && meal.getAudio()?.startsWith("file://")) {
+      if (token && meal.audio && meal.audio?.startsWith("file://")) {
         const formData = new FormData();
         // @ts-ignore
         formData.append("audio", {
-          uri: meal.getAudio(),
+          uri: meal.audio,
           name: "meal.m4a",
           type: "audio/m4a",
         });
@@ -262,18 +278,18 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (displayImage) {
-        meal.setImage(displayImage);
+        meal.image = displayImage;
       }
       if (displayAudio) {
-        meal.setAudio(displayAudio);
+        meal.audio = displayAudio;
       }
 
       await StorageService.updateMeal(meal);
       // Update state locally
-      setMeals((prev) => prev.map((m) => (m.getId() === meal.getId() ? meal : m)));
+      setMeals((prev) => prev.map((m) => (m.id === meal.id ? meal : m)));
 
       if (token) {
-        const mealData = meal.toJSON();
+        const mealData = { ...meal };
         if (serverImagePath) {
           mealData.image = serverImagePath;
         } else if (mealData.image && mealData.image.startsWith(API_BASE_URL)) {
@@ -302,7 +318,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   const deleteMeal = async (mealId: string) => {
     try {
       await StorageService.deleteMeal(mealId);
-      setMeals(prev => prev.filter(m => m.getId() !== mealId));
+      setMeals(prev => prev.filter(m => m.id !== mealId));
 
       const token = await AsyncStorage.getItem("auth_token");
       if (token) {

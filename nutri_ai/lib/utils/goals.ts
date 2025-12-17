@@ -1,7 +1,7 @@
 import { 
   ActivityLevel, 
   Gender, 
-  IUser, 
+  User, 
   MotivationToTrackCalories,
   WeightGoalType,
   WeightLossRate 
@@ -33,7 +33,7 @@ export interface MacroSplit {
  * Calculate Basal Metabolic Rate using Mifflin-St Jeor Equation
  * This is the most accurate formula for most people
  */
-export const calculateBMR = (user: IUser): number => {
+export const calculateBMR = (user: User): number => {
   let bmr = 10 * user.weightKg + 6.25 * user.heightCm - 5 * user.age;
   
   if (user.gender === Gender.Male) {
@@ -50,7 +50,7 @@ export const calculateBMR = (user: IUser): number => {
  * More accurate if body fat percentage is known
  * BMR = 370 + (21.6 × lean body mass in kg)
  */
-export const calculateBMRWithBodyFat = (user: IUser): number => {
+export const calculateBMRWithBodyFat = (user: User): number => {
   if (!user.bodyFatPercentage) {
     return calculateBMR(user);
   }
@@ -78,7 +78,7 @@ export const getActivityMultiplier = (activityLevel: ActivityLevel): number => {
 /**
  * Calculate Total Daily Energy Expenditure (TDEE)
  */
-export const calculateTDEE = (user: IUser): number => {
+export const calculateTDEE = (user: User): number => {
   const bmr = user.bodyFatPercentage 
     ? calculateBMRWithBodyFat(user) 
     : calculateBMR(user);
@@ -119,7 +119,7 @@ export const getCalorieAdjustmentForRate = (
 /**
  * Determine macro split based on user goals and preferences
  */
-export const getMacroSplit = (user: IUser): MacroSplit => {
+export const getMacroSplit = (user: User): MacroSplit => {
   const motivation = user.motivation;
   const proteinPref = user.proteinPreference || "moderate";
   
@@ -189,7 +189,7 @@ export const getMacroSplit = (user: IUser): MacroSplit => {
  * Calculate recommended protein intake based on body weight and goals
  * Returns grams of protein per day
  */
-export const calculateProteinTarget = (user: IUser, calories: number): number => {
+export const calculateProteinTarget = (user: User, calories: number): number => {
   // Protein recommendations (g/kg body weight)
   let proteinPerKg = 1.6; // Default for muscle building/active individuals
   
@@ -254,7 +254,7 @@ export const calculateTimeToGoal = (
 /**
  * Main function to calculate comprehensive nutrition goals
  */
-export const calculateGoals = (user: IUser): NutritionGoals => {
+export const calculateGoals = (user: User): NutritionGoals => {
   // Calculate BMR and TDEE
   const bmr = user.bodyFatPercentage 
     ? calculateBMRWithBodyFat(user) 
@@ -374,7 +374,7 @@ export const calculateGoals = (user: IUser): NutritionGoals => {
 /**
  * Helper function to get a summary of the user's goals
  */
-export const getGoalSummary = (user: IUser, goals: NutritionGoals): string => {
+export const getGoalSummary = (user: User, goals: NutritionGoals): string => {
   const parts: string[] = [];
   
   parts.push(`Daily Calorie Target: ${goals.calories} kcal`);
@@ -402,7 +402,7 @@ export const getGoalSummary = (user: IUser, goals: NutritionGoals): string => {
 /**
  * Validate if user's goals are realistic and safe
  */
-export const validateGoals = (user: IUser): { valid: boolean; warnings: string[] } => {
+export const validateGoals = (user: User): { valid: boolean; warnings: string[] } => {
   const warnings: string[] = [];
   
   // Check if target weight is realistic
