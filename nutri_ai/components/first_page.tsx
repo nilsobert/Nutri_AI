@@ -1,12 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
-import {
-  Animated,
-  Easing,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BorderRadius, Shadows, Spacing, TextStyles } from "../constants/theme";
 

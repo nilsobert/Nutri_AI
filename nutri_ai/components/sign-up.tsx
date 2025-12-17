@@ -73,7 +73,9 @@ export default function SignUp() {
       const defaultMedicalCondition = MedicalCondition.None;
       const defaultMotivation = MotivationToTrackCalories.LeadAHealthyLife;
 
-      console.log("[SignUp] Sending signup request with default profile data...");
+      console.log(
+        "[SignUp] Sending signup request with default profile data...",
+      );
       const signupPayload = {
         email: emailTrim,
         password: password,
