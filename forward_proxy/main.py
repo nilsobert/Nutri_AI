@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 
 from database import get_db, init_db, User, Meal, AnalysisLog, AnalysisStatus
 from PIL import Image
+from pydub import AudioSegment
 import io
 from auth import (
     get_password_hash,
@@ -32,7 +33,7 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
@@ -728,11 +729,27 @@ async def transcribe_audio(audio_path: str):
     whisper_url = os.getenv("WHISPER_API_URL", "http://pangolin.7cc.xyz:10303/transcribe")
     whisper_key = os.getenv("WHISPER_API_KEY", "1234")
     
+    # Convert to WAV if needed
+    wav_path = audio_path
+    if not audio_path.lower().endswith(".wav"):
+        try:
+            logger.info(f"Converting {audio_path} to WAV")
+            audio = AudioSegment.from_file(audio_path)
+            # Set to 16kHz, mono, 16-bit as recommended by Whisper
+            audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+            wav_path = os.path.splitext(audio_path)[0] + ".wav"
+            audio.export(wav_path, format="wav")
+            logger.info(f"Converted to {wav_path}")
+        except Exception as e:
+            logger.error(f"Failed to convert audio: {e}")
+            # Fallback to original file if conversion fails
+            pass
+
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            with open(audio_path, "rb") as f:
-                files = {'file': (os.path.basename(audio_path), f, "audio/mpeg")}
+            with open(wav_path, "rb") as f:
+                files = {'file': (os.path.basename(wav_path), f, "audio/wav")}
                 headers = {"X-API-Key": whisper_key}
                 
                 logger.info(f"[ExternalAPI] Calling Whisper API at {whisper_url}")
