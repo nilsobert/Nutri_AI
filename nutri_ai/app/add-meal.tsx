@@ -141,6 +141,8 @@ const AddMealScreen = () => {
       }
 
       const data = await response.json();
+      console.log("Analysis response:", JSON.stringify(data, null, 2));
+      
       // Populate form
       if (data.structured_meal && data.structured_meal.items && data.structured_meal.items.length > 0) {
           const item = data.structured_meal.items[0]; // Just take first for now
@@ -149,7 +151,10 @@ const AddMealScreen = () => {
           setProtein(item.nutrition.protein_g.toString());
           setCarbs(item.nutrition.carbohydrates_g.toString());
           setFat(item.nutrition.fat_g.toString());
+      } else {
+          Alert.alert("Analysis Info", "No food items identified automatically. Please enter details manually.");
       }
+      
       if (data.transcription) {
           setTranscription(data.transcription);
       }
