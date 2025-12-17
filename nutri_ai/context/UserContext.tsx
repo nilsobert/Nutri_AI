@@ -79,6 +79,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         const userObj = User.fromJSON(profileData);
         setUserState(userObj);
         await StorageService.saveUser(userObj);
+        // Store user email as user_id for meal context tracking
+        await AsyncStorage.setItem("user_id", profileData.email);
         console.log("[UserContext] Profile saved locally");
       } else {
         console.error(`[UserContext] Failed to fetch profile: ${profileResponse.status}`);
@@ -219,12 +221,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    console.log("[UserContext] Logging out...");
     setUserState(null);
     setProfileImage(null);
-    await StorageService.clearUser();
-    await StorageService.removeProfileImage();
-    // Optionally clear meals too if they are user-specific and we want to wipe data on logout
-    // await StorageService.clearAll();
+    await AsyncStorage.removeItem("auth_token");
+    await AsyncStorage.removeItem("user_id");
+    await StorageService.clearAll();
+    console.log("[UserContext] Logout complete");
   };
 
   const goals = useMemo(() => {

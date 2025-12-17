@@ -58,6 +58,7 @@ const AddMealScreen = () => {
       quality,
       nutrition,
       undefined,
+      undefined,
       "Test Meal",
       timestamp,
     );

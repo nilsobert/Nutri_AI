@@ -17,8 +17,10 @@ export class MealEntry {
   // Unix timestamp
   private readonly _timestamp: number;
   private _category: MealCategory;
-  // Path to stored image
+  // Path/URL to stored image
   private _image?: string;
+  // Path/URL to stored audio
+  private _audio?: string;
   private _transcription?: string;
   private _mealQuality: MealQuality;
   private _nutritionInfo: NutritionInfo;
@@ -28,6 +30,7 @@ export class MealEntry {
     mealQuality: MealQuality,
     nutritionInfo: NutritionInfo,
     image?: string,
+    audio?: string,
     transcription?: string,
     timestamp?: number,
     id?: string,
@@ -38,6 +41,7 @@ export class MealEntry {
     this._mealQuality = mealQuality;
     this._nutritionInfo = nutritionInfo;
     this._image = image;
+    this._audio = audio;
     this._transcription = transcription;
   }
 
@@ -66,6 +70,14 @@ export class MealEntry {
 
   public setImage(image: string | undefined): void {
     this._image = image;
+  }
+
+  public getAudio(): string | undefined {
+    return this._audio;
+  }
+
+  public setAudio(audio: string | undefined): void {
+    this._audio = audio;
   }
 
   public getTranscription(): string | undefined {
@@ -98,6 +110,7 @@ export class MealEntry {
       timestamp: this._timestamp,
       category: this._category,
       image: this._image,
+      audio: this._audio,
       transcription: this._transcription,
       mealQuality: this._mealQuality,
       nutritionInfo: this._nutritionInfo,
@@ -110,6 +123,7 @@ export class MealEntry {
       MealQuality.fromJSON(json.mealQuality),
       NutritionInfo.fromJSON(json.nutritionInfo),
       json.image,
+      json.audio,
       json.transcription,
       json.timestamp,
       json.id,
