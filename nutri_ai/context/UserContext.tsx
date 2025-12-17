@@ -15,6 +15,7 @@ interface UserContextType {
   logout: () => Promise<void>;
   isLoading: boolean;
   goals: NutritionGoals | null;
+  token: string | null;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -23,6 +24,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -32,10 +34,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       // Check if user has a token (is logged in)
-      const token = await AsyncStorage.getItem("auth_token");
+      const storedToken = await AsyncStorage.getItem("auth_token");
+      setToken(storedToken);
       
       // Only load from storage if we have a token (user is logged in)
-      if (token) {
+      if (storedToken) {
         const [loadedImage, loadedUser] = await Promise.all([
           StorageService.loadProfileImage(),
           StorageService.loadUser(),
@@ -60,8 +63,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      const token = await AsyncStorage.getItem("auth_token");
-      if (!token) {
+      const storedToken = await AsyncStorage.getItem("auth_token");
+      setToken(storedToken);
+      if (!storedToken) {
         console.log("[UserContext] No auth token found, skipping fetchUser");
         return;
       }
@@ -227,6 +231,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     await StorageService.clearAll();
     setUserState(null);
     setProfileImage(null);
+    setToken(null);
     console.log("[UserContext] Logout complete");
   };
 
@@ -247,6 +252,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         logout,
         isLoading,
         goals,
+        token,
       }}
     >
       {children}

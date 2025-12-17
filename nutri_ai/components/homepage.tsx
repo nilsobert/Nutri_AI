@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   LayoutAnimation,
   Platform,
@@ -15,6 +15,8 @@ import {
   Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
+  Modal,
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -28,9 +30,14 @@ import Animated, {
   interpolateColor,
   Extrapolation,
   SharedValue,
+  withSpring,
+  withRepeat,
+  withSequence,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { Audio } from "expo-av";
 import { useUser } from "../context/UserContext";
 import { useMeals } from "../context/MealContext";
 import { useNetwork } from "../context/NetworkContext";
@@ -543,11 +550,18 @@ const IOSStyleHomeScreen: React.FC = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
   const scrollViewRef = React.useRef<Animated.ScrollView>(null);
   const { profileImage, goals } = useUser();
   const { meals: allMeals } = useMeals();
+
+  // Camera & Audio State
+  const [permission, requestPermission] = useCameraPermissions();
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const cameraRef = useRef<CameraView>(null);
+  const recordingScale = useSharedValue(1);
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
@@ -668,6 +682,80 @@ const IOSStyleHomeScreen: React.FC = () => {
     const today = new Date();
     setCurrentDate(today);
     scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
+  // Audio Recording Logic
+  const startRecording = async () => {
+    try {
+      if (!permission?.granted) {
+        const { status } = await requestPermission();
+        if (status !== "granted") {
+          Alert.alert("Permission needed", "Camera permission is required to track meals.");
+          return;
+        }
+      }
+
+      const { status: audioStatus } = await Audio.requestPermissionsAsync();
+      if (audioStatus !== "granted") {
+        Alert.alert("Permission needed", "Microphone permission is required to record audio notes.");
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      setRecording(recording);
+      setIsRecording(true);
+      recordingScale.value = withRepeat(withSequence(withTiming(1.2, { duration: 500 }), withTiming(1, { duration: 500 })), -1, true);
+      
+    } catch (err) {
+      console.error("Failed to start recording", err);
+      Alert.alert("Error", "Failed to start recording");
+    }
+  };
+
+  const stopRecordingAndCapture = async () => {
+    if (!recording) return;
+
+    try {
+      setIsRecording(false);
+      recordingScale.value = withSpring(1);
+
+      // 1. Stop Audio
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+
+      // 2. Take Picture
+      if (cameraRef.current) {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.7,
+          base64: false,
+          skipProcessing: true, // Faster capture
+        });
+
+        // 3. Navigate to Add Meal Screen
+        if (photo && uri) {
+          router.push({
+            pathname: "/add-meal",
+            params: {
+              date: currentDate.toISOString(),
+              imageUri: photo.uri,
+              audioUri: uri,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to stop recording", err);
+      Alert.alert("Error", "Failed to capture meal");
+    }
   };
 
   const meals: MealEntry[] = allMeals.filter((meal) => {
@@ -993,22 +1081,53 @@ const IOSStyleHomeScreen: React.FC = () => {
 
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
-        style={[styles.fab, !isConnected && { opacity: 0.5 }]}
+        style={[
+          styles.fab, 
+          !isConnected && { opacity: 0.5 },
+          useAnimatedStyle(() => ({
+            transform: [{ scale: recordingScale.value }],
+            backgroundColor: isRecording ? "#FF3B30" : Colors.primary,
+          }))
+        ]}
+        onLongPress={() => {
+          if (isConnected) startRecording();
+        }}
+        onPressOut={() => {
+          if (isRecording) stopRecordingAndCapture();
+        }}
         onPress={() => {
-          if (isConnected) {
-            router.push({
-              pathname: "/add-meal",
-              params: { date: currentDate.toISOString() },
-            });
+          if (isConnected && !isRecording) {
+            // Fallback for tap: just open add meal without pre-recording
+            // Or we could make tap start camera only?
+            // For now, let's keep tap as "Manual Add" or maybe just hint to hold
+            Alert.alert("Hold to Record", "Hold the button to record audio and take a picture of your meal.");
           }
         }}
         activeOpacity={isConnected ? 0.8 : 1}
         entering={FadeIn}
         exiting={FadeOut}
         disabled={!isConnected}
+        delayLongPress={200}
       >
-        <Ionicons name="add" size={28} color="white" />
+        <Ionicons name={isRecording ? "mic" : "add"} size={28} color="white" />
       </AnimatedTouchableOpacity>
+
+      {/* Camera Overlay */}
+      <Modal visible={isRecording} transparent animationType="fade">
+        <View style={styles.cameraOverlay}>
+          {permission?.granted && (
+            <CameraView 
+              ref={cameraRef}
+              style={styles.camera} 
+              facing="back"
+            />
+          )}
+          <View style={styles.recordingIndicator}>
+            <View style={styles.recordingDot} />
+            <Text style={styles.recordingText}>Recording... Release to Snap</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1309,13 +1428,44 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: Spacing["3xl"],
     right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     ...Shadows.large,
+    zIndex: 200,
+  },
+  cameraOverlay: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  camera: {
+    flex: 1,
+  },
+  recordingIndicator: {
+    position: 'absolute',
+    bottom: 120,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 10,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+  },
+  recordingText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
   slideHeader: {
     flexDirection: "row",

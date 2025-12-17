@@ -59,12 +59,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   return (
-    <NetworkProvider>
-      <UserProvider>
+    <UserProvider>
+      <NetworkProvider>
         <MealProvider>
           <RootLayoutNav />
         </MealProvider>
-      </UserProvider>
-    </NetworkProvider>
+      </NetworkProvider>
+    </UserProvider>
   );
 }
