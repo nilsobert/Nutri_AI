@@ -47,13 +47,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
         setLastSyncedUserId(currentUserId);
       }
 
-      // Load from local storage first (only if same user)
-      if (currentUserId === lastSyncedUserId) {
-        const loadedMeals = await StorageService.loadMeals();
-        setMeals(loadedMeals);
-      }
-
-      // Sync with server
+      // Sync with server (always fetch from server, don't rely on local cache for user changes)
       console.log("[MealContext] Fetching meals from server...");
       const response = await fetch(`${API_BASE_URL}/meals`, {
         headers: { "Authorization": `Bearer ${token}` },
