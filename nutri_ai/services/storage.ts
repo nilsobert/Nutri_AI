@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from 'expo-file-system';
 import { User, parseUser } from "../types/user";
 import { MealEntry, parseMealEntry } from "../types/mealEntry";
 
@@ -117,6 +118,37 @@ export const StorageService = {
       ]);
     } catch (e) {
       console.error("Failed to clear all data", e);
+    }
+  },
+
+  async moveFileToPermanentStorage(uri: string): Promise<string> {
+    try {
+      if (!uri) return uri;
+      // If already in document directory, return as is
+      // @ts-ignore
+      if (FileSystem.documentDirectory && uri.includes(FileSystem.documentDirectory)) return uri;
+
+      const filename = uri.split('/').pop();
+      // @ts-ignore
+      const newPath = `${FileSystem.documentDirectory}meals/${filename}`;
+      
+      // Ensure directory exists
+      // @ts-ignore
+      const dirInfo = await FileSystem.getInfoAsync(`${FileSystem.documentDirectory}meals/`);
+      if (!dirInfo.exists) {
+        // @ts-ignore
+        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}meals/`, { intermediates: true });
+      }
+
+      await FileSystem.moveAsync({
+        from: uri,
+        to: newPath
+      });
+      
+      return newPath;
+    } catch (e) {
+      console.error("Failed to move file", e);
+      return uri; // Fallback to original URI if move fails
     }
   },
 };

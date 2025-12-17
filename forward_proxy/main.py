@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta, date
 from typing import Optional, List
+from contextlib import asynccontextmanager
 import httpx
 import os
 import base64
@@ -15,7 +16,9 @@ import time
 import uuid
 from dotenv import load_dotenv
 
-from database import get_db, init_db, User, Meal
+from database import get_db, init_db, User, Meal, AnalysisLog, AnalysisStatus
+from PIL import Image
+import io
 from auth import (
     get_password_hash,
     verify_password,
@@ -35,7 +38,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("forward_proxy")
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up...")
+    await health_check_external_services()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,6 +56,9 @@ app.add_middleware(
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+
     start_time = time.time()
     request_id = f"{time.time()}-{os.urandom(4).hex()}"
     
@@ -73,6 +85,49 @@ async def log_requests(request: Request, call_next):
 
 # Initialize DB
 init_db()
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+async def health_check_external_services():
+    # Whisper Check
+    whisper_url = os.getenv("WHISPER_API_URL", "http://pangolin.7cc.xyz:10303/transcribe")
+    try:
+        # Check connectivity to Whisper service
+        # Use the /health endpoint which is standard for this service
+        base_url = whisper_url.rsplit('/', 1)[0]
+        health_url = f"{base_url}/health"
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+             try:
+                 resp = await client.get(health_url)
+                 if resp.status_code == 200:
+                     logger.info(f"External services: Whisper ONLINE ({health_url}) - Status: {resp.status_code}")
+                 else:
+                     logger.warning(f"External services: Whisper ONLINE but returned {resp.status_code} ({health_url})")
+             except Exception as e:
+                 logger.error(f"External services: Whisper OFFLINE or Unreachable ({health_url}) - {e}")
+    except Exception as e:
+        logger.error(f"External services: Whisper Check Error ({e})")
+
+    # OpenAI Check
+    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if openai_base_url and openai_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                headers = {"Authorization": f"Bearer {openai_api_key}"}
+                # Try listing models as a lightweight check
+                resp = await client.get(f"{openai_base_url}/models", headers=headers)
+                if resp.status_code == 200:
+                    logger.info("External services: OpenAI ONLINE")
+                else:
+                    logger.error(f"External services: OpenAI Check Failed with status {resp.status_code}")
+        except Exception as e:
+            logger.error(f"External services: OpenAI Check Error ({e})")
+    else:
+        logger.warning("External services: OpenAI Check Skipped (Missing Env Vars)")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -667,6 +722,249 @@ Return *only* the JSON object and nothing else."""
 
     except Exception as e:
         logger.error(f"VLM Exception: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def transcribe_audio(audio_path: str):
+    whisper_url = os.getenv("WHISPER_API_URL", "http://pangolin.7cc.xyz:10303/transcribe")
+    whisper_key = os.getenv("WHISPER_API_KEY", "1234")
+    
+    start_time = time.time()
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            with open(audio_path, "rb") as f:
+                files = {'file': (os.path.basename(audio_path), f, "audio/mpeg")}
+                headers = {"X-API-Key": whisper_key}
+                
+                logger.info(f"[ExternalAPI] Calling Whisper API at {whisper_url}")
+                response = await client.post(whisper_url, headers=headers, files=files, data={"language": "en"})
+                
+        duration = time.time() - start_time
+        logger.info(f"[ExternalAPI] Whisper took {duration:.2f}s")
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get("text", ""), result
+        else:
+            logger.error(f"Whisper API Error: {response.status_code} - {response.text}")
+            return "", {"error": response.text, "status_code": response.status_code}
+            
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"[ExternalAPI] Whisper failed after {duration:.2f}s: {e}")
+        return "", {"error": str(e)}
+
+async def analyze_image_vlm(image_path: str, transcript: str = ""):
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    
+    if not openai_api_key or not openai_base_url:
+         raise Exception("Missing OpenAI credentials")
+
+    # Resize image if needed
+    try:
+        file_size = os.path.getsize(image_path)
+        if file_size > 2 * 1024 * 1024: # 2MB
+            logger.info(f"Image size {file_size} bytes > 2MB. Resizing...")
+            with Image.open(image_path) as img:
+                img.thumbnail((1024, 1024))
+                buffer = io.BytesIO()
+                img.save(buffer, format="JPEG", quality=85)
+                image_content = buffer.getvalue()
+        else:
+            with open(image_path, "rb") as f:
+                image_content = f.read()
+    except Exception as e:
+        logger.warning(f"Image processing failed: {e}. Using original file.")
+        with open(image_path, "rb") as f:
+            image_content = f.read()
+
+    base64_image = base64.b64encode(image_content).decode('utf-8')
+    
+    json_schema_template = """
+    {
+      "success": true,
+      "requestId": "img_analysis_...",
+      "items": [
+        {
+          "name": "Grilled Chicken Breast",
+          "confidence": 0.9,
+          "serving_size_grams": 150,
+          "nutrition": {
+            "calories": 248,
+            "protein_g": 46.5,
+            "fat_g": 5.4,
+            "carbohydrates_g": 0,
+            "sugar_g": 0,
+            "fiber_g": 0
+          }
+        }
+      ],
+      "errorMessage": null
+    }
+    """
+    
+    prompt_text = f"""Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts.
+
+Return a JSON object matching this exact schema:
+{json_schema_template}
+
+RULES:
+- `success`: Set to `true` if food is found, `false` otherwise.
+- `requestId`: Generate a unique ID for this analysis.
+- `items`: Create one object for *each* distinct food item in the image.
+- `confidence`: Your confidence (0.0 to 1.0).
+- `serving_size_grams`: Your best estimate of the item's weight in grams.
+- `nutrition`: The nutritional info for that *single item*.
+- `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
+
+Return *only* the JSON object and nothing else."""
+
+    if transcript:
+        prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
+
+    headers = {
+        "Authorization": f"Bearer {openai_api_key}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "Qwen2.5-VL-72B-Instruct",
+        "messages": [
+            {
+                "role": "system", 
+                "content": "You are an expert nutrition assistant. Respond only with the requested JSON object."
+            },
+            {
+                "role": "user", 
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt_text
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "temperature": 0.0,
+        "max_tokens": 2048
+    }
+    
+    logger.info(f"[ExternalAPI] Calling VLM API at {openai_base_url}")
+    logger.info(f"Prompt (truncated): {prompt_text[:500]}...")
+    logger.debug(f"Full Prompt: {prompt_text}")
+    
+    start_time = time.time()
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(f"{openai_base_url}/chat/completions", headers=headers, json=payload)
+    
+    duration = time.time() - start_time
+    logger.info(f"[ExternalAPI] VLM took {duration:.2f}s")
+        
+    if response.status_code != 200:
+         logger.error(f"AI Provider Error: {response.status_code} - {response.text}")
+         return {"error": response.text}, response.json() if response.headers.get("content-type") == "application/json" else response.text, prompt_text
+         
+    ai_result = response.json()
+    content = ai_result["choices"][0]["message"]["content"]
+    
+    # Parse JSON
+    try:
+        if "```json" in content:
+            parsed_content = content.split("```json")[1].split("```")[0].strip()
+        elif "```" in content:
+            parsed_content = content.split("```")[1].split("```")[0].strip()
+        else:
+            parsed_content = content
+        
+        json_obj = json.loads(parsed_content)
+        logger.info("[Parser] Successfully extracted JSON")
+        return json_obj, ai_result, prompt_text
+    except Exception as e:
+        logger.error(f"[Parser] Failed to parse JSON: {e}")
+        logger.debug(f"Raw content: {content}")
+        return {"error": "Failed to parse JSON", "raw": content}, ai_result, prompt_text
+
+@app.post("/api/analyze")
+async def analyze_meal(
+    image: UploadFile = File(...),
+    audio: Optional[UploadFile] = File(None),
+    client_timestamp: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    request_start_time = time.time()
+    analysis_id = str(uuid.uuid4())
+    
+    # 1. Ingest & Store
+    # Save files
+    os.makedirs(f"data/temp/{current_user.id}", exist_ok=True)
+    
+    image_ext = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+    image_path = f"data/temp/{current_user.id}/{analysis_id}.{image_ext}"
+    
+    with open(image_path, "wb") as buffer:
+        content = await image.read()
+        buffer.write(content)
+        
+    audio_path = None
+    if audio:
+        audio_ext = audio.filename.split(".")[-1] if "." in audio.filename else "mp3"
+        audio_path = f"data/temp/{current_user.id}/{analysis_id}.{audio_ext}"
+        with open(audio_path, "wb") as buffer:
+            audio_content = await audio.read()
+            buffer.write(audio_content)
+            
+    # Create Log
+    log_entry = AnalysisLog(
+        id=analysis_id,
+        user_id=current_user.id,
+        image_path=image_path,
+        audio_path=audio_path,
+        status=AnalysisStatus.PENDING.value
+    )
+    db.add(log_entry)
+    db.commit()
+    
+    try:
+        # 2. Transcribe
+        transcript = ""
+        if audio_path:
+            transcript, raw_whisper = await transcribe_audio(audio_path)
+            log_entry.transcription_text = transcript
+            log_entry.transcription_raw_response = json.dumps(raw_whisper) if raw_whisper else None
+            db.commit()
+            
+        # 3. VLM Analysis
+        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, transcript)
+        
+        log_entry.vlm_request_prompt = prompt_used
+        log_entry.vlm_raw_response = json.dumps(raw_vlm) if raw_vlm else None
+        
+        # 4. Finalize
+        if "error" in vlm_response:
+             log_entry.status = AnalysisStatus.FAILURE.value
+        else:
+             log_entry.status = AnalysisStatus.SUCCESS.value
+             
+        log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
+        db.commit()
+        
+        return {
+            "analysis_id": analysis_id,
+            "transcription": transcript,
+            "structured_meal": vlm_response
+        }
+        
+    except Exception as e:
+        logger.error(f"Analysis failed: {e}", exc_info=True)
+        log_entry.status = AnalysisStatus.FAILURE.value
+        log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
+        db.commit()
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
