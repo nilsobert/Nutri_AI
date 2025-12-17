@@ -4,6 +4,7 @@ import { StorageService } from "../services/storage";
 import { MealEntry, parseMealEntry } from "../types/mealEntry";
 import { API_BASE_URL } from "../constants/values";
 import { useUser } from "./UserContext";
+import { generateYearMeals } from "../lib/utils/generator";
 
 interface MealContextType {
   meals: MealEntry[];
@@ -11,6 +12,7 @@ interface MealContextType {
   updateMeal: (meal: MealEntry) => Promise<void>;
   deleteMeal: (mealId: string) => Promise<void>;
   refreshMeals: () => Promise<void>;
+  fillLastXDays: (days: number) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -332,6 +334,51 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fillLastXDays = async (days: number) => {
+    try {
+      console.log(`[MealContext] Filling last ${days} days with generated meals...`);
+      
+      // Generate all meals for the year
+      const yearMealsRecord = generateYearMeals();
+      
+      // Convert to flat array and filter for last X days
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const generatedMeals: MealEntry[] = [];
+      
+      for (let i = 0; i < days; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        
+        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}-${String(date.getDate()).padStart(2, "0")}`;
+        
+        const dayMeals = yearMealsRecord[dateStr];
+        if (dayMeals) {
+          Object.values(dayMeals).forEach((meal) => {
+            if (meal) {
+              generatedMeals.push(meal);
+            }
+          });
+        }
+      }
+      
+      console.log(`[MealContext] Generated ${generatedMeals.length} meals for last ${days} days`);
+      
+      // Add all generated meals
+      for (const meal of generatedMeals) {
+        await addMeal(meal);
+      }
+      
+      console.log("[MealContext] Finished filling last X days");
+    } catch (error) {
+      console.error("[MealContext] Failed to fill last X days", error);
+    }
+  };
+
   return (
     <MealContext.Provider
       value={{
@@ -340,6 +387,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
         updateMeal,
         deleteMeal,
         refreshMeals,
+        fillLastXDays,
         isLoading,
       }}
     >
