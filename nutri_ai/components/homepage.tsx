@@ -1,48 +1,44 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  LayoutAnimation,
+  Image,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   UIManager,
   useColorScheme,
-  View,
   useWindowDimensions,
-  Image,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  View,
 } from "react-native";
 import Animated, {
+  Extrapolation,
   FadeIn,
   FadeOut,
+  interpolate,
+  interpolateColor,
   LinearTransition,
+  SharedValue,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  useAnimatedScrollHandler,
-  interpolate,
-  interpolateColor,
-  Extrapolation,
-  SharedValue,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { useUser } from "../context/UserContext";
-import { useMeals } from "../context/MealContext";
-import { useNetwork } from "../context/NetworkContext";
-import { DAILY_CALORIE_GOAL } from "../constants/values";
 import {
   BorderRadius,
   Colors,
   Shadows,
   Spacing,
-  Typography,
   TextStyles,
+  Typography,
 } from "../constants/theme";
+import { DAILY_CALORIE_GOAL } from "../constants/values";
+import { useMeals } from "../context/MealContext";
+import { useNetwork } from "../context/NetworkContext";
+import { useUser } from "../context/UserContext";
 import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
 
@@ -312,17 +308,19 @@ const MealCard: React.FC<MealCardProps> = ({
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
-  const borderColor = isDark ? "#333" : "#f0f0f0";
+  const secondaryText = isDark
+    ? Colors.secondaryText.dark
+    : Colors.secondaryText.light;
+  const borderColor = isDark ? Colors.border.dark : Colors.border.light;
 
   const totalCalories = meals.reduce(
-    (sum, meal) => sum + meal.nutritionInfo.calories,
+    (sum, meal) => sum + meal.getNutritionInfo().getCalories(),
     0,
   );
 
   const renderMealDetails = (meal: MealEntry) => {
-    const nutrition = meal.nutritionInfo;
-    const quality = meal.mealQuality;
+    const nutrition = meal.getNutritionInfo();
+    const quality = meal.getMealQuality();
 
     return (
       <View style={{ width: contentWidth }}>
@@ -332,10 +330,10 @@ const MealCard: React.FC<MealCardProps> = ({
               style={[styles.slideTitle, { color: textColor }]}
               numberOfLines={1}
             >
-              {meal.transcription || "Meal Item"}
+              {meal.getTranscription() || "Meal Item"}
             </Text>
             <Text style={[styles.slideCalories, { color: secondaryText }]}>
-              {nutrition.calories} kcal
+              {nutrition.getCalories()} kcal
             </Text>
           </View>
         )}
@@ -343,19 +341,19 @@ const MealCard: React.FC<MealCardProps> = ({
         <View style={styles.nutrientRow}>
           <NutrientPill
             label="Carbs"
-            value={`${nutrition.carbs}g`}
+            value={`${nutrition.getCarbs()}g`}
             color={Colors.secondary.carbs}
             isDark={isDark}
           />
           <NutrientPill
             label="Protein"
-            value={`${nutrition.protein}g`}
+            value={`${nutrition.getProtein()}g`}
             color={Colors.secondary.protein}
             isDark={isDark}
           />
           <NutrientPill
             label="Fat"
-            value={`${nutrition.fat}g`}
+            value={`${nutrition.getFat()}g`}
             color={Colors.secondary.fat}
             isDark={isDark}
           />
@@ -373,13 +371,13 @@ const MealCard: React.FC<MealCardProps> = ({
                 styles.qualityBadge,
                 {
                   backgroundColor: getQualityColor(
-                    quality.mealQualityScore,
+                    quality.getMealQualityScore(),
                   ),
                 },
               ]}
             >
               <Text style={styles.qualityScore}>
-                {quality.mealQualityScore}
+                {quality.getMealQualityScore()}
               </Text>
             </View>
           </View>
@@ -388,7 +386,7 @@ const MealCard: React.FC<MealCardProps> = ({
               Goal Fit
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.goalFitPercentage}%
+              {quality.getGoalFitPercentage()}%
             </Text>
           </View>
           <View style={styles.statItem}>
@@ -396,7 +394,7 @@ const MealCard: React.FC<MealCardProps> = ({
               Density
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.calorieDensity.toFixed(1)}
+              {quality.getCalorieDensity().toFixed(1)}
             </Text>
           </View>
         </View>
@@ -417,7 +415,7 @@ const MealCard: React.FC<MealCardProps> = ({
         <View
           style={[
             styles.mealIcon,
-            { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+            { backgroundColor: isDark ? Colors.grey.dark : "#F2F2F7" },
           ]}
         >
           <Ionicons
@@ -452,7 +450,7 @@ const MealCard: React.FC<MealCardProps> = ({
             >
               {meals.length > 1
                 ? `${meals.length} items`
-                : meals[0]?.transcription || "No description"}
+                : meals[0]?.getTranscription() || "No description"}
             </Text>
             <Animated.View style={chevronStyle}>
               <Ionicons name="chevron-down" size={16} color={secondaryText} />
@@ -477,7 +475,7 @@ const MealCard: React.FC<MealCardProps> = ({
                 scrollEventThrottle={16}
               >
                 {meals.map((meal, index) => (
-                  <View key={meal.id || index}>
+                  <View key={meal.getId() || index}>
                     {renderMealDetails(meal)}
                   </View>
                 ))}
@@ -502,7 +500,7 @@ const MealCard: React.FC<MealCardProps> = ({
             style={[
               styles.addMealButton,
               {
-                backgroundColor: isDark ? "#333" : "#f5f5f5",
+                backgroundColor: isDark ? Colors.grey.dark : "#f5f5f5",
                 opacity: isConnected ? 1 : 0.5,
               },
             ]}
@@ -520,12 +518,24 @@ const MealCard: React.FC<MealCardProps> = ({
             <Ionicons
               name="add-circle-outline"
               size={20}
-              color={isConnected ? Colors.primary : "#999"}
+              color={
+                isConnected
+                  ? Colors.primary
+                  : isDark
+                    ? Colors.secondaryText.dark
+                    : Colors.secondaryText.light
+              }
             />
             <Text
               style={[
                 styles.addMealButtonText,
-                { color: isConnected ? Colors.primary : "#999" },
+                {
+                  color: isConnected
+                    ? Colors.primary
+                    : isDark
+                      ? Colors.secondaryText.dark
+                      : Colors.secondaryText.light,
+                },
               ]}
             >
               {isConnected ? "Add Item" : "Offline"}
@@ -671,7 +681,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   };
 
   const meals: MealEntry[] = allMeals.filter((meal) => {
-    const mealDate = new Date(meal.timestamp * 1000);
+    const mealDate = new Date(meal.getTimestamp() * 1000);
     return isSameDay(mealDate, currentDate);
   });
 
@@ -679,7 +689,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const groupedMeals = React.useMemo(() => {
     const groups = new Map<MealCategory, MealEntry[]>();
     meals.forEach((meal) => {
-      const cat = meal.category;
+      const cat = meal.getCategory();
       if (!groups.has(cat)) {
         groups.set(cat, []);
       }
@@ -699,23 +709,23 @@ const IOSStyleHomeScreen: React.FC = () => {
 
   const totalCalories = meals.reduce(
     (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.calories,
+      sum + meal.getNutritionInfo().getCalories(),
     0,
   );
 
   const totalCarbs = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.carbs,
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
     0,
   );
 
   const totalProtein = meals.reduce(
     (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.protein,
+      sum + meal.getNutritionInfo().getProtein(),
     0,
   );
 
   const totalFat = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.fat,
+    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
     0,
   );
 
@@ -731,7 +741,9 @@ const IOSStyleHomeScreen: React.FC = () => {
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
+  const secondaryText = isDark
+    ? Colors.secondaryText.dark
+    : Colors.secondaryText.light;
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -886,7 +898,9 @@ const IOSStyleHomeScreen: React.FC = () => {
           styles.absoluteHeader,
           {
             paddingTop: insets.top + Spacing.md,
-            borderBottomColor: isDark ? "#333" : "#ccc",
+            borderBottomColor: isDark
+              ? Colors.border.dark
+              : Colors.border.light,
           },
         ]}
       >
@@ -945,7 +959,10 @@ const IOSStyleHomeScreen: React.FC = () => {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: isConnected ? "#34C759" : "#FF3B30" },
+                  {
+                    backgroundColor: isConnected ? "#34C759" : "#FF3B30",
+                    borderColor: isDark ? Colors.background.dark : "white",
+                  },
                 ]}
               />
             </TouchableOpacity>
