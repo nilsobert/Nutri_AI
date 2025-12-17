@@ -1,8 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import date
-
+from datetime import date, datetime
+import enum
 import os
 
 # Ensure data directory exists
@@ -84,6 +84,26 @@ class Meal(Base):
     meal_quality_score = Column(Float)
 
     user = relationship("User", back_populates="meals")
+
+class AnalysisStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+class AnalysisLog(Base):
+    __tablename__ = "analysis_logs"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    image_path = Column(String, nullable=True)
+    audio_path = Column(String, nullable=True)
+    transcription_text = Column(String, nullable=True)
+    transcription_raw_response = Column(Text, nullable=True)
+    vlm_request_prompt = Column(Text, nullable=True)
+    vlm_raw_response = Column(Text, nullable=True)
+    status = Column(String, default=AnalysisStatus.PENDING.value)
+    processing_duration_ms = Column(Integer, nullable=True)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
