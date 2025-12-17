@@ -5,13 +5,42 @@ import {
 } from "@react-navigation/native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 import { useEffect } from "react";
+import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { UserProvider, useUser } from "@/context/UserContext";
+import { Colors } from "@/constants/theme";
 import { MealProvider } from "@/context/MealContext";
 import { NetworkProvider } from "@/context/NetworkContext";
+import { UserProvider, useUser } from "@/context/UserContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+
+// Custom Dark Theme
+const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background.dark,
+    card: Colors.cardBackground.dark,
+    text: Colors.text.dark,
+    border: Colors.border.dark,
+    notification: Colors.primary,
+  },
+};
+
+// Custom Light Theme
+const CustomLightTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background.light,
+    card: Colors.cardBackground.light,
+    text: Colors.text.light,
+    border: Colors.border.light,
+    notification: Colors.primary,
+  },
+};
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
@@ -36,7 +65,9 @@ function RootLayoutNav() {
   }, [user, isLoading, segments]);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider
+      value={colorScheme === "dark" ? CustomDarkTheme : CustomLightTheme}
+    >
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen

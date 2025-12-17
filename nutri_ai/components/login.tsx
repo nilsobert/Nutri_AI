@@ -1,10 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import CryptoJS from "crypto-js";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -14,17 +15,10 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
-  Modal,
-  ActivityIndicator,
 } from "react-native";
 import { Colors } from "../constants/theme";
-import { useUser } from "../context/UserContext";
-import {
-  User,
-  MedicalCondition,
-  MotivationToTrackCalories,
-} from "../types/user";
 import { API_BASE_URL } from "../constants/values";
+import { useUser } from "../context/UserContext";
 
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
@@ -38,28 +32,33 @@ const IOSStyleLoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    const emailTrim = (email || "").trim().toLowerCase();
+    const inputTrim = (email || "").trim().toLowerCase();
 
-    if (!emailTrim || !password) {
-      Alert.alert("Missing fields", "Please enter email and password");
+    if (!inputTrim || !password) {
+      Alert.alert("Missing fields", "Please enter email/username and password");
       return;
     }
 
-    console.log(`[Login] Attempting to login user: ${emailTrim}`);
+    console.log(`[Login] Attempting to login user: ${inputTrim}`);
     console.log(`[Login] Server URL: ${API_BASE_URL}/login`);
 
     setIsLoading(true);
     try {
-      console.log("[Login] Sending login request...");
+      // Check if input is email or username
+      const isEmail = inputTrim.includes("@");
+      const requestBody = isEmail
+        ? { email: inputTrim, password: password }
+        : { username: inputTrim, password: password };
+
+      console.log(
+        `[Login] Sending login request with ${isEmail ? "email" : "username"}...`,
+      );
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: emailTrim,
-          password: password,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       console.log(`[Login] Response status: ${response.status}`);
@@ -68,9 +67,57 @@ const IOSStyleLoginScreen = () => {
 
       if (!response.ok) {
         console.error("[Login] Login failed:", data.detail);
+
+        // Check if email/username was not found (404)
+        if (
+          response.status === 404 &&
+          (data.detail === "Email not registered" ||
+            data.detail === "Username not registered")
+        ) {
+          console.log(
+            "[Login] Email/username not registered, showing signup prompt",
+          );
+          Alert.alert(
+            "Account Not Found",
+            "This email or username is not yet registered. Would you like to create an account?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Sign Up",
+                onPress: () => router.push("/screens/signup-screen"),
+              },
+            ],
+          );
+          return;
+        }
+
+        // Check if password was incorrect (401)
+        if (response.status === 401 && data.detail === "Incorrect password") {
+          console.log("[Login] Incorrect password, showing alert");
+          Alert.alert(
+            "Incorrect Password",
+            "The password you entered is wrong. Would you like to reset your password or try again?",
+            [
+              {
+                text: "Try Again",
+                style: "cancel",
+              },
+              {
+                text: "Forgot Password",
+                onPress: () => router.push("/screens/recover-screen"),
+              },
+            ],
+          );
+          return;
+        }
+
+        // Other errors
         Alert.alert(
           "Login Failed",
-          data.detail || "Incorrect email or password",
+          data.detail || "An error occurred during login",
         );
         return;
       }
@@ -92,8 +139,9 @@ const IOSStyleLoginScreen = () => {
       console.error("[Login] Error message:", err.message);
       console.error("[Login] Error stack:", err.stack);
       Alert.alert(
-        "Connection Error",
-        `Could not connect to the server. ${err.message || "Please check your internet connection."}`,
+        "Server Connection Failed",
+        "Unable to connect to the backend server. Please make sure the server is running at " +
+          API_BASE_URL,
       );
     } finally {
       setIsLoading(false);
@@ -111,9 +159,16 @@ const IOSStyleLoginScreen = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
       <Modal transparent={true} animationType="fade" visible={isLoading}>
         <View style={styles.loadingOverlay}>
-          <View style={[styles.loadingContainer, { backgroundColor: isDark ? "#333" : "white" }]}>
+          <View
+            style={[
+              styles.loadingContainer,
+              { backgroundColor: isDark ? "#333" : "white" },
+            ]}
+          >
             <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={[styles.loadingText, { color: mainText }]}>Logging in...</Text>
+            <Text style={[styles.loadingText, { color: mainText }]}>
+              Logging in...
+            </Text>
           </View>
         </View>
       </Modal>
@@ -136,13 +191,12 @@ const IOSStyleLoginScreen = () => {
             <TextInput
               value={email}
               onChangeText={setEmail}
-              placeholder="Email"
+              placeholder="Email or Username"
               placeholderTextColor={placeholderColor}
               style={[
                 styles.input,
                 { backgroundColor: inputBg, color: mainText },
               ]}
-              keyboardType="email-address"
               autoCapitalize="none"
               returnKeyType="next"
             />
@@ -202,7 +256,9 @@ const IOSStyleLoginScreen = () => {
               <Text style={[styles.smallText, { color: mainText }]}>
                 You don't have an account yet?{" "}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/")}>
+              <TouchableOpacity
+                onPress={() => router.push("/screens/signup-screen")}
+              >
                 <Text style={styles.linkAccent}>Sign up</Text>
               </TouchableOpacity>
             </View>

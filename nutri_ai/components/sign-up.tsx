@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import CryptoJS from "crypto-js";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -15,17 +14,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 import { Colors } from "../constants/theme";
-import {
-  ActivityLevel,
-  Gender,
-  MedicalCondition,
-  MotivationToTrackCalories,
-  User,
-} from "../types/user";
-import { useUser } from "../context/UserContext";
 import { API_BASE_URL } from "../constants/values";
+import { useUser } from "../context/UserContext";
+import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 
 export default function SignUp() {
   const router = useRouter();
@@ -41,108 +33,172 @@ export default function SignUp() {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const handleSignUp = async () => {
-    const usernameTrim = username.trim();
-    const emailTrim = email.trim().toLowerCase();
-
-    if (!usernameTrim || !emailTrim || !password || !confirm) {
-      Alert.alert("Missing fields", "Please fill in all fields");
-      return;
-    }
-
-    if (!emailTrim.includes("@")) {
-      router.push("/screens/signup-invalid-email-screen");
-      return;
-    }
-
-    if (password !== confirm) {
-      Alert.alert("Password mismatch", "Passwords do not match");
-      return;
-    }
-
-    console.log(`[SignUp] Attempting to sign up user: ${emailTrim}`);
-    const url = `${API_BASE_URL}/signup`;
-    console.log(`[SignUp] URL: ${url}`);
-
     try {
-      // Default values for new user
-      const defaultAge = 25;
-      const defaultHeight = 175;
-      const defaultWeight = 70;
-      const defaultGender = Gender.Male;
-      const defaultActivityLevel = ActivityLevel.Sedentary;
-      const defaultMedicalCondition = MedicalCondition.None;
-      const defaultMotivation = MotivationToTrackCalories.LeadAHealthyLife;
+      console.log("[SignUp] ========== BUTTON CLICKED ==========");
+      console.log("[SignUp] Username:", username);
+      console.log("[SignUp] Email:", email);
+      console.log("[SignUp] Password length:", password.length);
+      console.log("[SignUp] Confirm length:", confirm.length);
 
-      console.log("[SignUp] Sending signup request with default profile data...");
-      const signupPayload = {
-        email: emailTrim,
-        password: password,
-        name: usernameTrim,
-        age: defaultAge,
-        height_cm: defaultHeight,
-        weight_kg: defaultWeight,
-        gender: defaultGender,
-        activity_level: defaultActivityLevel,
-        medical_condition: defaultMedicalCondition,
-        motivation: defaultMotivation,
-      };
-      console.log("[SignUp] Signup payload:", signupPayload);
+      const usernameTrim = username.trim();
+      const emailTrim = email.trim().toLowerCase();
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(signupPayload),
-      });
-
-      console.log(`[SignUp] Response status: ${response.status}`);
-      const data = await response.json();
-      console.log(`[SignUp] Response data:`, data);
-
-      if (!response.ok) {
-        console.error("[SignUp] Signup failed:", data.detail);
-        Alert.alert("Sign Up Failed", data.detail || "An error occurred");
+      // Validate all fields are filled
+      if (!usernameTrim || !emailTrim || !password || !confirm) {
+        console.log("[SignUp] ❌ Missing fields validation failed");
+        console.log("[SignUp] Username filled:", !!usernameTrim);
+        console.log("[SignUp] Email filled:", !!emailTrim);
+        console.log("[SignUp] Password filled:", !!password);
+        console.log("[SignUp] Confirm filled:", !!confirm);
+        Alert.alert("Required Fields", "Please fill in all fields");
         return;
       }
 
-      // Store token
-      console.log("[SignUp] Storing auth token...");
-      await AsyncStorage.setItem("auth_token", data.access_token);
-      console.log("[SignUp] Auth token stored successfully");
+      // Validate email format (must contain @ and have text before and after it)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailTrim)) {
+        console.log("[SignUp] ❌ Email validation failed:", emailTrim);
+        Alert.alert(
+          "Invalid Email",
+          "Please enter a valid email (e.g., user@example.com)",
+        );
+        return;
+      }
 
-      // Create local user object (using hash for compatibility, though not used for auth anymore)
-      const passwordHash = CryptoJS.SHA256(password).toString();
-      const userObj: User = {
-        name: usernameTrim,
-        email: emailTrim,
-        password: passwordHash,
-        age: defaultAge,
-        heightCm: defaultHeight,
-        weightKg: defaultWeight,
-        gender: defaultGender,
-        activityLevel: defaultActivityLevel,
-        medicalCondition: defaultMedicalCondition,
-        motivation: defaultMotivation,
-      };
+      // Validate password length (at least 6 characters)
+      if (password.length < 6) {
+        console.log("[SignUp] ❌ Password too short:", password.length);
+        Alert.alert(
+          "Password Too Short",
+          "Password must be at least 6 characters",
+        );
+        return;
+      }
 
-      console.log("[SignUp] Saving user locally and syncing to server...");
-      await saveUser(userObj);
-      console.log("[SignUp] User saved and synced successfully");
+      // Validate password confirmation matches
+      if (password !== confirm) {
+        console.log("[SignUp] ❌ Password mismatch validation failed");
+        console.log("[SignUp] Password:", password);
+        console.log("[SignUp] Confirm:", confirm);
+        Alert.alert(
+          "Passwords Don't Match",
+          "The passwords entered are not the same",
+        );
+        return;
+      }
 
-      setShowSuccessAlert(true);
-      setTimeout(() => {
-        setShowSuccessAlert(false);
-        console.log("[SignUp] Navigating to home...");
-        router.push("/(tabs)");
-      }, 2000);
+      console.log(
+        "[SignUp] ✅ All validations passed. Checking availability...",
+      );
+
+      // Check if email or username already exists
+      try {
+        console.log("[SignUp] Checking if email/username is available...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(
+          `${API_BASE_URL}/check-availability?email=${encodeURIComponent(emailTrim)}&name=${encodeURIComponent(usernameTrim)}`,
+          {
+            method: "GET",
+            signal: controller.signal,
+          },
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.error(
+            "[SignUp] ❌ Availability check failed:",
+            response.status,
+          );
+          Alert.alert(
+            "Connection Error",
+            "Could not verify availability. Check your connection and try again.",
+          );
+          return;
+        }
+
+        const data = await response.json();
+        console.log("[SignUp] Availability check result:", data);
+
+        if (!data.email_available && !data.name_available) {
+          // Both email and username are taken
+          Alert.alert(
+            "Email and Username Already Registered",
+            "The email and username you entered are already registered. Please use different credentials or log in if you already have an account.",
+            [
+              { text: "Try Again", style: "cancel" },
+              {
+                text: "Go to Login",
+                onPress: () => router.push("/screens/login-screen"),
+                style: "default",
+              },
+            ],
+          );
+          return;
+        } else if (!data.email_available) {
+          // Email is taken
+          Alert.alert(
+            "Email Already Registered",
+            "This email is already registered. Please use a different email or log in if you already have an account.",
+            [
+              { text: "Try Again", style: "cancel" },
+              {
+                text: "Go to Login",
+                onPress: () => router.push("/screens/login-screen"),
+                style: "default",
+              },
+            ],
+          );
+          return;
+        } else if (!data.name_available) {
+          // Username is taken
+          Alert.alert(
+            "Username Already Registered",
+            "This username is already registered. Please choose a different name.",
+            [{ text: "OK", style: "default" }],
+          );
+          return;
+        }
+
+        // Both are available, proceed with signup
+        console.log(
+          "[SignUp] ✅ Email and username are available. Proceeding to profile building...",
+        );
+      } catch (error: any) {
+        console.error("[SignUp] ❌ Error checking availability:", error);
+
+        if (error.name === "AbortError") {
+          Alert.alert(
+            "Connection Timeout",
+            "The verification is taking too long. Check your internet connection and try again.",
+          );
+        } else {
+          Alert.alert(
+            "Connection Error",
+            "Could not verify availability. Check your connection and try again.",
+          );
+        }
+        return;
+      }
+
+      // Store signup credentials temporarily in AsyncStorage
+      console.log("[SignUp] Storing signup credentials temporarily...");
+      await AsyncStorage.setItem("temp_signup_name", usernameTrim);
+      await AsyncStorage.setItem("temp_signup_email", emailTrim);
+      await AsyncStorage.setItem("temp_signup_password", password);
+      console.log("[SignUp] Credentials stored successfully");
+
+      // Navigate to welcome page first
+      console.log("[SignUp] Navigating to welcome page...");
+      router.push("/screens/onboarding/welcome");
     } catch (error: any) {
-      console.error("[SignUp] Error:", error);
-      console.error("[SignUp] Error message:", error.message);
+      console.error("[SignUp] ❌ CRITICAL ERROR:", error);
       console.error("[SignUp] Error stack:", error.stack);
       Alert.alert(
-        "Connection Error",
-        `Could not connect to the server. ${error.message || "Please check your internet connection."}`,
+        "Error",
+        `Could not process registration. ${error.message || "Please try again."}`,
       );
     }
   };
@@ -156,7 +212,9 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
-      <AppleStyleAlert visible={showSuccessAlert} text="Sign-up successful" />
+      {showSuccessAlert && (
+        <AppleStyleAlert visible={showSuccessAlert} text="Sign-up successful" />
+      )}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
