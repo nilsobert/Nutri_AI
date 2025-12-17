@@ -31,21 +31,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [loadedImage, loadedUser] = await Promise.all([
-        StorageService.loadProfileImage(),
-        StorageService.loadUser(),
-      ]);
-
-      if (loadedImage) {
-        setProfileImage(loadedImage);
-      }
-      if (loadedUser) {
-        setUserState(loadedUser);
-      }
-      
-      // Try to sync with server if we have a token
+      // Check if user has a token (is logged in)
       const token = await AsyncStorage.getItem("auth_token");
+      
+      // Only load from storage if we have a token (user is logged in)
       if (token) {
+        const [loadedImage, loadedUser] = await Promise.all([
+          StorageService.loadProfileImage(),
+          StorageService.loadUser(),
+        ]);
+
+        if (loadedImage) {
+          setProfileImage(loadedImage);
+        }
+        if (loadedUser) {
+          setUserState(loadedUser);
+        }
+        
+        // Try to sync with server
         await fetchUser();
       }
     } catch (error) {
@@ -197,6 +200,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log(`[UserContext] Profile sync response: ${response.status}`);
         if (!response.ok) {
           console.error("[UserContext] Failed to sync profile with server:", response.status);
+          if (response.status === 401) {
+            console.log("[UserContext] Token invalid or expired during sync, logging out...");
+            await logout();
+            return;
+          }
           const errorData = await response.json();
           console.error("[UserContext] Error details:", errorData);
         } else {
