@@ -111,7 +111,16 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Text style={{ color: textColor }}>Please log in to view profile</Text>
       </View>
     );
@@ -229,7 +238,7 @@ export default function ProfileScreen() {
           SETTINGS
         </Text>
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/screens/edit-goals" as any)}
           >

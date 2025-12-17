@@ -49,16 +49,16 @@ export interface IUser {
   motivation: MotivationToTrackCalories;
   email: string;
   password: string;
-  
+
   // Weight goal tracking
   targetWeightKg?: number;
   weightGoalType?: WeightGoalType;
   weightLossRate?: WeightLossRate;
   targetDate?: Date; // When user wants to reach their goal
-  
+
   // Body composition (optional, for more accurate calculations)
   bodyFatPercentage?: number;
-  
+
   // Dietary preferences
   proteinPreference?: "low" | "moderate" | "high"; // Affects macro split
 
@@ -81,16 +81,16 @@ export class User implements IUser {
   private _motivation: MotivationToTrackCalories;
   private _email: string;
   private _password: string;
-  
+
   // Weight goal tracking
   private _targetWeightKg?: number;
   private _weightGoalType?: WeightGoalType;
   private _weightLossRate?: WeightLossRate;
   private _targetDate?: Date;
-  
+
   // Body composition
   private _bodyFatPercentage?: number;
-  
+
   // Dietary preferences
   private _proteinPreference?: "low" | "moderate" | "high";
 
@@ -138,7 +138,7 @@ export class User implements IUser {
     this._email = params.email;
     this._password = params.password;
     this._medicalCondition = params.medicalCondition ?? MedicalCondition.None;
-    
+
     // Optional weight goal parameters
     this._targetWeightKg = params.targetWeightKg;
     this._weightGoalType = params.weightGoalType;
@@ -270,7 +270,10 @@ export class User implements IUser {
     return this._bodyFatPercentage;
   }
   public set bodyFatPercentage(bodyFatPercentage: number | undefined) {
-    if (bodyFatPercentage !== undefined && (bodyFatPercentage < 0 || bodyFatPercentage > 100)) {
+    if (
+      bodyFatPercentage !== undefined &&
+      (bodyFatPercentage < 0 || bodyFatPercentage > 100)
+    ) {
       log.error("Invalid body fat percentage in user.ts.");
       throw new RangeError("Body fat percentage must be between 0 and 100.");
     }
@@ -280,7 +283,9 @@ export class User implements IUser {
   public get proteinPreference(): "low" | "moderate" | "high" | undefined {
     return this._proteinPreference;
   }
-  public set proteinPreference(proteinPreference: "low" | "moderate" | "high" | undefined) {
+  public set proteinPreference(
+    proteinPreference: "low" | "moderate" | "high" | undefined,
+  ) {
     this._proteinPreference = proteinPreference;
   }
 
@@ -288,7 +293,8 @@ export class User implements IUser {
     return this._customCalories;
   }
   public set customCalories(customCalories: number | undefined) {
-    if (customCalories !== undefined) validateNonNegative("customCalories", customCalories);
+    if (customCalories !== undefined)
+      validateNonNegative("customCalories", customCalories);
     this._customCalories = customCalories;
   }
 
@@ -296,7 +302,8 @@ export class User implements IUser {
     return this._customProtein;
   }
   public set customProtein(customProtein: number | undefined) {
-    if (customProtein !== undefined) validateNonNegative("customProtein", customProtein);
+    if (customProtein !== undefined)
+      validateNonNegative("customProtein", customProtein);
     this._customProtein = customProtein;
   }
 
@@ -304,7 +311,8 @@ export class User implements IUser {
     return this._customCarbs;
   }
   public set customCarbs(customCarbs: number | undefined) {
-    if (customCarbs !== undefined) validateNonNegative("customCarbs", customCarbs);
+    if (customCarbs !== undefined)
+      validateNonNegative("customCarbs", customCarbs);
     this._customCarbs = customCarbs;
   }
 
@@ -355,8 +363,12 @@ export class User implements IUser {
       age: json.age,
       gender: json.gender ?? Gender.Male,
       heightCm: json.heightCm ?? json.height_cm ?? 175,
-      activityLevel: json.activityLevel ?? json.activity_level ?? ActivityLevel.Sedentary,
-      medicalCondition: json.medicalCondition ?? json.medical_condition ?? MedicalCondition.None,
+      activityLevel:
+        json.activityLevel ?? json.activity_level ?? ActivityLevel.Sedentary,
+      medicalCondition:
+        json.medicalCondition ??
+        json.medical_condition ??
+        MedicalCondition.None,
       weightKg: json.weightKg ?? json.weight_kg,
       motivation: json.motivation,
       email: json.email,
@@ -364,7 +376,11 @@ export class User implements IUser {
       targetWeightKg: json.targetWeightKg ?? json.target_weight_kg,
       weightGoalType: json.weightGoalType ?? json.weight_goal_type,
       weightLossRate: json.weightLossRate ?? json.weight_loss_rate,
-      targetDate: json.targetDate ? new Date(json.targetDate) : (json.target_date ? new Date(json.target_date) : undefined),
+      targetDate: json.targetDate
+        ? new Date(json.targetDate)
+        : json.target_date
+          ? new Date(json.target_date)
+          : undefined,
       bodyFatPercentage: json.bodyFatPercentage ?? json.body_fat_percentage,
       proteinPreference: json.proteinPreference ?? json.protein_preference,
       customCalories: json.customCalories ?? json.custom_calories,
