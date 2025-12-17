@@ -45,6 +45,8 @@ import {
 } from "../constants/theme";
 import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
+import { generateYearMeals } from "../lib/utils/generator";
+import { getYearMeals } from "../mock-data/mealstore";
 
 if (
   Platform.OS === "android" &&
@@ -545,6 +547,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [generatedMeals, setGeneratedMeals] = useState<MealEntry[]>([]);
   const scrollViewRef = React.useRef<Animated.ScrollView>(null);
   const { profileImage, goals } = useUser();
   const { meals: allMeals } = useMeals();
@@ -697,34 +700,10 @@ const IOSStyleHomeScreen: React.FC = () => {
     MealCategory.Other,
   ];
 
-  const totalCalories = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.getNutritionInfo().getCalories(),
-    0,
-  );
-
-  const totalCarbs = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getCarbs(),
-    0,
-  );
-
-  const totalProtein = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.getNutritionInfo().getProtein(),
-    0,
-  );
-
-  const totalFat = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.getNutritionInfo().getFat(),
-    0,
-  );
-
   const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
   const carbsGoal = goals?.carbs || 300;
   const proteinGoal = goals?.protein || 150;
   const fatGoal = goals?.fat || 80;
-
-  const remainingCalories = calorieGoal - totalCalories;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
@@ -732,6 +711,66 @@ const IOSStyleHomeScreen: React.FC = () => {
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
+
+  
+  
+  React.useEffect(() => {
+    const mealsObj = getYearMeals();
+  
+    const mealsArray: MealEntry[] = Object.values(mealsObj).flatMap(
+      (day) => Object.values(day) as MealEntry[]
+    );
+    setGeneratedMeals(mealsArray);
+  }, []);
+  
+  const generatedMealsForDay = React.useMemo(
+    () =>
+      generatedMeals.filter((meal: MealEntry) =>
+        isSameDay(new Date(meal.getTimestamp() * 1000), currentDate)
+      ),
+    [generatedMeals, currentDate]
+  );
+  
+  const generatedGroupedMeals = React.useMemo(() => {
+    const groups = new Map<MealCategory, MealEntry[]>();
+  
+    generatedMealsForDay.forEach((meal: MealEntry) => {
+      const category = meal.getCategory();
+      if (!groups.has(category)) {
+        groups.set(category, []);
+      }
+      groups.get(category)!.push(meal);
+    });
+  
+    return groups;
+  }, [generatedMealsForDay]);
+  
+  const totalCalories = generatedMealsForDay.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getCalories(),
+    0
+  );
+  
+  const totalCarbs = generatedMealsForDay.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getCarbs(),
+    0
+  );
+  
+  const totalProtein = generatedMealsForDay.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getProtein(),
+    0
+  );
+  
+  const totalFat = generatedMealsForDay.reduce(
+    (sum: number, meal: MealEntry) =>
+      sum + meal.getNutritionInfo().getFat(),
+    0
+  );
+  
+  const remainingCalories = calorieGoal - totalCalories;
+  
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -852,30 +891,53 @@ const IOSStyleHomeScreen: React.FC = () => {
         </View>
 
         {/* Meals Section */}
+        {/* Meals Section */}
         <View style={styles.mealsSection}>
           <Text style={[styles.sectionTitle, { color: textColor }]}>
             {isSameDay(currentDate, new Date()) ? "Today's Meals" : "Meals"}
           </Text>
-          {meals.length > 0 ? (
-            categoryOrder.map((category) => {
-              const categoryMeals = groupedMeals.get(category);
-              if (!categoryMeals || categoryMeals.length === 0) return null;
-              return (
-                <MealCard
-                  key={category}
-                  category={category}
-                  meals={categoryMeals}
-                  isDark={isDark}
-                  currentDate={currentDate}
-                />
-              );
-            })
+
+          {meals.length > 0 || generatedMealsForDay.length > 0 ? (
+            <>
+              {/* Render actual meals if present */}
+              {meals.length > 0 &&
+                categoryOrder.map((category) => {
+                  const categoryMeals = groupedMeals.get(category);
+                  if (!categoryMeals || categoryMeals.length === 0) return null;
+                  return (
+                    <MealCard
+                      key={category}
+                      category={category}
+                      meals={categoryMeals}
+                      isDark={isDark}
+                      currentDate={currentDate}
+                    />
+                  );
+                })}
+
+              {/* Render generated meals if present */}
+              {generatedMealsForDay.length > 0 &&
+                categoryOrder.map((category) => {
+                  const categoryMeals = generatedGroupedMeals.get(category);
+                  if (!categoryMeals || categoryMeals.length === 0) return null;
+                  return (
+                    <MealCard
+                      key={`gen-${category}`}
+                      category={category}
+                      meals={categoryMeals}
+                      isDark={isDark}
+                      currentDate={currentDate}
+                    />
+                  );
+                })}
+            </>
           ) : (
             <Text style={{ color: secondaryText, textAlign: "center" }}>
               No meals recorded for this day
             </Text>
           )}
         </View>
+
       </Animated.ScrollView>
 
       {/* Blur Header */}
@@ -1348,3 +1410,8 @@ const styles = StyleSheet.create({
 });
 
 export default IOSStyleHomeScreen;
+
+function setGeneratedMeals(mealsArray: MealEntry[]) {
+  throw new Error("Function not implemented.");
+}
+

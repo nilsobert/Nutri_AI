@@ -59,7 +59,9 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
   onClose,
   isDark,
 }) => {
-  const bgColor = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
+  const bgColor = isDark
+    ? Colors.cardBackground.dark
+    : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
 
   return (
@@ -73,7 +75,9 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
         <TouchableOpacity style={styles.modalBackdrop} onPress={onClose} />
         <View style={[styles.modalContent, { backgroundColor: bgColor }]}>
           <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: textColor }]}>{title}</Text>
+            <Text style={[styles.modalTitle, { color: textColor }]}>
+              {title}
+            </Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={Colors.primary} />
             </TouchableOpacity>
@@ -85,7 +89,9 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
               <TouchableOpacity
                 style={[
                   styles.optionItem,
-                  item === selectedValue && { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+                  item === selectedValue && {
+                    backgroundColor: isDark ? "#333" : "#f0f0f0",
+                  },
                 ]}
                 onPress={() => {
                   onSelect(item);
@@ -95,7 +101,10 @@ const SelectionModal: React.FC<SelectionModalProps> = ({
                 <Text
                   style={[
                     styles.optionText,
-                    { color: item === selectedValue ? Colors.primary : textColor },
+                    {
+                      color:
+                        item === selectedValue ? Colors.primary : textColor,
+                    },
                     item === selectedValue && { fontWeight: "bold" },
                   ]}
                 >
@@ -122,38 +131,42 @@ export default function EditGoalsScreen() {
 
   // State for form fields
   const [motivation, setMotivation] = useState<MotivationToTrackCalories>(
-    user?.motivation || MotivationToTrackCalories.LeadAHealthyLife
+    user?.motivation || MotivationToTrackCalories.LeadAHealthyLife,
   );
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
-    user?.activityLevel || ActivityLevel.Moderate
+    user?.activityLevel || ActivityLevel.Moderate,
   );
   const [weight, setWeight] = useState(user?.weightKg?.toString() || "");
   const [targetWeight, setTargetWeight] = useState(
-    user?.targetWeightKg?.toString() || ""
+    user?.targetWeightKg?.toString() || "",
   );
   const [weightGoalType, setWeightGoalType] = useState<WeightGoalType>(
-    user?.weightGoalType || WeightGoalType.Maintain
+    user?.weightGoalType || WeightGoalType.Maintain,
   );
   const [weightLossRate, setWeightLossRate] = useState<WeightLossRate>(
-    user?.weightLossRate || WeightLossRate.Moderate
+    user?.weightLossRate || WeightLossRate.Moderate,
   );
 
   // Custom Goals State
-  const [isCustomGoals, setIsCustomGoals] = useState(user?.isCustomGoals || false);
+  const [isCustomGoals, setIsCustomGoals] = useState(
+    user?.isCustomGoals || false,
+  );
   const [customCalories, setCustomCalories] = useState(
-    user?.customCalories?.toString() || ""
+    user?.customCalories?.toString() || "",
   );
   const [customProtein, setCustomProtein] = useState(
-    user?.customProtein?.toString() || ""
+    user?.customProtein?.toString() || "",
   );
   const [customCarbs, setCustomCarbs] = useState(
-    user?.customCarbs?.toString() || ""
+    user?.customCarbs?.toString() || "",
   );
   const [customFat, setCustomFat] = useState(user?.customFat?.toString() || "");
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<"motivation" | "activity" | "goalType" | "rate" | null>(null);
+  const [modalType, setModalType] = useState<
+    "motivation" | "activity" | "goalType" | "rate" | null
+  >(null);
 
   // Derived values for preview
   const [previewGoals, setPreviewGoals] = useState<any>(null);
@@ -257,7 +270,9 @@ export default function EditGoalsScreen() {
   };
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
-  const cardBg = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
+  const cardBg = isDark
+    ? Colors.cardBackground.dark
+    : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
   const borderColor = isDark ? "#333" : "#f0f0f0";
@@ -309,7 +324,12 @@ export default function EditGoalsScreen() {
             </View>
             <View style={styles.previewDivider} />
             <View style={styles.previewItem}>
-              <Text style={[styles.previewValue, { color: Colors.secondary.protein }]}>
+              <Text
+                style={[
+                  styles.previewValue,
+                  { color: Colors.secondary.protein },
+                ]}
+              >
                 {previewGoals?.protein || 0}g
               </Text>
               <Text style={[styles.previewLabel, { color: secondaryText }]}>
@@ -318,7 +338,9 @@ export default function EditGoalsScreen() {
             </View>
             <View style={styles.previewDivider} />
             <View style={styles.previewItem}>
-              <Text style={[styles.previewValue, { color: Colors.secondary.carbs }]}>
+              <Text
+                style={[styles.previewValue, { color: Colors.secondary.carbs }]}
+              >
                 {previewGoals?.carbs || 0}g
               </Text>
               <Text style={[styles.previewLabel, { color: secondaryText }]}>
@@ -327,7 +349,9 @@ export default function EditGoalsScreen() {
             </View>
             <View style={styles.previewDivider} />
             <View style={styles.previewItem}>
-              <Text style={[styles.previewValue, { color: Colors.secondary.fat }]}>
+              <Text
+                style={[styles.previewValue, { color: Colors.secondary.fat }]}
+              >
                 {previewGoals?.fat || 0}g
               </Text>
               <Text style={[styles.previewLabel, { color: secondaryText }]}>
@@ -346,12 +370,18 @@ export default function EditGoalsScreen() {
             style={styles.row}
             onPress={() => openModal("motivation")}
           >
-            <Text style={[styles.rowLabel, { color: textColor }]}>Motivation</Text>
+            <Text style={[styles.rowLabel, { color: textColor }]}>
+              Motivation
+            </Text>
             <View style={styles.rowRight}>
               <Text style={[styles.rowValue, { color: secondaryText }]}>
                 {formatEnum(motivation)}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             </View>
           </TouchableOpacity>
           <View style={[styles.divider, { backgroundColor: borderColor }]} />
@@ -367,13 +397,19 @@ export default function EditGoalsScreen() {
               <Text style={[styles.rowValue, { color: secondaryText }]}>
                 {formatEnum(activityLevel)}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             </View>
           </TouchableOpacity>
           <View style={[styles.divider, { backgroundColor: borderColor }]} />
 
           <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: textColor }]}>Current Weight (kg)</Text>
+            <Text style={[styles.rowLabel, { color: textColor }]}>
+              Current Weight (kg)
+            </Text>
             <TextInput
               style={[styles.input, { color: textColor }]}
               value={weight}
@@ -394,18 +430,26 @@ export default function EditGoalsScreen() {
             style={styles.row}
             onPress={() => openModal("goalType")}
           >
-            <Text style={[styles.rowLabel, { color: textColor }]}>Goal Type</Text>
+            <Text style={[styles.rowLabel, { color: textColor }]}>
+              Goal Type
+            </Text>
             <View style={styles.rowRight}>
               <Text style={[styles.rowValue, { color: secondaryText }]}>
                 {formatEnum(weightGoalType)}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             </View>
           </TouchableOpacity>
 
           {weightGoalType !== WeightGoalType.Maintain && (
             <>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: textColor }]}>
                   Target Weight (kg)
@@ -419,17 +463,25 @@ export default function EditGoalsScreen() {
                   placeholderTextColor={secondaryText}
                 />
               </View>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <TouchableOpacity
                 style={styles.row}
                 onPress={() => openModal("rate")}
               >
-                <Text style={[styles.rowLabel, { color: textColor }]}>Pace</Text>
+                <Text style={[styles.rowLabel, { color: textColor }]}>
+                  Pace
+                </Text>
                 <View style={styles.rowRight}>
                   <Text style={[styles.rowValue, { color: secondaryText }]}>
                     {formatEnum(weightLossRate)}
                   </Text>
-                  <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={secondaryText}
+                  />
                 </View>
               </TouchableOpacity>
             </>
@@ -454,7 +506,9 @@ export default function EditGoalsScreen() {
 
           {isCustomGoals && (
             <>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: textColor }]}>
                   Calories (kcal)
@@ -468,7 +522,9 @@ export default function EditGoalsScreen() {
                   placeholderTextColor={secondaryText}
                 />
               </View>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: textColor }]}>
                   Protein (g)
@@ -482,7 +538,9 @@ export default function EditGoalsScreen() {
                   placeholderTextColor={secondaryText}
                 />
               </View>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: textColor }]}>
                   Carbs (g)
@@ -496,7 +554,9 @@ export default function EditGoalsScreen() {
                   placeholderTextColor={secondaryText}
                 />
               </View>
-              <View style={[styles.divider, { backgroundColor: borderColor }]} />
+              <View
+                style={[styles.divider, { backgroundColor: borderColor }]}
+              />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: textColor }]}>
                   Fat (g)
@@ -523,10 +583,10 @@ export default function EditGoalsScreen() {
           modalType === "motivation"
             ? motivation
             : modalType === "activity"
-            ? activityLevel
-            : modalType === "goalType"
-            ? weightGoalType
-            : weightLossRate
+              ? activityLevel
+              : modalType === "goalType"
+                ? weightGoalType
+                : weightLossRate
         }
         onSelect={handleModalSelect}
         onClose={() => setModalVisible(false)}

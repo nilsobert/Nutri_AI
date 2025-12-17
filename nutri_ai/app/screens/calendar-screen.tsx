@@ -1,5 +1,5 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+// CalendarScreen.tsx
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -7,13 +7,11 @@ import {
   TouchableOpacity,
   View,
   useColorScheme,
-  LayoutAnimation,
-  Platform,
-  UIManager,
+  useWindowDimensions,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
+import { MealEntry, MealCategory } from "../../types/mealEntry";
+import { getYearMeals } from "../../mock-data/mealstore";
 import {
   BorderRadius,
   Colors,
@@ -21,86 +19,195 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
-import { useMeals } from "../../context/MealContext";
-import { MealEntry, MealCategory } from "../../types/mealEntry";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 
-// Enable LayoutAnimation on Android
-if (
-  Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+// MealCard component (from home screen)
+const MealCard: React.FC<{
+  category: MealCategory;
+  meals: MealEntry[];
+  isDark: boolean;
+}> = ({ category, meals, isDark }) => {
+  const [expanded, setExpanded] = useState(false);
+  const rotation = useSharedValue(0);
+  const { width: screenWidth } = useWindowDimensions();
 
-const mealCategories = [
-  "Breakfast",
-  "Lunch",
-  "Dinner",
-  "Snack",
-  "Other",
-] as const;
-const categoryLabels: Record<string, string> = {
-  Breakfast: "Breakfast",
-  Lunch: "Lunch",
-  Dinner: "Dinner",
-  Snack: "Snack",
-  Other: "Other",
-};
+  const toggleExpand = () => {
+    setExpanded(!expanded);
+    rotation.value = withTiming(expanded ? 0 : 180);
+  };
 
-const getMealIcon = (category: string) => {
-  switch (category) {
-    case "Breakfast":
-      return "sunny-outline";
-    case "Lunch":
-      return "restaurant-outline";
-    case "Dinner":
-      return "moon-outline";
-    case "Snack":
-      return "cafe-outline";
-    default:
-      return "fast-food-outline";
-  }
-};
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
 
-export default function MergedCalendar() {
-  const { meals } = useMeals();
-  const today = new Date();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const insets = useSafeAreaInsets();
-
-  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark ? "#999" : "#666";
+
+  const totalCalories = meals.reduce(
+    (sum, meal) => sum + meal.getNutritionInfo().getCalories(),
+    0
+  );
+
+  return (
+    <Animated.View
+      style={[styles.mealCard, { backgroundColor: cardBg }]}
+      entering={FadeIn}
+      exiting={FadeOut}
+    >
+      <TouchableOpacity
+        onPress={toggleExpand}
+        activeOpacity={0.7}
+        style={styles.mealCardHeader}
+      >
+        <View
+          style={[
+            styles.mealIcon,
+            { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+          ]}
+        >
+          <Ionicons
+            name={
+              category === MealCategory.Breakfast
+                ? "sunny-outline"
+                : category === MealCategory.Lunch
+                ? "restaurant-outline"
+                : category === MealCategory.Dinner
+                ? "moon-outline"
+                : "cafe-outline"
+            }
+            size={24}
+            color={Colors.primary}
+          />
+        </View>
+
+        <View style={styles.mealHeaderInfo}>
+          <View style={styles.mealTitleRow}>
+            <Text style={[styles.mealName, { color: textColor }]}>{category}</Text>
+            <Text
+              style={[
+                styles.mealCalories,
+                { color: textColor, fontWeight: "bold" },
+              ]}
+            >
+              {totalCalories} kcal
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {expanded &&
+        meals.map((meal, i) => {
+          const nutrition = meal.getNutritionInfo();
+          return (
+            <View
+              style={[
+                styles.mealDetails,
+                { width: screenWidth - Spacing.xl * 2 },
+              ]}
+              key={i}
+            >
+              {/* Removed meal name */}
+              <View style={styles.nutrientRow}>
+                <View
+                  style={[
+                    styles.nutrientPill,
+                    { backgroundColor: isDark ? "#3498DB20" : "#3498DB15" },
+                  ]}
+                >
+                  <Text style={{ color: "#3498DB" }}>
+                    {nutrition.getCarbs()}g Carbs
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.nutrientPill,
+                    { backgroundColor: isDark ? "#34C75920" : "#34C75915" },
+                  ]}
+                >
+                  <Text style={{ color: "#34C759" }}>
+                    {nutrition.getProtein()}g Protein
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.nutrientPill,
+                    { backgroundColor: isDark ? "#FF950020" : "#FF950015" },
+                  ]}
+                >
+                  <Text style={{ color: "#FF9500" }}>{nutrition.getFat()}g Fat</Text>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+    </Animated.View>
+  );
+};
+
+const mealCategories: MealCategory[] = [
+  MealCategory.Breakfast,
+  MealCategory.Lunch,
+  MealCategory.Dinner,
+  MealCategory.Snack,
+];
+
+export default function CalendarScreen() {
+  const today = new Date();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
+  const cardBg = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
+  const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const GREEN = Colors.primary;
 
   const [viewMode, setViewMode] = useState<"month" | "year">("month");
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
   const [selectedDate, setSelectedDate] = useState(
-    today.toISOString().split("T")[0],
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
   );
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const [yearMeals, setYearMeals] = useState<MealEntry[]>([]);
+
+  useEffect(() => {
+    const mealsObj = getYearMeals();
+    const mealsArray = Object.values(mealsObj).flatMap((day) =>
+      Object.values(day)
+    );
+    setYearMeals(mealsArray);
+  }, []);
+
+  // Filter meals for selected date
+  const mealsForSelectedDate: Record<MealCategory, MealEntry[]> = {
+    [MealCategory.Breakfast]: [],
+    [MealCategory.Lunch]: [],
+    [MealCategory.Dinner]: [],
+    [MealCategory.Snack]: [],
+    [MealCategory.Other]: [],
+  };
+  yearMeals.forEach((meal) => {
+    const mealDate = new Date(meal.getTimestamp() * 1000);
+    const dateStr = `${mealDate.getFullYear()}-${String(
+      mealDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(mealDate.getDate()).padStart(2, "0")}`;
+    if (dateStr === selectedDate) {
+      mealsForSelectedDate[meal.getCategory()].push(meal);
+    }
+  });
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
   ];
 
-  // Calendar calculations
   const getMonthMatrix = () => {
     const firstDay = new Date(year, month, 1).getDay();
     const firstDayIndexMon = firstDay === 0 ? 6 : firstDay - 1;
@@ -121,22 +228,6 @@ export default function MergedCalendar() {
   };
   const monthMatrix = getMonthMatrix();
   const yearGrid = Array.from({ length: 12 }, (_, i) => i);
-
-  const prevMonth = () => {
-    if (month === 0) {
-      setMonth(11);
-      setYear((y) => y - 1);
-    } else setMonth((m) => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) {
-      setMonth(0);
-      setYear((y) => y + 1);
-    } else setMonth((m) => m + 1);
-  };
-  const prevYear = () => setYear((y) => y - 1);
-  const nextYear = () => setYear((y) => y + 1);
-
   const isSameDate = (a: Date, b: Date) =>
     a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() &&
@@ -144,450 +235,154 @@ export default function MergedCalendar() {
 
   const handleDayPress = (day: number) => {
     const dateObj = new Date(year, month, day);
-    // Adjust for timezone offset to get correct local date string
-    const offset = dateObj.getTimezoneOffset();
-    const localDate = new Date(dateObj.getTime() - offset * 60 * 1000);
-    const dateStr = localDate.toISOString().split("T")[0];
+    const dateStr = `${dateObj.getFullYear()}-${String(
+      dateObj.getMonth() + 1
+    ).padStart(2, "0")}-${String(dateObj.getDate()).padStart(2, "0")}`;
     setSelectedDate(dateStr);
-    setExpanded({});
   };
 
-  const toggleExpand = (category: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpanded((prev) => ({ ...prev, [category]: !prev[category] }));
-  };
-
-  // Group meals by date and category
-  const mealsByDate: Record<
-    string,
-    Record<string, Array<{ name: string; details: string }>>
-  > = {};
-
-  meals.forEach((meal) => {
-    const date = new Date(meal.getTimestamp() * 1000);
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - offset * 60 * 1000);
-    const dateStr = localDate.toISOString().split("T")[0];
-
-    if (!mealsByDate[dateStr]) {
-      mealsByDate[dateStr] = {
-        Breakfast: [],
-        Lunch: [],
-        Dinner: [],
-        Snack: [],
-        Other: [],
-      };
-    }
-
-    const category = meal.getCategory();
-    if (mealsByDate[dateStr][category]) {
-      mealsByDate[dateStr][category].push({
-        name: meal.getCategory(), // Or use transcription if available as name
-        details:
-          meal.getTranscription() ||
-          `${meal.getNutritionInfo().getCalories()} kcal`,
-      });
-    }
-  });
-
-  const mealsForSelected = mealsByDate[selectedDate] || {
-    Breakfast: [],
-    Lunch: [],
-    Dinner: [],
-    Snack: [],
-    Other: [],
-  };
+  const prevMonth = () => { if(month===0){ setMonth(11); setYear(y=>y-1); } else setMonth(m=>m-1); };
+  const nextMonth = () => { if(month===11){ setMonth(0); setYear(y=>y+1); } else setMonth(m=>m+1); };
+  const prevYear = () => setYear(y=>y-1);
+  const nextYear = () => setYear(y=>y+1);
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: 60 + insets.top },
-        ]}
-      >
-        {/* Segmented control */}
-        <View
-          style={[
-            styles.segmentWrap,
-            { backgroundColor: isDark ? "#2a2a2a" : "#e8e8e8" },
-          ]}
-        >
-          {(["month", "year"] as const).map((v) => (
-            <TouchableOpacity
-              key={v}
-              onPress={() => setViewMode(v)}
-              style={[
-                styles.segment,
-                viewMode === v && { backgroundColor: GREEN },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  { color: viewMode === v ? "white" : GREEN },
-                ]}
-              >
-                {v.toUpperCase()}
+      {/* Segmented control */}
+      <View style={[styles.segmentWrap, { backgroundColor: isDark ? "#2a2a2a" : "#e8e8e8" }]}>
+        {(["month", "year"] as const).map((v) => (
+          <TouchableOpacity
+            key={v}
+            onPress={() => setViewMode(v)}
+            style={[styles.segment, viewMode === v && { backgroundColor: GREEN }]}
+          >
+            <Text style={[styles.segmentText, { color: viewMode === v ? "white" : GREEN }]}>
+              {v.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Header */}
+      <View style={styles.header}>
+        {viewMode === "month" && (
+          <>
+            <TouchableOpacity onPress={prevMonth}>
+              <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.centeredHeader}>
+              <Text style={[styles.headerTitle, { color: textColor }]}>
+                {monthNames[month]} {year}
               </Text>
+            </View>
+            <TouchableOpacity onPress={nextMonth}>
+              <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {viewMode === "year" && (
+          <View style={styles.yearHeader}>
+            <TouchableOpacity onPress={prevYear}>
+              <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
+            </TouchableOpacity>
+            <View style={styles.centeredHeader}>
+              <Text style={[styles.headerTitle, { color: textColor }]}>
+                {year}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={nextYear}>
+              <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {/* Month view */}
+      {viewMode === "month" && (
+        <View>
+          <View style={styles.weekLabelsRow}>
+            {["M","T","W","T","F","S","S"].map((ini,i)=>(
+              <Text key={i} style={[styles.weekLabel,{color:"#666"}]}>{ini}</Text>
+            ))}
+          </View>
+          {monthMatrix.map((row,rIdx)=>(
+            <View key={rIdx} style={styles.gridRow}>
+              {row.map((day,cIdx)=>{
+                const isToday = day!==null && isSameDate(new Date(year,month,day), new Date());
+                const hasMeal = day!==null && yearMeals.some(meal=>{
+                  const mealDate = new Date(meal.getTimestamp()*1000);
+                  return mealDate.getFullYear()===year && mealDate.getMonth()===month && mealDate.getDate()===day;
+                });
+                return (
+                  <View key={cIdx} style={styles.gridCell}>
+                    {day ? (
+                      <TouchableOpacity onPress={()=>handleDayPress(day)} style={[styles.dayCircle,isToday&&{backgroundColor:GREEN,borderRadius:21}]}>
+                        <Text style={[styles.dayText,{color:isToday?"white":textColor}]}>{day}</Text>
+                        {hasMeal && <View style={{width:6,height:6,borderRadius:3,backgroundColor:"#3498DB",marginTop:4}}/>}
+                      </TouchableOpacity>
+                    ) : (<View style={styles.dayEmpty}/>)}
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Year view */}
+      {viewMode==="year" && (
+        <ScrollView contentContainerStyle={styles.yearGrid}>
+          {yearGrid.map(m=>(
+            <TouchableOpacity key={m} style={[styles.yearCell,{backgroundColor:cardBg},Shadows.small]} onPress={()=>{setMonth(m); setViewMode("month");}}>
+              <Text style={[styles.yearMonthText,{color:textColor}]}>{monthNames[m]}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
+      )}
 
-        {/* Header */}
-        <View style={styles.header}>
-          {viewMode === "month" && (
-            <>
-              <TouchableOpacity onPress={prevMonth}>
-                <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
-              </TouchableOpacity>
-              <View style={styles.centeredHeader}>
-                <Text style={[styles.headerTitle, { color: textColor }]}>
-                  {monthNames[month]} {year}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={nextMonth}>
-                <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          {viewMode === "year" && (
-            <View style={styles.yearHeader}>
-              <TouchableOpacity onPress={prevYear}>
-                <Text style={[styles.arrow, { color: GREEN }]}>‹</Text>
-              </TouchableOpacity>
-              <View style={styles.centeredHeader}>
-                <Text style={[styles.headerTitle, { color: textColor }]}>
-                  {year}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={nextYear}>
-                <Text style={[styles.arrow, { color: GREEN }]}>›</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+      <Text style={[styles.dateTitle,{color:GREEN}]}>{selectedDate}</Text>
 
-        {/* MONTH VIEW */}
-        {viewMode === "month" && (
-          <View>
-            <View style={styles.weekLabelsRow}>
-              {["M", "T", "W", "T", "F", "S", "S"].map((ini, i) => (
-                <Text
-                  key={i}
-                  style={[styles.weekLabel, { color: secondaryText }]}
-                >
-                  {ini}
-                </Text>
-              ))}
-            </View>
-            {monthMatrix.map((row, rIdx) => (
-              <View key={rIdx} style={styles.gridRow}>
-                {row.map((day, cIdx) => {
-                  const isToday =
-                    day !== null &&
-                    isSameDate(new Date(year, month, day), new Date());
-                  const dayObj = day ? new Date(year, month, day) : null;
-                  let dayStr = "";
-                  if (dayObj) {
-                    const offset = dayObj.getTimezoneOffset();
-                    const localDate = new Date(
-                      dayObj.getTime() - offset * 60 * 1000,
-                    );
-                    dayStr = localDate.toISOString().split("T")[0];
-                  }
-
-                  const hasMeal =
-                    dayStr &&
-                    mealsByDate[dayStr] &&
-                    Object.values(mealsByDate[dayStr]).some(
-                      (arr) => arr.length > 0,
-                    );
-
-                  return (
-                    <View key={cIdx} style={styles.gridCell}>
-                      {day ? (
-                        <TouchableOpacity
-                          onPress={() => handleDayPress(day)}
-                          style={[
-                            styles.dayCircle,
-                            isToday && {
-                              backgroundColor: GREEN,
-                              shadowColor: "#000",
-                              shadowOpacity: 0.15,
-                              shadowRadius: 4,
-                            },
-                            hasMeal &&
-                              !isToday && {
-                                borderWidth: 2,
-                                borderColor: GREEN,
-                              },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.dayText,
-                              {
-                                color: isToday ? "white" : textColor,
-                                fontWeight: isToday ? "700" : "400",
-                              },
-                            ]}
-                          >
-                            {day}
-                          </Text>
-                        </TouchableOpacity>
-                      ) : (
-                        <View style={styles.dayEmpty} />
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* YEAR VIEW */}
-        {viewMode === "year" && (
-          <View style={styles.yearGrid}>
-            {yearGrid.map((m) => (
-              <TouchableOpacity
-                key={m}
-                style={[
-                  styles.yearCell,
-                  { backgroundColor: cardBg },
-                  Shadows.small,
-                ]}
-                onPress={() => {
-                  setMonth(m);
-                  setViewMode("month");
-                }}
-              >
-                <Text style={[styles.yearMonthText, { color: textColor }]}>
-                  {monthNames[m]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {/* Selected Date */}
-        <Text style={[styles.dateTitle, { color: GREEN }]}>{selectedDate}</Text>
-
-        {/* Meal List */}
-        <View style={styles.mealList}>
-          {mealCategories.map((category) => (
-            <View
-              key={category}
-              style={[styles.categoryContainer, { backgroundColor: cardBg }]}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.categoryHeader,
-                  { backgroundColor: isDark ? "#262727" : "#E3F2FD" },
-                ]}
-                onPress={() => toggleExpand(category)}
-              >
-                <View
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-                >
-                  <Ionicons
-                    name={getMealIcon(category) as any}
-                    size={20}
-                    color={GREEN}
-                  />
-                  <Text style={[styles.categoryTitle, { color: GREEN }]}>
-                    {categoryLabels[category]}
-                  </Text>
-                </View>
-                <Ionicons
-                  name={expanded[category] ? "chevron-up" : "chevron-down"}
-                  size={20}
-                  color={GREEN}
-                />
-              </TouchableOpacity>
-              {expanded[category] && (
-                <View style={styles.mealDetails}>
-                  {mealsForSelected[category].length === 0 ? (
-                    <Text style={[styles.noMealText, { color: secondaryText }]}>
-                      No meals recorded.
-                    </Text>
-                  ) : (
-                    mealsForSelected[category].map((meal, idx) => (
-                      <View key={idx} style={styles.mealItem}>
-                        <Text style={[styles.mealName, { color: textColor }]}>
-                          {meal.name}
-                        </Text>
-                        <Text
-                          style={[styles.mealDesc, { color: secondaryText }]}
-                        >
-                          {meal.details}
-                        </Text>
-                      </View>
-                    ))
-                  )}
-                </View>
-              )}
-            </View>
-          ))}
-        </View>
+      {/* --- Lower part: Meal Cards --- */}
+      <ScrollView style={{ marginHorizontal: -Spacing.xl, paddingHorizontal: Spacing.xl }}>
+        {mealCategories.map(category=>{
+          const meals = mealsForSelectedDate[category];
+          if(meals.length===0) return null;
+          return <MealCard key={category} category={category} meals={meals} isDark={isDark}/>;
+        })}
       </ScrollView>
-
-      {/* Glass Header */}
-      <BlurView
-        intensity={80}
-        tint={isDark ? "dark" : "light"}
-        style={[
-          styles.absoluteHeader,
-          {
-            paddingTop: insets.top,
-            height: 44 + insets.top,
-            borderBottomColor: isDark ? "#333" : "#ccc",
-          },
-        ]}
-      >
-        <View style={styles.headerContent}>
-          <Text style={[styles.headerTitleText, { color: textColor }]}>
-            Calendar
-          </Text>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.doneButtonText}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: {
-    paddingBottom: 100,
-    paddingHorizontal: Spacing.xl,
-  },
-  absoluteHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    zIndex: 100,
-    justifyContent: "center",
-  },
-  headerContent: {
-    paddingHorizontal: Spacing.lg,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    height: 44,
-  },
-  headerTitleText: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  doneButtonText: {
-    color: Colors.primary,
-    fontSize: 17,
-    fontWeight: "600",
-  },
-  segmentWrap: {
-    flexDirection: "row",
-    padding: 4,
-    borderRadius: BorderRadius.xl,
-    marginBottom: Spacing.lg,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: BorderRadius.lg,
-    alignItems: "center",
-  },
-  segmentText: { fontWeight: Typography.weights.semibold },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.lg,
-  },
-  centeredHeader: { flex: 1, alignItems: "center" },
-  headerTitle: {
-    fontSize: Typography.sizes.xl,
-    fontWeight: Typography.weights.semibold,
-  },
-  arrow: { fontSize: 32, paddingHorizontal: 12 },
-  weekLabelsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: Spacing.sm,
-  },
-  weekLabel: {
-    width: `${100 / 7}%`,
-    textAlign: "center",
-    fontWeight: Typography.weights.semibold,
-  },
-  gridRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 6,
-  },
-  gridCell: { width: `${100 / 7}%`, alignItems: "center" },
-  dayCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dayText: { fontSize: Typography.sizes.base },
-  dayEmpty: { width: 42, height: 42 },
-  yearGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    paddingTop: Spacing.md,
-  },
-  yearCell: {
-    width: "48%",
-    paddingVertical: 18,
-    borderRadius: BorderRadius.xl,
-    marginBottom: Spacing.lg,
-    alignItems: "center",
-  },
-  yearHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 6,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-  },
-  yearMonthText: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: Typography.weights.semibold,
-  },
-  dateTitle: {
-    fontSize: Typography.sizes.lg,
-    fontWeight: "bold",
-    marginVertical: 10,
-  },
-  mealList: { marginHorizontal: 0 },
-  categoryContainer: { marginBottom: 10, borderRadius: 8, overflow: "hidden" },
-  categoryHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 14,
-  },
-  categoryTitle: { fontSize: Typography.sizes.base, fontWeight: "600" },
-  mealDetails: { paddingHorizontal: 16, paddingVertical: 8 },
-  mealItem: { marginBottom: 8 },
-  mealName: { fontSize: Typography.sizes.base, fontWeight: "500" },
-  mealDesc: { fontSize: Typography.sizes.xs, opacity: 0.7 },
-  noMealText: {
-    fontSize: Typography.sizes.xs,
-    fontStyle: "italic",
-    opacity: 0.6,
-  },
+  container: { flex:1, padding:Spacing.xl },
+  segmentWrap:{ flexDirection:"row", padding:4, borderRadius:BorderRadius.xl, marginBottom:Spacing.lg },
+  segment:{ flex:1, paddingVertical:8, borderRadius:BorderRadius.lg, alignItems:"center" },
+  segmentText:{ fontWeight:Typography.weights.semibold },
+  header:{ flexDirection:"row", alignItems:"center", justifyContent:"space-between", marginBottom:Spacing.lg },
+  centeredHeader:{ flex:1, alignItems:"center" },
+  headerTitle:{ fontSize:Typography.sizes.xl, fontWeight:Typography.weights.semibold },
+  arrow:{ fontSize:32, paddingHorizontal:12 },
+  weekLabelsRow:{ flexDirection:"row", justifyContent:"space-between", marginBottom:Spacing.sm },
+  weekLabel:{ width:`${100/7}%`, textAlign:"center", fontWeight:Typography.weights.semibold },
+  gridRow:{ flexDirection:"row", justifyContent:"space-between", marginVertical:6 },
+  gridCell:{ width:`${100/7}%`, alignItems:"center" },
+  dayCircle:{ width:42, height:42, justifyContent:"center", alignItems:"center" },
+  dayText:{ fontSize:Typography.sizes.base },
+  dayEmpty:{ width:42, height:42 },
+  yearGrid:{ flexDirection:"row", flexWrap:"wrap", justifyContent:"space-between", paddingTop:Spacing.md },
+  yearCell:{ width:"48%", paddingVertical:18, borderRadius:BorderRadius.xl, marginBottom:Spacing.lg, alignItems:"center" },
+  yearHeader:{ paddingHorizontal:20, paddingTop:10, paddingBottom:6, flexDirection:"row", justifyContent:"space-between", alignItems:"center" },
+  yearMonthText:{ fontSize:Typography.sizes.lg, fontWeight:Typography.weights.semibold },
+  dateTitle:{ fontSize:Typography.sizes.lg, fontWeight:"bold", marginVertical:10 },
+  mealCard:{ borderRadius:BorderRadius.xl, padding:Spacing.lg, marginBottom:Spacing.md, ...Shadows.small },
+  mealCardHeader:{ flexDirection:"row", alignItems:"center" },
+  mealIcon:{ width:48, height:48, borderRadius:24, justifyContent:"center", alignItems:"center", marginRight:Spacing.md },
+  mealHeaderInfo:{ flex:1, justifyContent:"center" },
+  mealTitleRow:{ flexDirection:"row", justifyContent:"space-between", alignItems:"center" },
+  mealName:{ fontSize:Typography.sizes.lg, fontWeight:"600" },
+  mealCalories:{ fontSize:Typography.sizes.base },
+  mealDetails:{ marginTop:Spacing.sm, paddingHorizontal:0, paddingVertical:Spacing.sm },
+  nutrientRow:{ flexDirection:"row", gap:6, marginTop:4 },
+  nutrientPill:{ paddingHorizontal:6, paddingVertical:2, borderRadius:8 }
 });
