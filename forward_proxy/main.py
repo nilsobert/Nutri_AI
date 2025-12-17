@@ -4,7 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from datetime import timedelta, date
-from typing import Optional
+from typing import Optional, List
 import httpx
 import os
 import base64
@@ -12,9 +12,10 @@ import json
 import logging
 import sys
 import time
+import uuid
 from dotenv import load_dotenv
 
-from database import get_db, init_db, User
+from database import get_db, init_db, User, Meal
 from auth import (
     get_password_hash,
     verify_password,
@@ -123,6 +124,31 @@ class UserProfileUpdate(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class NutritionInfoModel(BaseModel):
+    calories: int
+    carbs: int
+    sugar: int
+    protein: int
+    fat: int
+
+class MealQualityModel(BaseModel):
+    calorieDensity: float
+    goalFitPercentage: float
+    mealQualityScore: float
+
+class MealCreate(BaseModel):
+    id: str
+    timestamp: int
+    category: str
+    image: Optional[str] = None
+    audio: Optional[str] = None
+    transcription: Optional[str] = None
+    nutritionInfo: NutritionInfoModel
+    mealQuality: MealQualityModel
+
+class MealResponse(MealCreate):
+    pass
 
 class MealTrackResponse(BaseModel):
     success: bool
@@ -296,6 +322,178 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
         data={"sub": str(db_user.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/meals", response_model=MealResponse)
+def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[POST /meals] Creating/Updating meal {meal.id} for user {current_user.id} (email: {current_user.email})")
+    logger.debug(f"[POST /meals] Meal data: category={meal.category}, timestamp={meal.timestamp}, has_image={bool(meal.image)}, has_audio={bool(meal.audio)}, has_transcription={bool(meal.transcription)}")
+    
+    # Check if meal already exists to avoid duplicates or handle updates
+    # IMPORTANT: Scope to the current user to prevent cross-user overwrites
+    existing_meal = db.query(Meal).filter(Meal.id == meal.id, Meal.user_id == current_user.id).first()
+    if existing_meal:
+        logger.info(f"[POST /meals] Updating existing meal {meal.id} for user {current_user.id}")
+        logger.debug(f"[POST /meals] Old meal: category={existing_meal.category}, has_image={bool(existing_meal.image_path)}, has_audio={bool(existing_meal.audio_path)}")
+        # Update existing meal
+        existing_meal.timestamp = meal.timestamp
+        existing_meal.category = meal.category
+        existing_meal.image_path = meal.image
+        existing_meal.audio_path = meal.audio
+        existing_meal.transcription = meal.transcription
+        existing_meal.calories = meal.nutritionInfo.calories
+        existing_meal.carbs = meal.nutritionInfo.carbs
+        existing_meal.sugar = meal.nutritionInfo.sugar
+        existing_meal.protein = meal.nutritionInfo.protein
+        existing_meal.fat = meal.nutritionInfo.fat
+        existing_meal.calorie_density = meal.mealQuality.calorieDensity
+        existing_meal.goal_fit_percentage = meal.mealQuality.goalFitPercentage
+        existing_meal.meal_quality_score = meal.mealQuality.mealQualityScore
+        db.commit()
+        db.refresh(existing_meal)
+        return meal
+    
+    db_meal = Meal(
+        id=meal.id,
+        user_id=current_user.id,
+        timestamp=meal.timestamp,
+        category=meal.category,
+        image_path=meal.image,
+        audio_path=meal.audio,
+        transcription=meal.transcription,
+        calories=meal.nutritionInfo.calories,
+        carbs=meal.nutritionInfo.carbs,
+        sugar=meal.nutritionInfo.sugar,
+        protein=meal.nutritionInfo.protein,
+        fat=meal.nutritionInfo.fat,
+        calorie_density=meal.mealQuality.calorieDensity,
+        goal_fit_percentage=meal.mealQuality.goalFitPercentage,
+        meal_quality_score=meal.mealQuality.mealQualityScore
+    )
+    db.add(db_meal)
+    db.commit()
+    db.refresh(db_meal)
+    logger.info(f"[POST /meals] Meal {meal.id} created successfully for user {current_user.id}")
+    return meal
+
+@app.get("/meals", response_model=List[MealResponse])
+def get_meals(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[GET /meals] Fetching meals for user {current_user.id} (email: {current_user.email})")
+    meals = db.query(Meal).filter(Meal.user_id == current_user.id).all()
+    logger.info(f"[GET /meals] Found {len(meals)} meals for user {current_user.id}")
+    if meals:
+        logger.debug(f"[GET /meals] Meal IDs: {[m.id for m in meals]}")
+    return [
+        MealResponse(
+            id=m.id,
+            timestamp=m.timestamp,
+            category=m.category,
+            image=m.image_path,
+            audio=m.audio_path,
+            transcription=m.transcription,
+            nutritionInfo=NutritionInfoModel(
+                calories=m.calories,
+                carbs=m.carbs,
+                sugar=m.sugar,
+                protein=m.protein,
+                fat=m.fat
+            ),
+            mealQuality=MealQualityModel(
+                calorieDensity=m.calorie_density,
+                goalFitPercentage=m.goal_fit_percentage,
+                mealQualityScore=m.meal_quality_score
+            )
+        ) for m in meals
+    ]
+
+@app.delete("/meals/{meal_id}")
+def delete_meal(meal_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[DELETE /meals/{meal_id}] Deleting meal for user {current_user.id} (email: {current_user.email})")
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == current_user.id).first()
+    if not meal:
+        logger.warning(f"[DELETE /meals/{meal_id}] Meal not found for user {current_user.id}")
+        raise HTTPException(status_code=404, detail="Meal not found")
+    logger.debug(f"[DELETE /meals/{meal_id}] Deleting meal with image_path={meal.image_path}, audio_path={meal.audio_path}")
+    db.delete(meal)
+    db.commit()
+    logger.info(f"[DELETE /meals/{meal_id}] Meal deleted successfully for user {current_user.id}")
+    return {"message": "Meal deleted"}
+
+@app.post("/meals/image")
+async def upload_meal_image(
+    image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"[POST /meals/image] Uploading meal image for user {current_user.id} (email: {current_user.email})")
+    logger.debug(f"[POST /meals/image] File: {image.filename}, content_type: {image.content_type}")
+    os.makedirs("data/meal_images", exist_ok=True)
+    file_ext = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+    file_name = f"{uuid.uuid4()}.{file_ext}"
+    relative_path = f"meal_images/{file_name}"
+    file_path = f"data/{relative_path}"
+    
+    with open(file_path, "wb") as buffer:
+        content = await image.read()
+        buffer.write(content)
+    
+    logger.info(f"[POST /meals/image] Image saved to {file_path} ({len(content)} bytes)")
+    return {"image_path": relative_path}
+
+@app.post("/meals/audio")
+async def upload_meal_audio(
+    audio: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    logger.info(f"[POST /meals/audio] Uploading meal audio for user {current_user.id} (email: {current_user.email})")
+    logger.debug(f"[POST /meals/audio] File: {audio.filename}, content_type: {audio.content_type}")
+    os.makedirs("data/meal_audios", exist_ok=True)
+    file_ext = audio.filename.split(".")[-1] if "." in audio.filename else "m4a"
+    file_name = f"{uuid.uuid4()}.{file_ext}"
+    relative_path = f"meal_audios/{file_name}"
+    file_path = f"data/{relative_path}"
+
+    with open(file_path, "wb") as buffer:
+        content = await audio.read()
+        buffer.write(content)
+
+    logger.info(f"[POST /meals/audio] Audio saved to {file_path} ({len(content)} bytes)")
+    return {"audio_path": relative_path}
+
+@app.get("/static/{file_path:path}")
+def get_static_file(file_path: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Serve static files only if they belong to the authenticated user.
+
+    Currently we only store meal images under data/meal_images/ and audios under data/meal_audios/.
+    """
+    logger.info(f"[GET /static/{file_path}] Serving static file for user {current_user.id} (email: {current_user.email})")
+    
+    # Prevent directory traversal
+    if ".." in file_path or file_path.startswith("/"):
+        logger.warning(f"[GET /static/{file_path}] Directory traversal attempt detected for user {current_user.id}")
+        raise HTTPException(status_code=400, detail="Invalid path")
+
+    # Only allow access to meal images + audios via this endpoint
+    if not (file_path.startswith("meal_images/") or file_path.startswith("meal_audios/")):
+        logger.warning(f"[GET /static/{file_path}] Unauthorized file type access attempt for user {current_user.id}")
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    # Authorization: ensure this file_path belongs to one of the user's meals
+    meal = db.query(Meal).filter(
+        Meal.user_id == current_user.id,
+        (Meal.image_path == file_path) | (Meal.audio_path == file_path)
+    ).first()
+    if not meal:
+        logger.warning(f"[GET /static/{file_path}] File not found or not owned by user {current_user.id}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    full_path = os.path.join("data", file_path)
+    if not os.path.exists(full_path):
+        logger.error(f"[GET /static/{file_path}] File exists in DB but not on disk for user {current_user.id}")
+        raise HTTPException(status_code=404, detail="File not found")
+
+    logger.debug(f"[GET /static/{file_path}] Serving file successfully for user {current_user.id}")
+    return FileResponse(full_path)
 
 def check_quota_and_update(user: User, db: Session) -> bool:
     today = date.today()

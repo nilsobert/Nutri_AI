@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 from datetime import date
 
 import os
@@ -58,8 +58,46 @@ class User(Base):
     # Profile Image
     profile_image_path = Column(String, nullable=True)
 
+    meals = relationship("Meal", back_populates="user")
+
+class Meal(Base):
+    __tablename__ = "meals"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    timestamp = Column(Integer)
+    category = Column(String)
+    image_path = Column(String, nullable=True)
+    audio_path = Column(String, nullable=True)
+    transcription = Column(String, nullable=True)
+    
+    # Nutrition Info
+    calories = Column(Integer)
+    carbs = Column(Integer)
+    sugar = Column(Integer)
+    protein = Column(Integer)
+    fat = Column(Integer)
+    
+    # Meal Quality
+    calorie_density = Column(Float)
+    goal_fit_percentage = Column(Float)
+    meal_quality_score = Column(Float)
+
+    user = relationship("User", back_populates="meals")
+
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight migrations for sqlite (add new columns when missing)
+    # NOTE: For larger projects, use Alembic.
+    with engine.connect() as conn:
+        try:
+            cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(meals)").fetchall()]
+            if "audio_path" not in cols:
+                conn.exec_driver_sql("ALTER TABLE meals ADD COLUMN audio_path VARCHAR")
+        except Exception:
+            # meals table may not exist yet or PRAGMA may fail in edge cases
+            pass
 
 def get_db():
     db = SessionLocal()
