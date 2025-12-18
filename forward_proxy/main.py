@@ -649,8 +649,9 @@ async def track_meal(
                 "protein_g": 46.5,
                 "fat_g": 5.4,
                 "carbohydrates_g": 0,
-                "sugar_g": 0,
-                "fiber_g": 0
+                "meal_quality" : 9, 
+                "goal_fit_percent" : 0.9,
+                "calorie_density_cal_per_gram" : 1.65
               }
             }
           ],
@@ -670,6 +671,9 @@ RULES:
 - `confidence`: Your confidence (0.0 to 1.0).
 - `serving_size_grams`: Your best estimate of the item's weight in grams.
 - `nutrition`: The nutritional info for that *single item*.
+- `meal_quality`: Estimate a reasonable natural number between 0 and 10, where 0 is worst meal quality.
+- `goal_fit_percent`: Set to a reasonable value between 0 and 1 based on the user's selected goal.
+- `calorie_density_cal_per_gram`: With the estimated meal calories and weight, calculate the calorie density of the meal.
 - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
 
 Return *only* the JSON object and nothing else."""
@@ -817,15 +821,16 @@ async def analyze_image_vlm(image_path: str, context: str = ""):
       "items": [
         {
           "name": "Grilled Chicken Breast",
-          "confidence": 0.9,
-          "serving_size_grams": 150,
-          "nutrition": {
+            "confidence": 0.9,
+            "serving_size_grams": 150,
+            "nutrition": {
             "calories": 248,
             "protein_g": 46.5,
             "fat_g": 5.4,
             "carbohydrates_g": 0,
-            "sugar_g": 0,
-            "fiber_g": 0
+            "meal_quality" : 9, 
+            "goal_fit_percent" : 0.9,
+            "calorie_density_cal_per_gram" : 1.65
           }
         }
       ],
@@ -845,6 +850,9 @@ RULES:
 - `confidence`: Your confidence (0.0 to 1.0).
 - `serving_size_grams`: Your best estimate of the item's weight in grams.
 - `nutrition`: The nutritional info for that *single item*.
+- `meal_quality`: Estimate a reasonable natural number between 0 and 10, where 0 is worst meal quality.
+- `goal_fit_percent`: Set to a reasonable value between 0 and 1 based on the user's selected goal.
+- `calorie_density_cal_per_gram`: With the estimated meal calories and weight, calculate the calorie density of the meal.
 - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
 
 Return *only* the JSON object and nothing else."""
