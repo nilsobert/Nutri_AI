@@ -26,7 +26,6 @@ export default function GenderSelection() {
 
   const handleNext = () => {
     if (!gender) return;
-    // Store gender in AsyncStorage and navigate to next page
     router.push({
       pathname: "/screens/onboarding/goal-selection",
       params: { gender: gender.toString() },
@@ -46,7 +45,7 @@ export default function GenderSelection() {
         <TouchableOpacity
           onPress={() => router.push("/screens/onboarding/goal-selection")}
         >
-          <Text style={[styles.skipText, { color: Colors.secondaryText.dark }]}>
+          <Text style={[styles.skipText, { color: isDark ? "#999" : "#666" }]}> 
             Skip
           </Text>
         </TouchableOpacity>
@@ -58,16 +57,16 @@ export default function GenderSelection() {
           Identify your gender
         </Text>
 
-        <View style={styles.genderOptions}>
-          <View style={styles.genderRow}>
-            <TouchableOpacity
-              style={[
-                styles.genderCard,
-                { backgroundColor: cardBg },
-                gender === Gender.Male && styles.genderCardSelected,
-              ]}
-              onPress={() => setGender(Gender.Male)}
-            >
+          <View style={styles.genderOptions}>
+            <View style={styles.genderRow}>
+              <TouchableOpacity
+                style={[
+                  styles.genderCard,
+                  { backgroundColor: cardBg },
+                  gender === Gender.Male && styles.genderCardSelected,
+                ]}
+                onPress={() => setGender(Gender.Male)}
+              >
               <View
                 style={[
                   styles.iconCircle,
@@ -117,63 +116,6 @@ export default function GenderSelection() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.genderRow}>
-            <TouchableOpacity
-              style={[
-                styles.genderCard,
-                { backgroundColor: cardBg },
-                gender === Gender.Other && styles.genderCardSelected,
-              ]}
-              onPress={() => setGender(Gender.Other)}
-            >
-              <View
-                style={[
-                  styles.iconCircle,
-                  {
-                    backgroundColor:
-                      gender === Gender.Other ? "#9C27B0" : "#F3E5F5",
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="transgender"
-                  size={40}
-                  color={gender === Gender.Other ? "#fff" : "#9C27B0"}
-                />
-              </View>
-              <Text style={[styles.genderLabel, { color: textColor }]}>
-                Other
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.genderCard,
-                { backgroundColor: cardBg },
-                gender === Gender.PreferNotToSay && styles.genderCardSelected,
-              ]}
-              onPress={() => setGender(Gender.PreferNotToSay)}
-            >
-              <View
-                style={[
-                  styles.iconCircle,
-                  {
-                    backgroundColor:
-                      gender === Gender.PreferNotToSay ? "#607D8B" : "#ECEFF1",
-                  },
-                ]}
-              >
-                <Ionicons
-                  name="help-circle-outline"
-                  size={40}
-                  color={gender === Gender.PreferNotToSay ? "#fff" : "#607D8B"}
-                />
-              </View>
-              <Text style={[styles.genderLabel, { color: textColor }]}>
-                Prefer not to say
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
 
