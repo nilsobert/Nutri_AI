@@ -46,6 +46,7 @@ import {
 import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
 
+
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -257,7 +258,7 @@ const MealCard: React.FC<MealCardProps> = ({
   isDark,
   currentDate,
 }) => {
-  const { isConnected } = useNetwork();
+  const { isServerReachable } = useNetwork();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
@@ -503,32 +504,32 @@ const MealCard: React.FC<MealCardProps> = ({
               styles.addMealButton,
               {
                 backgroundColor: isDark ? "#333" : "#f5f5f5",
-                opacity: isConnected ? 1 : 0.5,
+                opacity: isServerReachable ? 1 : 0.5,
               },
             ]}
             onPress={() => {
-              if (isConnected) {
+              if (isServerReachable) {
                 router.push({
                   pathname: "/add-meal",
                   params: { date: currentDate.toISOString() },
                 });
               }
             }}
-            activeOpacity={isConnected ? 0.7 : 1}
-            disabled={!isConnected}
+            activeOpacity={isServerReachable ? 0.7 : 1}
+            disabled={!isServerReachable}
           >
             <Ionicons
               name="add-circle-outline"
               size={20}
-              color={isConnected ? Colors.primary : "#999"}
+              color={isServerReachable ? Colors.primary : "#999"}
             />
             <Text
               style={[
                 styles.addMealButtonText,
-                { color: isConnected ? Colors.primary : "#999" },
+                { color: isServerReachable ? Colors.primary : "#999" },
               ]}
             >
-              {isConnected ? "Add Item" : "Offline"}
+              {isServerReachable ? "Add Item" : "Offline"}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -538,7 +539,7 @@ const MealCard: React.FC<MealCardProps> = ({
 };
 
 const IOSStyleHomeScreen: React.FC = () => {
-  const { isConnected } = useNetwork();
+  const { isServerReachable } = useNetwork();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -945,7 +946,7 @@ const IOSStyleHomeScreen: React.FC = () => {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: isConnected ? "#34C759" : "#FF3B30" },
+                  { backgroundColor: isServerReachable ? "#34C759" : "#FF3B30" },
                 ]}
               />
             </TouchableOpacity>
@@ -993,19 +994,19 @@ const IOSStyleHomeScreen: React.FC = () => {
 
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
-        style={[styles.fab, !isConnected && { opacity: 0.5 }]}
+        style={[styles.fab, !isServerReachable && { opacity: 0.5 }]}
         onPress={() => {
-          if (isConnected) {
+          if (isServerReachable) {
             router.push({
               pathname: "/add-meal",
               params: { date: currentDate.toISOString() },
             });
           }
         }}
-        activeOpacity={isConnected ? 0.8 : 1}
+        activeOpacity={isServerReachable ? 0.8 : 1}
         entering={FadeIn}
         exiting={FadeOut}
-        disabled={!isConnected}
+        disabled={!isServerReachable}
       >
         <Ionicons name="add" size={28} color="white" />
       </AnimatedTouchableOpacity>
