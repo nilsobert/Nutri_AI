@@ -406,6 +406,14 @@ const MealCard: React.FC<MealCardProps> = ({
               {quality.goalFitPercentage}%
             </Text>
           </View>
+          <View style={styles.statItem}>
+            <Text style={[styles.statLabel, { color: secondaryText }]}>
+              Density
+            </Text>
+            <Text style={[styles.statValue, { color: textColor }]}>
+              {quality.calorieDensity ? quality.calorieDensity.toFixed(1) : "0.0"}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
