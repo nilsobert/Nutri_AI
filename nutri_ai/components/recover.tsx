@@ -10,28 +10,48 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
+import { Colors } from "../constants/theme";
+import { API_BASE_URL } from "../constants/values";
 
 const RecoverComponent = () => {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [email, setEmail] = useState("");
 
-  const isEmailRegistered = async (emailToCheck: string): Promise<boolean> => {
+  const isEmailOrUsernameRegistered = async (
+    input: string,
+  ): Promise<boolean> => {
     try {
-      // replace with your real API endpoint if needed
-      const res = await fetch("https://example.com/api/check-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToCheck }),
-      });
+      // Check if it's an email (contains @) or username
+      const isEmail = input.includes("@");
+
+      const queryParam = isEmail
+        ? `email=${encodeURIComponent(input)}`
+        : `name=${encodeURIComponent(input)}`;
+
+      const res = await fetch(
+        `${API_BASE_URL}/check-availability?${queryParam}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       if (!res.ok) throw new Error("network");
       const json = await res.json();
-      return !!json.registered;
+
+      // If email/name_available is false, it means it IS registered
+      if (isEmail) {
+        return !json.email_available;
+      } else {
+        return !json.name_available;
+      }
     } catch (err) {
-      // fallback mock
-      const mockRegistered = ["test@example.com", "you@domain.com"];
-      return mockRegistered.includes(emailToCheck.toLowerCase());
+      console.error("Error checking email/username availability:", err);
+      return false;
     }
   };
 
@@ -39,22 +59,35 @@ const RecoverComponent = () => {
     const addr = email.trim();
     if (!addr) {
       Alert.alert(
-        "Enter email",
+        "Enter email or username",
         "Please enter your email address or username.",
       );
       return;
     }
 
-    const registered = await isEmailRegistered(addr);
+    const registered = await isEmailOrUsernameRegistered(addr);
     if (registered) {
-      router.push("/screens/sent-screen");
+      // Email/username is registered - show alert and stay on page
+      Alert.alert(
+        "Password Reset",
+        "Please check your email to reset your password.",
+        [{ text: "OK", style: "default" }],
+      );
     } else {
+      // Email/username not registered - redirect to not found page
       router.push("/screens/notfound-screen");
     }
   };
 
+  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
+  const textColor = isDark ? Colors.text.dark : Colors.text.light;
+  const cardBg = isDark
+    ? Colors.cardBackground.dark
+    : Colors.cardBackground.light;
+  const placeholderColor = isDark ? "#666" : "#bfc9b2";
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.wrapper}
@@ -64,11 +97,15 @@ const RecoverComponent = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Forgot your{"\n"}password?</Text>
-            <Text style={styles.subtitle}>Nothing to worry about!</Text>
+            <Text style={[styles.title, { color: textColor }]}>
+              Forgot your{"\n"}password?
+            </Text>
+            <Text style={[styles.subtitle, { color: Colors.primary }]}>
+              Nothing to worry about!
+            </Text>
           </View>
 
-          <Text style={styles.instruction}>
+          <Text style={[styles.instruction, { color: textColor }]}>
             Please enter your email{"\n"}or username:
           </Text>
 
@@ -77,8 +114,11 @@ const RecoverComponent = () => {
               value={email}
               onChangeText={setEmail}
               placeholder="Username or Email"
-              placeholderTextColor="#bfc9b2"
-              style={styles.input}
+              placeholderTextColor={placeholderColor}
+              style={[
+                styles.input,
+                { backgroundColor: cardBg, color: textColor },
+              ]}
               keyboardType="email-address"
               autoCapitalize="none"
               returnKeyType="done"
@@ -98,7 +138,9 @@ const RecoverComponent = () => {
             style={styles.welcomeRow}
             onPress={() => router.push("/")}
           >
-            <Text style={styles.welcomeLink}>Welcome Screen</Text>
+            <Text style={[styles.welcomeLink, { color: Colors.primary }]}>
+              Welcome Screen
+            </Text>
           </TouchableOpacity>
 
           <View style={{ height: 80 }} />
@@ -109,7 +151,7 @@ const RecoverComponent = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#c9e09a" },
+  safe: { flex: 1 },
   wrapper: { flex: 1 },
   container: {
     flexGrow: 1,
@@ -119,32 +161,28 @@ const styles = StyleSheet.create({
   },
   header: { marginBottom: 18 },
   title: {
-    color: "#000000",
     fontSize: 34,
     fontWeight: "800",
     lineHeight: 40,
     marginBottom: 6,
   },
   subtitle: {
-    color: "#1E8E3E",
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 18,
   },
-  instruction: { color: "#000000", fontSize: 14, marginBottom: 12 },
+  instruction: { fontSize: 14, marginBottom: 12 },
   inputRow: {
     position: "relative",
     marginBottom: 18,
     justifyContent: "center",
   },
   input: {
-    backgroundColor: "#ffffff",
     height: 48,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingRight: 56,
     fontSize: 15,
-    color: "#2a2a2a",
     shadowColor: "rgba(0,0,0,0.06)",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 1,
@@ -158,7 +196,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#1E8E3E",
+    backgroundColor: Colors.primary,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
@@ -174,7 +212,7 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 1 }],
   },
   welcomeRow: { alignItems: "center", marginTop: 12 },
-  welcomeLink: { color: "#ffd34d", fontWeight: "700", fontSize: 13 },
+  welcomeLink: { fontWeight: "700", fontSize: 13 },
 });
 
 export default RecoverComponent;

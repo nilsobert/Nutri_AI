@@ -11,11 +11,17 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { useMeals } from "../context/MealContext";
 import { useUser } from "../context/UserContext";
-import { MealEntry, MealCategory, createMealEntry } from "../types/mealEntry";
+import { MealEntry, MealCategory } from "../types/mealEntry";
 import { MealQuality } from "../types/mealQuality";
 import { NutritionInfo } from "../types/nutritionInfo";
 import { MS_TO_S } from "../constants/values";
-import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../constants/theme";
+import {
+  Colors,
+  Typography,
+  Spacing,
+  BorderRadius,
+  Shadows,
+} from "../constants/theme";
 
 /* this is just a placeholder screen */
 const AddMealScreen = () => {
@@ -30,40 +36,42 @@ const AddMealScreen = () => {
   );
 
   // Calculate remaining calories
-  const todaysMeals = meals.filter(m => {
-    const d = new Date(m.timestamp * 1000);
-    return d.getDate() === selectedDate.getDate() && 
-           d.getMonth() === selectedDate.getMonth() && 
-           d.getFullYear() === selectedDate.getFullYear();
+  const todaysMeals = meals.filter((m) => {
+    const d = new Date(m.getTimestamp() * 1000);
+    return (
+      d.getDate() === selectedDate.getDate() &&
+      d.getMonth() === selectedDate.getMonth() &&
+      d.getFullYear() === selectedDate.getFullYear()
+    );
   });
-  
-  const totalCalories = todaysMeals.reduce((sum, m) => sum + m.nutritionInfo.calories, 0);
+
+  const totalCalories = todaysMeals.reduce(
+    (sum, m) => sum + m.getNutritionInfo().getCalories(),
+    0,
+  );
   const calorieGoal = goals?.calories || 2000;
   const remaining = calorieGoal - totalCalories;
 
   const handleAddTestMeal = async () => {
-    const nutrition = {
+    const nutrition = new NutritionInfo({
       calories: 500,
       carbs: 50,
       sugar: 10,
       protein: 30,
       fat: 20,
-    };
-    const quality = {
-      calorieDensity: 1.2,
-      goalFitPercentage: 80,
-      mealQualityScore: 8,
-    };
+    });
+    const quality = new MealQuality(1.2, 80, 8);
 
     const timestamp = Math.floor(selectedDate.getTime() / MS_TO_S);
 
-    const meal = createMealEntry({
-      category: selectedCategory,
-      mealQuality: quality,
-      nutritionInfo: nutrition,
-      transcription: "Test Meal",
-      timestamp: timestamp,
-    });
+    const meal = new MealEntry(
+      selectedCategory,
+      quality,
+      nutrition,
+      undefined,
+      "Test Meal",
+      timestamp,
+    );
 
     await addMeal(meal);
     router.back();
@@ -86,7 +94,12 @@ const AddMealScreen = () => {
         {/* Goal Context Card */}
         <View style={styles.goalCard}>
           <Text style={styles.goalLabel}>Calories Remaining</Text>
-          <Text style={[styles.goalValue, { color: remaining < 0 ? Colors.secondary.fat : Colors.primary }]}>
+          <Text
+            style={[
+              styles.goalValue,
+              { color: remaining < 0 ? Colors.secondary.fat : Colors.primary },
+            ]}
+          >
             {remaining}
           </Text>
           <Text style={styles.goalSubtext}>
@@ -94,9 +107,7 @@ const AddMealScreen = () => {
           </Text>
         </View>
 
-        <Text style={styles.placeholderText}>
-          Debug: Select Meal Details
-        </Text>
+        <Text style={styles.placeholderText}>Debug: Select Meal Details</Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Date</Text>
@@ -205,30 +216,30 @@ const styles = StyleSheet.create({
     color: "white",
   },
   goalCard: {
-    width: '100%',
-    backgroundColor: '#f8f9fa',
+    width: "100%",
+    backgroundColor: "#f8f9fa",
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: "#e9ecef",
   },
   goalLabel: {
     fontSize: Typography.sizes.sm,
-    color: '#6c757d',
+    color: "#6c757d",
     marginBottom: 4,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   goalValue: {
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 4,
   },
   goalSubtext: {
     fontSize: Typography.sizes.sm,
-    color: '#adb5bd',
+    color: "#adb5bd",
   },
 });
 

@@ -388,7 +388,7 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
     }));
 
   meals.forEach((meal) => {
-    const mealDate = new Date(meal.timestamp * MS_TO_S);
+    const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
     if (range === "Day") {
@@ -426,13 +426,13 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
     }
 
     if (index !== -1 && index < dataPoints) {
-      const info = meal.nutritionInfo;
-      data[index].carbs += info.carbs;
-      data[index].protein += info.protein;
-      data[index].fat += info.fat;
+      const info = meal.getNutritionInfo();
+      data[index].carbs += info.getCarbs();
+      data[index].protein += info.getProtein();
+      data[index].fat += info.getFat();
       data[index].calories +=
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
-      data[index].quality += meal.mealQuality.mealQualityScore;
+        info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9;
+      data[index].quality += meal.getMealQuality().getMealQualityScore();
       data[index].count += 1;
     }
   });
@@ -470,7 +470,7 @@ function getHistoricalData(
   }
 
   meals.forEach((meal) => {
-    const mDate = new Date(meal.timestamp * MS_TO_S);
+    const mDate = new Date(meal.getTimestamp() * MS_TO_S);
     let index = -1;
 
     if (resolution === "day") {
@@ -489,12 +489,12 @@ function getHistoricalData(
     }
 
     if (index >= 0 && index < count) {
-      const info = meal.nutritionInfo;
-      data[index].carbs += info.carbs;
-      data[index].protein += info.protein;
-      data[index].fat += info.fat;
+      const info = meal.getNutritionInfo();
+      data[index].carbs += info.getCarbs();
+      data[index].protein += info.getProtein();
+      data[index].fat += info.getFat();
       data[index].calories +=
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
+        info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9;
     }
   });
 
@@ -508,7 +508,7 @@ function calculateStreak(meals: any[]) {
 
   for (let i = 0; i < 365; i++) {
     const hasMeal = meals.some((m) => {
-      const d = new Date(m.timestamp * MS_TO_S);
+      const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === currentDay.getDate() &&
         d.getMonth() === currentDay.getMonth() &&
@@ -530,7 +530,12 @@ function calculateStreak(meals: any[]) {
   return streak;
 }
 
-function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calorieGoal: number): number {
+function getDailyGoalMetCount(
+  startDate: Date,
+  endDate: Date,
+  meals: any[],
+  calorieGoal: number,
+): number {
   let daysMet = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -540,7 +545,7 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calo
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dayTotalCalories = meals
       .filter((m) => {
-        const mealDate = new Date(m.timestamp * MS_TO_S);
+        const mealDate = new Date(m.getTimestamp() * MS_TO_S);
         return (
           mealDate.getDate() === d.getDate() &&
           mealDate.getMonth() === d.getMonth() &&
@@ -548,9 +553,9 @@ function getDailyGoalMetCount(startDate: Date, endDate: Date, meals: any[], calo
         );
       })
       .reduce((sum, meal) => {
-        const info = meal.nutritionInfo;
+        const info = meal.getNutritionInfo();
         return (
-          sum + info.carbs * 4 + info.protein * 4 + info.fat * 9
+          sum + info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9
         );
       }, 0);
 
@@ -575,7 +580,7 @@ function calculateStreakInPeriod(
   // Go backwards from the end date to find the first day without a meal
   while (checkDay >= startDate) {
     const hasMealOnThisDay = meals.some((m) => {
-      const d = new Date(m.timestamp * MS_TO_S);
+      const d = new Date(m.getTimestamp() * MS_TO_S);
       return (
         d.getDate() === checkDay.getDate() &&
         d.getMonth() === checkDay.getMonth() &&
@@ -607,7 +612,7 @@ function calculateLongestStreakOverall(meals: any[]): number {
   // Get all unique dates that have meals
   const mealDates = new Set<string>();
   meals.forEach((meal) => {
-    const d = new Date(meal.timestamp * MS_TO_S);
+    const d = new Date(meal.getTimestamp() * MS_TO_S);
     const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     mealDates.add(dateKey);
   });
@@ -661,11 +666,11 @@ function getMaxMealInPeriod(
   end.setHours(23, 59, 59, 999);
 
   meals.forEach((meal) => {
-    const mealDate = new Date(meal.timestamp * MS_TO_S);
+    const mealDate = new Date(meal.getTimestamp() * MS_TO_S);
     if (mealDate >= start && mealDate <= end) {
-      const info = meal.nutritionInfo;
+      const info = meal.getNutritionInfo();
       const mealCalories =
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
+        info.getCarbs() * 4 + info.getProtein() * 4 + info.getFat() * 9;
       if (mealCalories > maxCalories) {
         maxCalories = mealCalories;
       }
@@ -1035,11 +1040,7 @@ export default function InsightsScreen() {
 
   // Helper to get chart props
   const getChartProps = (data: any[], startDate: Date) => {
-    const maxVal = Math.max(
-      ...data.map((d) => d.calories),
-      calorieGoal,
-      10,
-    );
+    const maxVal = Math.max(...data.map((d) => d.calories), calorieGoal, 10);
     let step = 10;
     if (maxVal > 2000) step = 500;
     else if (maxVal > 1000) step = 200;
@@ -1143,7 +1144,12 @@ export default function InsightsScreen() {
     );
   }
 
-  const daysGoalMet = getDailyGoalMetCount(startDate, endDate, meals, calorieGoal);
+  const daysGoalMet = getDailyGoalMetCount(
+    startDate,
+    endDate,
+    meals,
+    calorieGoal,
+  );
 
   // Calculate for previous period (relative to current view)
   let prevPeriodStartDate, prevPeriodEndDate;
@@ -1171,7 +1177,7 @@ export default function InsightsScreen() {
     prevPeriodStartDate,
     prevPeriodEndDate,
     meals,
-    calorieGoal
+    calorieGoal,
   );
 
   // Use longest streak overall for Year view, otherwise use period-specific streak

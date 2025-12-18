@@ -5,17 +5,26 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../constants/theme";
 
 export default function RecoverNotFound() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
+  const textColor = isDark ? Colors.text.dark : Colors.text.light;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: bgColor }]}>
       <View style={styles.container}>
-        <Text style={styles.message}>The email is{"\n"}not registered</Text>
+        <Text style={[styles.message, { color: textColor }]}>
+          The email is{"\n"}not registered
+        </Text>
 
         <TouchableOpacity
           style={[styles.actionButton, styles.secondaryButton]}
@@ -37,7 +46,9 @@ export default function RecoverNotFound() {
           onPress={() => router.push("/")}
           style={styles.welcomeWrap}
         >
-          <Text style={styles.welcomeLink}>Welcome Screen</Text>
+          <Text style={[styles.welcomeLink, { color: Colors.primary }]}>
+            Welcome Screen
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -47,7 +58,6 @@ export default function RecoverNotFound() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#c9e09a",
   },
   container: {
     flex: 1,
@@ -58,7 +68,6 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 24,
-    color: "#000",
     fontSize: 32,
     fontWeight: "800",
     textAlign: "center",
@@ -80,10 +89,11 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   secondaryButton: {
-    backgroundColor: "#2f8d3a",
+    backgroundColor: Colors.primary,
+    opacity: 0.8,
   },
   primaryButton: {
-    backgroundColor: "#1E8E3E",
+    backgroundColor: Colors.primary,
   },
   actionText: {
     color: "#ffffff",
@@ -98,7 +108,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   welcomeLink: {
-    color: "#ffd34d",
     fontWeight: "700",
     fontSize: 13,
   },

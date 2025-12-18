@@ -3,16 +3,26 @@ import React, { useEffect, useRef } from "react";
 import {
   Animated,
   Easing,
+  ScrollView,
   Text,
   TouchableOpacity,
   View,
+  useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BorderRadius, Shadows, Spacing, TextStyles } from "../constants/theme";
+import {
+  BorderRadius,
+  Colors,
+  Shadows,
+  Spacing,
+  TextStyles,
+} from "../constants/theme";
 
 export default function FirstPage() {
   const router = useRouter();
-  const logoSize = 320;
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const logoSize = 420;
 
   const spin = useRef(new Animated.Value(0)).current;
   const bob = useRef(new Animated.Value(0)).current;
@@ -84,137 +94,145 @@ export default function FirstPage() {
     ],
   });
 
+  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
+  const textColor = isDark ? Colors.text.dark : Colors.text.light;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-      <View
-        style={{
-          alignItems: "center",
-          marginTop: Spacing["4xl"],
-          marginBottom: Spacing.lg,
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: Spacing.xl }}
+        showsVerticalScrollIndicator={false}
       >
-        <Animated.View
+        <View
           style={{
-            width: logoSize,
-            height: logoSize,
             alignItems: "center",
-            justifyContent: "center",
-            transform: [
-              { perspective: 1200 },
-              { rotateX },
-              { translateY: bob },
-            ],
+            marginTop: Spacing.xl,
+            marginBottom: Spacing.sm,
           }}
         >
-          <Animated.Image
-            source={require("../assets/images/logo_no_bg.png")}
-            style={{ width: logoSize, height: logoSize }}
-            resizeMode="contain"
-          />
-        </Animated.View>
-      </View>
-
-      <View
-        style={{
-          alignItems: "center",
-          paddingHorizontal: Spacing["2xl"],
-          marginTop: Spacing["3xl"],
-          width: "100%",
-        }}
-      >
-        {/* LOG IN BUTTON */}
-        <Animated.View
-          style={[
-            { width: "100%", maxWidth: 380, marginVertical: Spacing.lg },
-            makeBtnStyle(btn1),
-          ]}
-        >
-          <TouchableOpacity
+          <Animated.View
             style={{
-              width: "100%",
-              paddingVertical: 22,
-              borderRadius: BorderRadius["2xl"],
+              width: logoSize,
+              height: logoSize,
               alignItems: "center",
-              backgroundColor: "#149B2A",
-              ...Shadows.large,
+              justifyContent: "center",
+              transform: [
+                { perspective: 1200 },
+                { rotateX },
+                { translateY: bob },
+              ],
             }}
-            onPress={() => router.push("/screens/login-screen")}
-            activeOpacity={0.85}
           >
-            <Text
-              style={{
-                ...TextStyles.buttonText,
-                fontSize: 20,
-                color: "#FFFFFF",
-              }}
-            >
-              LOG IN
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+            <Animated.Image
+              source={require("../assets/images/logo_no_bg.png")}
+              style={{ width: logoSize, height: logoSize }}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        </View>
 
-        {/* SIGN UP BUTTON */}
-        <Animated.View
-          style={[
-            { width: "100%", maxWidth: 380, marginVertical: Spacing.lg },
-            makeBtnStyle(btn2),
-          ]}
+        <View
+          style={{
+            alignItems: "center",
+            paddingHorizontal: Spacing["2xl"],
+            marginTop: Spacing.lg,
+            width: "100%",
+          }}
         >
-          <TouchableOpacity
-            style={{
-              width: "100%",
-              paddingVertical: 22,
-              borderRadius: BorderRadius["2xl"],
-              alignItems: "center",
-              backgroundColor: "#149B2A",
-              ...Shadows.large,
-            }}
-            onPress={() => router.push("/screens/signup-screen")}
-            activeOpacity={0.85}
+          {/* LOG IN BUTTON */}
+          <Animated.View
+            style={[
+              { width: "100%", maxWidth: 380, marginVertical: Spacing.sm },
+              makeBtnStyle(btn1),
+            ]}
           >
-            <Text
+            <TouchableOpacity
               style={{
-                ...TextStyles.buttonText,
-                fontSize: 20,
-                color: "#FFFFFF",
+                width: "100%",
+                paddingVertical: 16,
+                borderRadius: BorderRadius["2xl"],
+                alignItems: "center",
+                backgroundColor: Colors.primary,
+                ...Shadows.large,
               }}
+              onPress={() => router.push("/screens/login-screen")}
+              activeOpacity={0.85}
             >
-              SIGN UP
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+              <Text
+                style={{
+                  ...TextStyles.buttonText,
+                  fontSize: 20,
+                  color: "#FFFFFF",
+                }}
+              >
+                LOG IN
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-        {/* SCAN MY MEAL BUTTON */}
-        <Animated.View
-          style={[
-            { width: "100%", maxWidth: 380, marginVertical: Spacing.lg },
-            makeBtnStyle(btn3),
-          ]}
-        >
-          <TouchableOpacity
-            style={{
-              width: "100%",
-              paddingVertical: 22,
-              borderRadius: BorderRadius["2xl"],
-              alignItems: "center",
-              backgroundColor: "#149B2A",
-              ...Shadows.large,
-            }}
-            onPress={() => router.push("/(tabs)")}
-            activeOpacity={0.85}
+          {/* SIGN UP BUTTON */}
+          <Animated.View
+            style={[
+              { width: "100%", maxWidth: 380, marginVertical: Spacing.sm },
+              makeBtnStyle(btn2),
+            ]}
           >
-            <Text
+            <TouchableOpacity
               style={{
-                ...TextStyles.buttonText,
-                fontSize: 20,
-                color: "#FFFFFF",
+                width: "100%",
+                paddingVertical: 16,
+                borderRadius: BorderRadius["2xl"],
+                alignItems: "center",
+                backgroundColor: Colors.primary,
+                ...Shadows.large,
               }}
+              onPress={() => router.push("/screens/signup-screen")}
+              activeOpacity={0.85}
             >
-              SCAN MY MEAL
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+              <Text
+                style={{
+                  ...TextStyles.buttonText,
+                  fontSize: 20,
+                  color: "#FFFFFF",
+                }}
+              >
+                SIGN UP
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* SCAN MY MEAL BUTTON */}
+          <Animated.View
+            style={[
+              { width: "100%", maxWidth: 380, marginVertical: Spacing.sm },
+              makeBtnStyle(btn3),
+            ]}
+          >
+            <TouchableOpacity
+              style={{
+                width: "100%",
+                paddingVertical: 16,
+                borderRadius: BorderRadius["2xl"],
+                alignItems: "center",
+                backgroundColor: Colors.primary,
+                ...Shadows.large,
+              }}
+              onPress={() => router.push("/(tabs)")}
+              activeOpacity={0.85}
+            >
+              <Text
+                style={{
+                  ...TextStyles.buttonText,
+                  fontSize: 20,
+                  color: "#FFFFFF",
+                }}
+              >
+                SCAN MY MEAL
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

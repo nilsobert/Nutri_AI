@@ -2,24 +2,28 @@ import { Platform } from "react-native";
 
 // Colors
 export const Colors = {
-  primary: "#3498DB", // replaced green with blue
+  primary: "#2196F3", // Bright blue accent
   secondary: {
-    protein: "#2ECC71",
-    carbs: "#F39C12",
-    fat: "#EC407A",
-    calories: "#3498DB",
+    protein: "#4CAF50", // Green for protein
+    carbs: "#FF9800", // Orange for carbs
+    fat: "#E91E63", // Pink/Red for fat
+    calories: "#2196F3", // Blue for calories
   },
   background: {
     light: "#fff",
-    dark: "#151718",
+    dark: "#0D0D0D", // Almost black background
   },
   cardBackground: {
     light: "#fff",
-    dark: "#1E2021",
+    dark: "#1A1A1A", // Dark gray cards
   },
   text: {
     light: "#11181C",
-    dark: "#ECEDEE",
+    dark: "#FFFFFF", // Pure white text
+  },
+  secondaryText: {
+    light: "#666",
+    dark: "#9E9E9E", // Gray text for secondary info
   },
   iconBackground: {
     breakfast: "#FFE5E5",
@@ -29,14 +33,19 @@ export const Colors = {
   shadow: "#000",
   nutrientBar: {
     light: "#f0f0f0",
-    dark: "#333",
+    dark: "#2A2A2A", // Darker bar background
   },
   floatingButton: {
-    light: "#3498DB", // replaced green with blue
-    dark: "#3498DB",
+    light: "#2196F3",
+    dark: "#2196F3", // Bright blue FAB
   },
   grey: {
     light: "#f0f0f0",
+    dark: "#2A2A2A",
+  },
+  border: {
+    light: "#E0E0E0",
+    dark: "#2A2A2A", // Subtle borders in dark mode
   },
 };
 
@@ -113,21 +122,21 @@ export const Shadows = {
   small: {
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2.22,
     elevation: 3,
   },
   medium: {
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 3.84,
     elevation: 5,
   },
   large: {
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 4.65,
     elevation: 8,
   },

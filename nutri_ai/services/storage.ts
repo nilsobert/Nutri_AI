@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { User, parseUser } from "../types/user";
-import { MealEntry, parseMealEntry } from "../types/mealEntry";
+import { User, IUser } from "../types/user";
+import { MealEntry } from "../types/mealEntry";
 
 const STORAGE_KEYS = {
   USER: "user_data",
@@ -11,7 +11,7 @@ const STORAGE_KEYS = {
 export const StorageService = {
   async saveUser(user: User): Promise<void> {
     try {
-      const json = JSON.stringify(user);
+      const json = JSON.stringify(user.toJSON());
       await AsyncStorage.setItem(STORAGE_KEYS.USER, json);
     } catch (e) {
       console.error("Failed to save user", e);
@@ -24,7 +24,7 @@ export const StorageService = {
       const json = await AsyncStorage.getItem(STORAGE_KEYS.USER);
       if (!json) return null;
       const data = JSON.parse(json);
-      return parseUser(data);
+      return User.fromJSON(data);
     } catch (e) {
       console.error("Failed to load user", e);
       return null;
@@ -41,7 +41,7 @@ export const StorageService = {
 
   async saveMeals(meals: MealEntry[]): Promise<void> {
     try {
-      const json = JSON.stringify(meals);
+      const json = JSON.stringify(meals.map((m) => m.toJSON()));
       await AsyncStorage.setItem(STORAGE_KEYS.MEALS, json);
     } catch (e) {
       console.error("Failed to save meals", e);
@@ -55,7 +55,7 @@ export const StorageService = {
       if (!json) return [];
       const data = JSON.parse(json);
       if (!Array.isArray(data)) return [];
-      return data.map((item: any) => parseMealEntry(item));
+      return data.map((item: any) => MealEntry.fromJSON(item));
     } catch (e) {
       console.error("Failed to load meals", e);
       return [];
@@ -70,7 +70,7 @@ export const StorageService = {
 
   async updateMeal(meal: MealEntry): Promise<void> {
     const meals = await this.loadMeals();
-    const index = meals.findIndex((m) => m.id === meal.id);
+    const index = meals.findIndex((m) => m.getId() === meal.getId());
     if (index !== -1) {
       meals[index] = meal;
       await this.saveMeals(meals);
@@ -79,7 +79,7 @@ export const StorageService = {
 
   async deleteMeal(mealId: string): Promise<void> {
     const meals = await this.loadMeals();
-    const newMeals = meals.filter((m) => m.id !== mealId);
+    const newMeals = meals.filter((m) => m.getId() !== mealId);
     await this.saveMeals(newMeals);
   },
 
