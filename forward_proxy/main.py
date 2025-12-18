@@ -32,12 +32,16 @@ from pydantic import BaseModel
 load_dotenv()
 
 # Configure logging
+# Allow overriding via env var, e.g. LOG_LEVEL=WARNING or LOG_LEVEL=INFO
+_log_level_str = os.getenv("LOG_LEVEL", "WARNING").upper()
+_log_level = getattr(logging, _log_level_str, logging.WARNING)
 logging.basicConfig(
-    level=logging.WARNING,
+    level=_log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("forward_proxy")
+logger.warning(f"[Logging] LOG_LEVEL={_log_level_str} (numeric={_log_level})")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -197,6 +201,7 @@ class MealCreate(BaseModel):
     id: str
     timestamp: int
     category: str
+    name: Optional[str] = None
     image: Optional[str] = None
     audio: Optional[str] = None
     transcription: Optional[str] = None
@@ -382,7 +387,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/meals", response_model=MealResponse)
 def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     logger.info(f"[POST /meals] Creating/Updating meal {meal.id} for user {current_user.id} (email: {current_user.email})")
-    logger.debug(f"[POST /meals] Meal data: category={meal.category}, timestamp={meal.timestamp}, has_image={bool(meal.image)}, has_audio={bool(meal.audio)}, has_transcription={bool(meal.transcription)}")
+    logger.debug(f"[POST /meals] Meal data: category={meal.category}, timestamp={meal.timestamp}, name={meal.name}, has_image={bool(meal.image)}, has_audio={bool(meal.audio)}, has_transcription={bool(meal.transcription)}")
     
     # Check if meal already exists to avoid duplicates or handle updates
     # IMPORTANT: Scope to the current user to prevent cross-user overwrites
@@ -393,6 +398,7 @@ def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user)
         # Update existing meal
         existing_meal.timestamp = meal.timestamp
         existing_meal.category = meal.category
+        existing_meal.name = meal.name
         existing_meal.image_path = meal.image
         existing_meal.audio_path = meal.audio
         existing_meal.transcription = meal.transcription
@@ -413,6 +419,7 @@ def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user)
         user_id=current_user.id,
         timestamp=meal.timestamp,
         category=meal.category,
+        name=meal.name,
         image_path=meal.image,
         audio_path=meal.audio,
         transcription=meal.transcription,
@@ -443,6 +450,7 @@ def get_meals(current_user: User = Depends(get_current_user), db: Session = Depe
             id=m.id,
             timestamp=m.timestamp,
             category=m.category,
+            name=m.name,
             image=m.image_path,
             audio=m.audio_path,
             transcription=m.transcription,
