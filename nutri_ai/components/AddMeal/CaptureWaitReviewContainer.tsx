@@ -514,8 +514,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
 
         {/* PHASE 2: CONTEXT INPUT */}
         {mode === 'CONTEXT_INPUT' && (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.contextContainer}>
-            <BlurView intensity={80} tint="systemMaterial" style={styles.contextCard}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.contextContainer}>
+              <BlurView intensity={80} tint="systemMaterial" style={styles.contextCard}>
               <Text style={styles.contextTitle}>Describe this meal...</Text>
 
               <Animated.View style={[styles.waveformWrapper, waveformWrapperAnimatedStyle]}>
@@ -553,7 +554,8 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
                 </TouchableOpacity>
               )}
             </BlurView>
-          </Animated.View>
+            </Animated.View>
+          </TouchableWithoutFeedback>
         )}
 
         {/* PHASE 3: LOADING STATE */}

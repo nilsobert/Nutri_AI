@@ -778,7 +778,7 @@ async def transcribe_audio(audio_path: str):
         logger.error(f"[ExternalAPI] Whisper failed after {duration:.2f}s: {e}")
         return "", {"error": str(e)}
 
-async def analyze_image_vlm(image_path: str, transcript: str = ""):
+async def analyze_image_vlm(image_path: str, context: str = ""):
     openai_api_key = os.getenv("OPENAI_API_KEY")
     openai_base_url = os.getenv("OPENAI_BASE_URL")
     
@@ -844,8 +844,8 @@ RULES:
 
 Return *only* the JSON object and nothing else."""
 
-    if transcript:
-        prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
+    if context:
+        prompt_text += f"\n\nAdditional Context: {context}"
 
     headers = {
         "Authorization": f"Bearer {openai_api_key}",
@@ -918,6 +918,7 @@ Return *only* the JSON object and nothing else."""
 async def analyze_meal(
     image: UploadFile = File(...),
     audio: Optional[UploadFile] = File(None),
+    context_text: Optional[str] = Form(None),
     client_timestamp: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -965,7 +966,13 @@ async def analyze_meal(
             db.commit()
             
         # 3. VLM Analysis
-        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, transcript)
+        full_context = ""
+        if transcript:
+            full_context += f"Audio Note: {transcript}\n"
+        if context_text:
+            full_context += f"User Description: {context_text}\n"
+            
+        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context)
         
         log_entry.vlm_request_prompt = prompt_used
         log_entry.vlm_raw_response = json.dumps(raw_vlm) if raw_vlm else None
