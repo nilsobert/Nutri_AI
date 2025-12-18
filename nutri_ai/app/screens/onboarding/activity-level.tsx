@@ -15,12 +15,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Spacing } from "../../../constants/theme";
 import { API_BASE_URL } from "../../../constants/values";
 import { useUser } from "../../../context/UserContext";
+import type { User } from "../../../types/user";
 import {
   ActivityLevel,
   Gender,
   MedicalCondition,
   MotivationToTrackCalories,
-  User,
 } from "../../../types/user";
 
 export default function ActivityLevelScreen() {
@@ -37,9 +37,7 @@ export default function ActivityLevelScreen() {
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark
-    ? Colors.secondaryText.dark
-    : Colors.secondaryText.light;
+  const secondaryText = isDark ? "#999" : "#666";
   const cardBg = isDark
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
@@ -137,21 +135,21 @@ export default function ActivityLevelScreen() {
 
       // Create user object
       const passwordHash = CryptoJS.SHA256(signupPassword).toString();
-      const userObj = new User({
+      const userObj: User = {
         name: signupName,
         email: signupEmail,
         password: passwordHash,
         age: parseInt(params.age as string),
-        weightKg: parseFloat(params.weight as string),
         heightCm: parseFloat(params.height as string),
+        weightKg: parseFloat(params.weight as string),
         gender: params.gender as Gender,
         activityLevel: activityLevel,
-        motivation: params.goal as MotivationToTrackCalories,
         medicalCondition: MedicalCondition.None,
+        motivation: params.goal as MotivationToTrackCalories,
         targetWeightKg: params.targetWeight
           ? parseFloat(params.targetWeight as string)
           : undefined,
-      });
+      };
 
       await saveUser(userObj);
 
@@ -187,7 +185,7 @@ export default function ActivityLevelScreen() {
       {/* Content */}
       <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>
-          What's your activity level?
+          {"What's your activity level?"}
         </Text>
 
         <View style={styles.activitiesGrid}>

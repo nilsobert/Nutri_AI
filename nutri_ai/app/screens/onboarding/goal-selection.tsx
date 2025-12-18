@@ -74,7 +74,7 @@ export default function GoalSelection() {
         <TouchableOpacity
           onPress={() => router.push("/screens/onboarding/basic-info")}
         >
-          <Text style={[styles.skipText, { color: Colors.secondaryText.dark }]}>
+          <Text style={[styles.skipText, { color: isDark ? "#999" : "#666" }]}> 
             Skip
           </Text>
         </TouchableOpacity>

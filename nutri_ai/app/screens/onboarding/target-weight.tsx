@@ -24,9 +24,7 @@ export default function TargetWeight() {
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark
-    ? Colors.secondaryText.dark
-    : Colors.secondaryText.light;
+  const secondaryText = isDark ? "#999" : "#666";
 
   const kgToLb = (kg: number) => Math.round(kg * 2.20462);
   const lbToKg = (lb: number) => Math.round(lb / 2.20462);
@@ -64,7 +62,7 @@ export default function TargetWeight() {
       {/* Content */}
       <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>
-          Let's set the goal you are going to crush!
+          {"Let's set the goal you are going to crush!"}
         </Text>
 
         {/* Unit Toggle */}

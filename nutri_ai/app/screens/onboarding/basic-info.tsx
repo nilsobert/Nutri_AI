@@ -27,9 +27,7 @@ export default function BasicInfo() {
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
-  const secondaryText = isDark
-    ? Colors.secondaryText.dark
-    : Colors.secondaryText.light;
+  const secondaryText = isDark ? "#999" : "#666";
   const inputBg = isDark ? "#2a2a2a" : "#f5f5f5";
   const placeholderColor = isDark ? "#888" : "#9aa5a0";
 
