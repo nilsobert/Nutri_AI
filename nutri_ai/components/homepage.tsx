@@ -45,6 +45,7 @@ import {
 } from "../constants/theme";
 import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
+import { MealImage } from "./MealImage";
 
 if (
   Platform.OS === "android" &&
@@ -325,18 +326,34 @@ const MealCard: React.FC<MealCardProps> = ({
     const quality = meal.mealQuality;
 
     return (
-      <View style={{ width: contentWidth }}>
+      <TouchableOpacity
+        style={{ width: contentWidth }}
+        activeOpacity={0.9}
+        onPress={() => {
+          router.push({
+            pathname: "/meal-detail",
+            params: { id: meal.id },
+          });
+        }}
+      >
         {meals.length > 1 && (
           <View style={styles.slideHeader}>
             <Text
               style={[styles.slideTitle, { color: textColor }]}
               numberOfLines={1}
             >
-              {meal.transcription || "Meal Item"}
+              {meal.name || meal.transcription || "Meal Item"}
             </Text>
             <Text style={[styles.slideCalories, { color: secondaryText }]}>
               {nutrition.calories} kcal
             </Text>
+          </View>
+        )}
+
+        {/* Meal Image */}
+        {meal.image && (
+          <View style={styles.mealImageContainer}>
+            <MealImage uri={meal.image} style={styles.mealImage} />
           </View>
         )}
 
@@ -372,9 +389,7 @@ const MealCard: React.FC<MealCardProps> = ({
               style={[
                 styles.qualityBadge,
                 {
-                  backgroundColor: getQualityColor(
-                    quality.mealQualityScore,
-                  ),
+                  backgroundColor: getQualityColor(quality.mealQualityScore),
                 },
               ]}
             >
@@ -391,16 +406,8 @@ const MealCard: React.FC<MealCardProps> = ({
               {quality.goalFitPercentage}%
             </Text>
           </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: secondaryText }]}>
-              Density
-            </Text>
-            <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.calorieDensity.toFixed(1)}
-            </Text>
-          </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -452,7 +459,7 @@ const MealCard: React.FC<MealCardProps> = ({
             >
               {meals.length > 1
                 ? `${meals.length} items`
-                : meals[0]?.transcription || "No description"}
+                : meals[0]?.name || meals[0]?.transcription || "No description"}
             </Text>
             <Animated.View style={chevronStyle}>
               <Ionicons name="chevron-down" size={16} color={secondaryText} />
@@ -1344,6 +1351,17 @@ const styles = StyleSheet.create({
   dot: {
     height: 6,
     borderRadius: 3,
+  },
+  mealImageContainer: {
+    width: "100%",
+    height: 200,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+    marginBottom: Spacing.md,
+  },
+  mealImage: {
+    width: "100%",
+    height: "100%",
   },
 });
 

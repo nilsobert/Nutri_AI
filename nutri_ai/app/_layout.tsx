@@ -51,6 +51,21 @@ function RootLayoutNav() {
           name="profile"
           options={{ presentation: "modal", headerShown: false }}
         />
+        <Stack.Screen
+          name="add-meal"
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+            gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="meal-detail"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

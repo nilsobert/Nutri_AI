@@ -67,6 +67,7 @@ class Meal(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     timestamp = Column(Integer)
     category = Column(String)
+    name = Column(String, nullable=True)
     image_path = Column(String, nullable=True)
     audio_path = Column(String, nullable=True)
     transcription = Column(String, nullable=True)
@@ -115,6 +116,8 @@ def init_db():
             cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(meals)").fetchall()]
             if "audio_path" not in cols:
                 conn.exec_driver_sql("ALTER TABLE meals ADD COLUMN audio_path VARCHAR")
+            if "name" not in cols:
+                conn.exec_driver_sql("ALTER TABLE meals ADD COLUMN name VARCHAR")
         except Exception:
             # meals table may not exist yet or PRAGMA may fail in edge cases
             pass

@@ -200,7 +200,7 @@ const IOSStyleLoginScreen = () => {
 
             <View style={[styles.links, { marginTop: 10 }]}>
               <Text style={[styles.smallText, { color: mainText }]}>
-                You don't have an account yet?{" "}
+                You don{"'"}t have an account yet?{" "}
               </Text>
               <TouchableOpacity onPress={() => router.push("/")}>
                 <Text style={styles.linkAccent}>Sign up</Text>
