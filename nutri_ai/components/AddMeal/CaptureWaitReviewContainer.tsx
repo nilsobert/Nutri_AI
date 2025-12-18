@@ -523,15 +523,26 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
                 <IOSWaveform level={audioLevel} isRecording={isRecording} isSpeaking={isSpeaking} />
               </Animated.View>
 
-              <TouchableOpacity
-                style={[styles.micButtonBig, isRecording && styles.micButtonActive]}
-                onPress={toggleRecording}
-                activeOpacity={0.9}
-              >
-                <Animated.View style={micHandoffStyle}>
-                  <Ionicons name={isRecording ? 'stop' : 'mic'} size={32} color="white" />
-                </Animated.View>
-              </TouchableOpacity>
+              {audioUri && !isRecording ? (
+                <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                  <View style={[styles.micButtonBig, { backgroundColor: '#34C759' }]}>
+                    <Ionicons name="checkmark" size={32} color="white" />
+                  </View>
+                  <TouchableOpacity onPress={() => setAudioUri(null)}>
+                    <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Re-record</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.micButtonBig, isRecording && styles.micButtonActive]}
+                  onPress={toggleRecording}
+                  activeOpacity={0.9}
+                >
+                  <Animated.View style={micHandoffStyle}>
+                    <Ionicons name={isRecording ? 'stop' : 'mic'} size={32} color="white" />
+                  </Animated.View>
+                </TouchableOpacity>
+              )}
 
               <TextInput
                 style={styles.contextInput}
