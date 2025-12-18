@@ -1,9 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { StorageService } from "../services/storage";
-import { User, parseUser } from "../types/user";
-import { calculateGoals, NutritionGoals } from "../lib/utils/goals";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { API_BASE_URL } from "../constants/values";
+import { calculateGoals, NutritionGoals } from "../lib/utils/goals";
+import { StorageService } from "../services/storage";
+import { User } from "../types/user";
 
 interface UserContextType {
   profileImage: string | null;
@@ -31,24 +37,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Check if user has a token (is logged in)
-      const token = await AsyncStorage.getItem("auth_token");
-      
-      // Only load from storage if we have a token (user is logged in)
-      if (token) {
-        const [loadedImage, loadedUser] = await Promise.all([
-          StorageService.loadProfileImage(),
-          StorageService.loadUser(),
-        ]);
+      const [loadedImage, loadedUser] = await Promise.all([
+        StorageService.loadProfileImage(),
+        StorageService.loadUser(),
+      ]);
 
-        if (loadedImage) {
-          setProfileImage(loadedImage);
-        }
-        if (loadedUser) {
-          setUserState(loadedUser);
-        }
-        
-        // Try to sync with server
+      if (loadedImage) {
+        setProfileImage(loadedImage);
+      }
+      if (loadedUser) {
+        setUserState(loadedUser);
+      }
+
+      // Try to sync with server if we have a token
+      const token = await AsyncStorage.getItem("auth_token");
+      if (token) {
         await fetchUser();
       }
     } catch (error) {
@@ -69,30 +72,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.log("[UserContext] Fetching user profile from server...");
       // Fetch profile
       const profileResponse = await fetch(`${API_BASE_URL}/profile`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log(`[UserContext] Profile response status: ${profileResponse.status}`);
+      console.log(
+        `[UserContext] Profile response status: ${profileResponse.status}`,
+      );
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
         console.log("[UserContext] Profile data received:", profileData);
-        const userObj = parseUser(profileData);
-        await StorageService.saveUser(userObj);
-        // Store user email as user_id for meal context tracking
-        await AsyncStorage.setItem("user_id", profileData.email);
+        const userObj = User.fromJSON(profileData);
         setUserState(userObj);
+        await StorageService.saveUser(userObj);
         console.log("[UserContext] Profile saved locally");
       } else {
-        console.error(`[UserContext] Failed to fetch profile: ${profileResponse.status}`);
+        console.error(
+          `[UserContext] Failed to fetch profile: ${profileResponse.status}`,
+        );
       }
 
       console.log("[UserContext] Fetching profile image from server...");
       // Fetch profile image
       const imageResponse = await fetch(`${API_BASE_URL}/profile/image`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log(`[UserContext] Image response status: ${imageResponse.status}`);
+      console.log(
+        `[UserContext] Image response status: ${imageResponse.status}`,
+      );
       if (imageResponse.ok) {
         const blob = await imageResponse.blob();
         const reader = new FileReader();
@@ -104,7 +111,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
         reader.readAsDataURL(blob);
       } else {
-        console.log(`[UserContext] Profile image not found (${imageResponse.status})`);
+        console.log(
+          `[UserContext] Profile image not found (${imageResponse.status})`,
+        );
       }
     } catch (error) {
       console.error("[UserContext] Error fetching user data:", error);
@@ -116,7 +125,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (image) {
       console.log("[UserContext] Saving profile image locally...");
       await StorageService.saveProfileImage(image);
-      
+
       // Upload to server
       try {
         const token = await AsyncStorage.getItem("auth_token");
@@ -133,15 +142,20 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           const response = await fetch(`${API_BASE_URL}/profile/image`, {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
               "Content-Type": "multipart/form-data",
             },
             body: formData,
           });
-          
-          console.log(`[UserContext] Profile image upload response: ${response.status}`);
+
+          console.log(
+            `[UserContext] Profile image upload response: ${response.status}`,
+          );
           if (!response.ok) {
-            console.error("[UserContext] Failed to upload profile image:", response.status);
+            console.error(
+              "[UserContext] Failed to upload profile image:",
+              response.status,
+            );
           } else {
             console.log("[UserContext] Profile image uploaded successfully");
           }
@@ -189,24 +203,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           is_custom_goals: newUser.isCustomGoals,
         };
         console.log("[UserContext] Profile data to sync:", profileData);
-        
+
         const response = await fetch(`${API_BASE_URL}/profile`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(profileData),
         });
-        
+
         console.log(`[UserContext] Profile sync response: ${response.status}`);
         if (!response.ok) {
-          console.error("[UserContext] Failed to sync profile with server:", response.status);
-          if (response.status === 401) {
-            console.log("[UserContext] Token invalid or expired during sync, logging out...");
-            await logout();
-            return;
-          }
+          console.error(
+            "[UserContext] Failed to sync profile with server:",
+            response.status,
+          );
           const errorData = await response.json();
           console.error("[UserContext] Error details:", errorData);
         } else {
@@ -222,12 +234,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     console.log("[UserContext] Logging out...");
-    await AsyncStorage.removeItem("auth_token");
-    await AsyncStorage.removeItem("user_id");
-    await StorageService.clearAll();
     setUserState(null);
     setProfileImage(null);
+    await AsyncStorage.removeItem("auth_token");
+    await StorageService.clearUser();
+    await StorageService.removeProfileImage();
     console.log("[UserContext] Logout complete");
+    // Optionally clear meals too if they are user-specific and we want to wipe data on logout
+    // await StorageService.clearAll();
   };
 
   const goals = useMemo(() => {

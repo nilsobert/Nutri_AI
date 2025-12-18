@@ -1,32 +1,27 @@
-import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  useColorScheme,
-  Platform,
-  TouchableOpacity,
-  Image,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
+  BorderRadius,
+  Colors,
+  Shadows,
+  Spacing,
+  Typography,
+} from "@/constants/theme";
+import { useUser } from "@/context/UserContext";
+import { MedicalCondition } from "@/types/user";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import React from "react";
 import {
-  Colors,
-  Typography,
-  Spacing,
-  BorderRadius,
-  Shadows,
-} from "@/constants/theme";
-import {
-  IUser,
-  MedicalCondition,
-  MotivationToTrackCalories,
-} from "@/types/user";
-import { useUser } from "@/context/UserContext";
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface InfoRowProps {
   label: string;
@@ -111,7 +106,16 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Text style={{ color: textColor }}>Please log in to view profile</Text>
       </View>
     );
@@ -229,7 +233,36 @@ export default function ProfileScreen() {
           SETTINGS
         </Text>
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
-          <TouchableOpacity 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/screens/edit-profile" as any)}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Edit Profile
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+            ]}
+          />
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/screens/edit-goals" as any)}
           >
