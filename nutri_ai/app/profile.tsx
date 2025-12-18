@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Platform,
   TouchableOpacity,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -27,6 +29,7 @@ import {
   MotivationToTrackCalories,
 } from "@/types/user";
 import { useUser } from "@/context/UserContext";
+import { useMeals } from "@/context/MealContext";
 
 interface InfoRowProps {
   label: string;
@@ -77,11 +80,29 @@ export default function ProfileScreen() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const { profileImage, setProfileImage, user, logout } = useUser();
+  const { fillLastXDays } = useMeals();
+  const [isFillingMeals, setIsFillingMeals] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     router.dismissAll();
     router.replace("/");
+  };
+
+  const handleFillLastXDays = async (days: number) => {
+    setIsFillingMeals(true);
+    try {
+      await fillLastXDays(days);
+      Alert.alert(
+        "Success",
+        `Filled the last ${days} days with ${days * 4} generated meals!`
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to fill meals. Check console for details.");
+      console.error("Error filling meals:", error);
+    } finally {
+      setIsFillingMeals(false);
+    }
   };
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
@@ -111,7 +132,16 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <View style={[styles.container, { backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Text style={{ color: textColor }}>Please log in to view profile</Text>
       </View>
     );
@@ -229,7 +259,7 @@ export default function ProfileScreen() {
           SETTINGS
         </Text>
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/screens/edit-goals" as any)}
           >
@@ -304,6 +334,109 @@ export default function ProfileScreen() {
                 Log Out
               </Text>
             </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Debug Menu Section */}
+        <Text style={[styles.sectionTitle, { color: secondaryText }]}>
+          DEBUG MENU
+        </Text>
+        <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => handleFillLastXDays(7)}
+            disabled={isFillingMeals}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="flask-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Fill Last 7 Days
+              </Text>
+            </View>
+            {isFillingMeals ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+            )}
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+            ]}
+          />
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => handleFillLastXDays(30)}
+            disabled={isFillingMeals}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="flask-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Fill Last 30 Days
+              </Text>
+            </View>
+            {isFillingMeals ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+            )}
+          </TouchableOpacity>
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
+            ]}
+          />
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => handleFillLastXDays(365)}
+            disabled={isFillingMeals}
+          >
+            <View style={styles.menuItemContent}>
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+                ]}
+              >
+                <Ionicons
+                  name="flask-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
+              </View>
+              <Text style={[styles.menuItemText, { color: textColor }]}>
+                Fill Last Year
+              </Text>
+            </View>
+            {isFillingMeals ? (
+              <ActivityIndicator size="small" color={Colors.primary} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
