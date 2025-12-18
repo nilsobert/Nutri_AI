@@ -48,7 +48,7 @@ import { API_BASE_URL } from '../../constants/values';
 import { IOSWaveform } from './IOSWaveform';
 import { MealReviewModal } from './MealReviewModal';
 
-type Mode = 'CAMERA' | 'CONTEXT_INPUT' | 'ANALYZING' | 'REVIEW';
+type Mode = 'CAMERA' | 'IMAGE_PREVIEW' | 'CONTEXT_INPUT' | 'ANALYZING' | 'REVIEW';
 
 interface CaptureWaitReviewContainerProps {
   initialDate?: string;
@@ -125,6 +125,11 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
     // Here we keep a lightweight visual affordance without calling native focus APIs.
   };
 
+  const retakePhoto = () => {
+    setMode('CAMERA');
+    setImageUri(null);
+  };
+
   const takePicture = async () => {
     if (cameraRef.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
@@ -136,7 +141,7 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         
         if (photo) {
           setImageUri(photo.uri);
-          setMode('CONTEXT_INPUT');
+          setMode('IMAGE_PREVIEW');
         }
       } catch (error) {
         console.error("Failed to take picture", error);
@@ -512,6 +517,25 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           </>
         )}
 
+        {/* PHASE 1.5: IMAGE PREVIEW */}
+        {mode === 'IMAGE_PREVIEW' && (
+            <View style={[styles.bottomControls, { bottom: 50, flexDirection: 'row', justifyContent: 'space-around', width: '100%', paddingHorizontal: 30 }]}>
+                <TouchableOpacity onPress={retakePhoto} style={{ alignItems: 'center' }}>
+                    <BlurView intensity={40} style={styles.previewActionButton}>
+                        <Ionicons name="close" size={32} color="white" />
+                    </BlurView>
+                    <Text style={styles.previewActionText}>Retake</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => setMode('CONTEXT_INPUT')} style={{ alignItems: 'center' }}>
+                    <BlurView intensity={80} tint="light" style={[styles.previewActionButton, styles.previewPrimaryButton]}>
+                        <Ionicons name="checkmark" size={36} color={Colors.primary} />
+                    </BlurView>
+                    <Text style={styles.previewActionText}>Use Photo</Text>
+                </TouchableOpacity>
+            </View>
+        )}
+
         {/* PHASE 2: CONTEXT INPUT */}
         {mode === 'CONTEXT_INPUT' && (
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -823,6 +847,32 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 1,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  previewActionButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  previewPrimaryButton: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: 'white',
+  },
+  previewActionText: {
+    color: 'white',
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: '600',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
