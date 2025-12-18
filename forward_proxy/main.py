@@ -733,12 +733,13 @@ Return *only* the JSON object and nothing else."""
         logger.error(f"VLM Exception: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-async def transcribe_audio(audio_path: str):
+async def transcribe_audio(audio_path: str, content_type: str = "audio/wav"):
     whisper_url = os.getenv("WHISPER_API_URL", "http://pangolin.7cc.xyz:10303/transcribe")
     whisper_key = os.getenv("WHISPER_API_KEY", "1234")
     
     # Convert to WAV if needed
     wav_path = audio_path
+    is_converted = False
     if not audio_path.lower().endswith(".wav"):
         try:
             logger.info(f"Converting {audio_path} to WAV")
@@ -747,6 +748,7 @@ async def transcribe_audio(audio_path: str):
             audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
             wav_path = os.path.splitext(audio_path)[0] + ".wav"
             audio.export(wav_path, format="wav")
+            is_converted = True
             logger.info(f"Converted to {wav_path}")
         except Exception as e:
             logger.error(f"Failed to convert audio: {e}")
@@ -756,11 +758,14 @@ async def transcribe_audio(audio_path: str):
     start_time = time.time()
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
+            # Determine correct mime type
+            mime_type = "audio/wav" if is_converted or wav_path.lower().endswith(".wav") else content_type
+            
             with open(wav_path, "rb") as f:
-                files = {'file': (os.path.basename(wav_path), f, "audio/wav")}
+                files = {'file': (os.path.basename(wav_path), f, mime_type)}
                 headers = {"X-API-Key": whisper_key}
                 
-                logger.info(f"[ExternalAPI] Calling Whisper API at {whisper_url}")
+                logger.info(f"[ExternalAPI] Calling Whisper API at {whisper_url} with mime_type={mime_type}")
                 response = await client.post(whisper_url, headers=headers, files=files, data={"language": "en"})
                 
         duration = time.time() - start_time
@@ -845,7 +850,7 @@ RULES:
 Return *only* the JSON object and nothing else."""
 
     if context:
-        prompt_text += f"\n\nAdditional Context: {context}"
+        prompt_text += f"\n\n{context}"
 
     headers = {
         "Authorization": f"Bearer {openai_api_key}",
@@ -960,7 +965,7 @@ async def analyze_meal(
         # 2. Transcribe
         transcript = ""
         if audio_path:
-            transcript, raw_whisper = await transcribe_audio(audio_path)
+            transcript, raw_whisper = await transcribe_audio(audio_path, audio.content_type if audio else "audio/wav")
             log_entry.transcription_text = transcript
             log_entry.transcription_raw_response = json.dumps(raw_whisper) if raw_whisper else None
             db.commit()
@@ -968,9 +973,9 @@ async def analyze_meal(
         # 3. VLM Analysis
         full_context = ""
         if transcript:
-            full_context += f"Audio Note: {transcript}\n"
+            full_context += f"Additional Context from Audio Note: {transcript}\n"
         if context_text:
-            full_context += f"User Description: {context_text}\n"
+            full_context += f"Additional Context from User Description: {context_text}\n"
             
         vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context)
         
