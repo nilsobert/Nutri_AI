@@ -30,6 +30,9 @@ interface MealReviewModalProps {
     protein: string;
     carbs: string;
     fat: string;
+    mealQualityScore?: number;
+    goalFitPercentage?: number;
+    calorieDensity?: number;
     transcription: string;
     mealType?: MealCategory;
     date?: Date;
@@ -53,6 +56,9 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
   const [protein, setProtein] = useState(initialData.protein);
   const [carbs, setCarbs] = useState(initialData.carbs);
   const [fat, setFat] = useState(initialData.fat);
+  const [mealQualityScore, setMealQualityScore] = useState((initialData.mealQualityScore || 0).toString());
+  const [goalFitPercentage, setGoalFitPercentage] = useState((initialData.goalFitPercentage || 0).toString());
+  const [calorieDensity, setCalorieDensity] = useState((initialData.calorieDensity || 0).toString());
   const [transcription, setTranscription] = useState(initialData.transcription);
   const [mealType, setMealType] = useState<MealCategory>(initialData.mealType || MealCategory.Lunch);
   const [selectedDate, setSelectedDate] = useState(initialData.date || new Date());
@@ -65,6 +71,9 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
       setProtein(initialData.protein);
       setCarbs(initialData.carbs);
       setFat(initialData.fat);
+      setMealQualityScore((initialData.mealQualityScore || 0).toString());
+      setGoalFitPercentage((initialData.goalFitPercentage || 0).toString());
+      setCalorieDensity((initialData.calorieDensity || 0).toString());
       setTranscription(initialData.transcription);
       
       // Set default meal type based on calories if under 150, otherwise based on time
@@ -91,6 +100,9 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
       protein,
       carbs,
       fat,
+      mealQualityScore: parseFloat(mealQualityScore) || 0,
+      goalFitPercentage: parseFloat(goalFitPercentage) || 0,
+      calorieDensity: parseFloat(calorieDensity) || 0,
       transcription,
       mealType,
       date: selectedDate,
@@ -234,6 +246,42 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
                 icon="water" 
                 color={Colors.secondary?.fat || '#AF52DE'} 
                 isDark={isDark} 
+              />
+            </View>
+          </View>
+
+          {/* Analysis */}
+          <View style={styles.section}>
+            <Text style={[styles.label, { color: isDark ? '#999' : '#666' }]}>ANALYSIS</Text>
+            <View style={[styles.card, { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' }]}>
+              <EditableMetricRow 
+                label="Quality Score" 
+                value={mealQualityScore} 
+                onChange={setMealQualityScore} 
+                icon="ribbon" 
+                color="#FFD700" 
+                isDark={isDark} 
+                unit="/10"
+              />
+              <Divider isDark={isDark} />
+              <EditableMetricRow 
+                label="Goal Fit" 
+                value={goalFitPercentage} 
+                onChange={setGoalFitPercentage} 
+                icon="checkmark-circle" 
+                color="#34C759" 
+                isDark={isDark} 
+                unit="%"
+              />
+              <Divider isDark={isDark} />
+              <EditableMetricRow 
+                label="Calorie Density" 
+                value={calorieDensity} 
+                onChange={setCalorieDensity} 
+                icon="flash" 
+                color="#FF9500" 
+                isDark={isDark} 
+                unit="cal/g"
               />
             </View>
           </View>

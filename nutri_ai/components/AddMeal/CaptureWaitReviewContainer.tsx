@@ -76,6 +76,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   const [protein, setProtein] = useState("0");
   const [carbs, setCarbs] = useState("0");
   const [fat, setFat] = useState("0");
+  const [mealQualityScore, setMealQualityScore] = useState(0);
+  const [goalFitPercentage, setGoalFitPercentage] = useState(0);
+  const [calorieDensity, setCalorieDensity] = useState(0);
   const [transcription, setTranscription] = useState("");
   const [contextText, setContextText] = useState("");
   const [mealType, setMealType] = useState<MealCategory>(MealCategory.Lunch);
@@ -337,6 +340,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           setProtein(item.nutrition.protein_g.toString());
           setCarbs(item.nutrition.carbohydrates_g.toString());
           setFat(item.nutrition.fat_g.toString());
+          setMealQualityScore(item.nutrition.meal_quality || 0);
+          setGoalFitPercentage(item.nutrition.goal_fit_percent ? Math.round(item.nutrition.goal_fit_percent * 100) : 0);
+          setCalorieDensity(item.nutrition.calorie_density_cal_per_gram || 0);
           
           if (data.transcription) {
               setTranscription(data.transcription);
@@ -374,9 +380,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           sugar: 0,
         },
         mealQuality: {
-          calorieDensity: 0,
-          goalFitPercentage: 0,
-          mealQualityScore: 0,
+          calorieDensity: data.calorieDensity || 0,
+          goalFitPercentage: data.goalFitPercentage || 0,
+          mealQualityScore: data.mealQualityScore || 0,
         },
         timestamp: Math.floor(data.date.getTime() / 1000),
       });
@@ -623,6 +629,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
                 protein,
                 carbs,
                 fat,
+                mealQualityScore,
+                goalFitPercentage,
+                calorieDensity,
                 transcription: transcription || contextText,
                 mealType,
                 date: selectedDate,
