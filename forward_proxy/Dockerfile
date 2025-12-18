@@ -5,6 +5,7 @@ WORKDIR /app
 # Install system dependencies (needed for some python packages or tools like curl)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first to leverage Docker cache

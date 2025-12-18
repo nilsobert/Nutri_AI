@@ -8,3 +8,5 @@ sqlalchemy
 python-multipart
 python-dotenv
 requests
+Pillow
+pydub

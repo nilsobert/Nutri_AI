@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import NetInfo from "@react-native-community/netinfo";
 import { StorageService } from "../services/storage";
+import { QueueService } from "../services/queue";
 import { MealEntry, parseMealEntry } from "../types/mealEntry";
 import { API_BASE_URL } from "../constants/values";
 import { useUser } from "./UserContext";
@@ -28,11 +30,143 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
     refreshMeals();
   }, [user]);
 
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      if (state.isConnected) {
+        processQueue();
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const processQueue = async () => {
+    const queue = await QueueService.getQueue();
+    if (queue.length === 0) return;
+
+    console.log(`[SyncQueue] Processing queue, length: ${queue.length}`);
+    const token = await AsyncStorage.getItem("auth_token");
+    if (!token) return;
+
+    for (const item of queue) {
+      try {
+        console.log(`[SyncQueue] Processing item ${item.id} (${item.type})`);
+        if (item.type === 'CREATE_MEAL') {
+           await syncMeal(item.payload, token);
+        } else if (item.type === 'UPDATE_MEAL') {
+           await syncMeal(item.payload, token);
+        } else if (item.type === 'DELETE_MEAL') {
+           await fetch(`${API_BASE_URL}/meals/${item.payload}`, {
+              method: "DELETE",
+              headers: { "Authorization": `Bearer ${token}` },
+           });
+        }
+        
+        await QueueService.removeFromQueue(item.id);
+        console.log(`[SyncQueue] Item ${item.id} processed successfully`);
+      } catch (e) {
+        console.error(`[SyncQueue] Failed to process item ${item.id}`, e);
+        item.retryCount = (item.retryCount || 0) + 1;
+        await QueueService.updateItem(item);
+      }
+    }
+  };
+
+  const syncMeal = async (meal: MealEntry, token: string) => {
+      let serverImagePath = undefined;
+      let serverAudioPath = undefined;
+
+      // Upload image if it's a local file
+      if (meal.image && meal.image?.startsWith("file://")) {
+        console.log("[SyncQueue] Uploading meal image...");
+        const formData = new FormData();
+        // @ts-ignore
+        formData.append("image", {
+          uri: meal.image,
+          name: "meal.jpg",
+          type: "image/jpeg",
+        });
+        
+        const uploadResponse = await fetch(`${API_BASE_URL}/meals/image`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          body: formData,
+        });
+        
+        if (uploadResponse.ok) {
+          const data = await uploadResponse.json();
+          serverImagePath = data.image_path;
+        } else {
+            throw new Error(`Image upload failed: ${uploadResponse.status}`);
+        }
+      } else if (meal.image && !meal.image.startsWith("file://")) {
+          // Already a server path or remote URL
+          if (meal.image.includes("/static/")) {
+              serverImagePath = meal.image.split("/static/")[1];
+          } else {
+              serverImagePath = meal.image;
+          }
+      }
+
+      // Upload audio if it's a local file
+      if (meal.audio && meal.audio?.startsWith("file://")) {
+        console.log("[SyncQueue] Uploading meal audio...");
+        const formData = new FormData();
+        // @ts-ignore
+        formData.append("audio", {
+          uri: meal.audio,
+          name: "meal.m4a",
+          type: "audio/m4a",
+        });
+
+        const uploadResponse = await fetch(`${API_BASE_URL}/meals/audio`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          body: formData,
+        });
+
+        if (uploadResponse.ok) {
+          const data = await uploadResponse.json();
+          serverAudioPath = data.audio_path;
+        } else {
+            throw new Error(`Audio upload failed: ${uploadResponse.status}`);
+        }
+      } else if (meal.audio && !meal.audio.startsWith("file://")) {
+          if (meal.audio.includes("/static/")) {
+              serverAudioPath = meal.audio.split("/static/")[1];
+          } else {
+              serverAudioPath = meal.audio;
+          }
+      }
+
+      const mealData = { ...meal };
+      if (serverImagePath) mealData.image = serverImagePath;
+      if (serverAudioPath) mealData.audio = serverAudioPath;
+
+      console.log("[SyncQueue] Posting meal data...");
+      const syncResponse = await fetch(`${API_BASE_URL}/meals`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(mealData),
+      });
+      
+      if (!syncResponse.ok) {
+        throw new Error(`Meal sync failed: ${syncResponse.status}`);
+      }
+  };
+
   const refreshMeals = async () => {
     setIsLoading(true);
     try {
       if (!user) {
-        console.log("[MealContext] User logged out (context), clearing meals");
         setMeals([]);
         setLastSyncedUserId(null);
         setIsLoading(false);
@@ -42,38 +176,30 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       const token = await AsyncStorage.getItem("auth_token");
       const currentUserId = await AsyncStorage.getItem("user_id");
 
-      // No auth => do not show any local cached meals (prevents user-to-user leakage)
       if (!token || !currentUserId) {
-        console.log("[MealContext] No auth token or user_id, clearing meals");
         setMeals([]);
         await StorageService.saveMeals([]);
         setLastSyncedUserId(currentUserId);
         return;
       }
 
-      // User changed => immediately clear local meals before doing anything else
       if (currentUserId !== lastSyncedUserId) {
-        console.log("[MealContext] User changed, clearing local meals");
         setMeals([]);
         await StorageService.saveMeals([]);
         setLastSyncedUserId(currentUserId);
       }
 
-      // Load from local storage first (only if same user)
       if (currentUserId === lastSyncedUserId) {
         const loadedMeals = await StorageService.loadMeals();
         setMeals(loadedMeals);
       }
 
-      // Sync with server
-      console.log("[MealContext] Fetching meals from server...");
       const response = await fetch(`${API_BASE_URL}/meals`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
-      console.log(`[MealContext] Meals fetch response: ${response.status}`);
+      
       if (response.ok) {
         const serverMealsData = await response.json();
-        console.log(`[MealContext] Received ${serverMealsData.length} meals from server`);
         const serverMeals = serverMealsData.map((m: any) => {
           const imageUrl = m.image ? `${API_BASE_URL}/static/${m.image}` : undefined;
           const audioUrl = m.audio ? `${API_BASE_URL}/static/${m.audio}` : undefined;
@@ -85,13 +211,9 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
         });
         setMeals(serverMeals);
         await StorageService.saveMeals(serverMeals);
-        console.log("[MealContext] Meals synced and saved locally");
       } else if (response.status === 401) {
-        console.warn("[MealContext] Unauthorized while fetching meals; clearing local meals");
         setMeals([]);
         await StorageService.saveMeals([]);
-      } else {
-        console.error(`[MealContext] Failed to fetch meals: ${response.status}`);
       }
     } catch (error) {
       console.error("[MealContext] Failed to load meals", error);
@@ -102,117 +224,19 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
   const addMeal = async (meal: MealEntry) => {
     try {
-      console.log(`[MealContext] Adding meal ${meal.id}`);
-      const token = await AsyncStorage.getItem("auth_token");
-      let serverImagePath = undefined;
-      let serverAudioPath = undefined;
-      let displayImage = meal.image;
-      let displayAudio = meal.audio;
-
-      // Upload image if it's a local file
-      if (token && meal.image && meal.image?.startsWith("file://")) {
-        console.log("[MealContext] Uploading meal image to server...");
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("image", {
-          uri: meal.image,
-          name: "meal.jpg",
-          type: "image/jpeg",
-        });
-        
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/image`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-        
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverImagePath = data.image_path;
-          displayImage = `${API_BASE_URL}/static/${serverImagePath}`;
-          console.log(`[MealContext] Image uploaded: ${serverImagePath}`);
-        } else {
-          console.error(`[MealContext] Image upload failed: ${uploadResponse.status}`);
-        }
-      }
-
-      // Upload audio if it's a local file
-      if (token && meal.audio && meal.audio?.startsWith("file://")) {
-        console.log("[MealContext] Uploading meal audio to server...");
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("audio", {
-          uri: meal.audio,
-          name: "meal.m4a",
-          type: "audio/m4a",
-        });
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/audio`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverAudioPath = data.audio_path;
-          displayAudio = `${API_BASE_URL}/static/${serverAudioPath}`;
-          console.log(`[MealContext] Audio uploaded: ${serverAudioPath}`);
-        } else {
-          console.error(`[MealContext] Audio upload failed: ${uploadResponse.status}`);
-        }
-      }
-
-      // Update meal with server URLs for local display/storage
-      if (displayImage) {
-          meal.image = displayImage;
-      }
-      if (displayAudio) {
-          meal.audio = displayAudio;
-      }
-
-      // Save to local
+      console.log(`[MealContext] Adding meal ${meal.id} (Optimistic)`);
       await StorageService.addMeal(meal);
       setMeals(prev => [...prev, meal]);
-      console.log("[MealContext] Meal saved locally");
-
-      // Send to server
-      if (token) {
-        console.log("[MealContext] Syncing meal to server...");
-        const mealData = { ...meal };
-        // Use relative path for server storage
-        if (serverImagePath) {
-            mealData.image = serverImagePath;
-        } else if (mealData.image && mealData.image.startsWith(API_BASE_URL)) {
-            // If it's already a server URL, extract relative path
-            mealData.image = mealData.image.replace(`${API_BASE_URL}/static/`, "");
-        }
-        if (serverAudioPath) {
-            mealData.audio = serverAudioPath;
-        } else if (mealData.audio && mealData.audio.startsWith(API_BASE_URL)) {
-            mealData.audio = mealData.audio.replace(`${API_BASE_URL}/static/`, "");
-        }
-
-        const syncResponse = await fetch(`${API_BASE_URL}/meals`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify(mealData),
-        });
-        console.log(`[MealContext] Meal sync response: ${syncResponse.status}`);
-        if (!syncResponse.ok) {
-          console.error("[MealContext] Failed to sync meal to server");
-        } else {
-          console.log("[MealContext] Meal synced successfully");
-        }
+      
+      await QueueService.addToQueue({
+          id: meal.id,
+          type: 'CREATE_MEAL',
+          payload: meal
+      });
+      
+      const state = await NetInfo.fetch();
+      if (state.isConnected) {
+          processQueue();
       }
     } catch (error) {
       console.error("[MealContext] Failed to add meal", error);
@@ -221,96 +245,18 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
   const updateMeal = async (meal: MealEntry) => {
     try {
-      const token = await AsyncStorage.getItem("auth_token");
-      let serverImagePath = undefined;
-      let serverAudioPath = undefined;
-      let displayImage = meal.image;
-      let displayAudio = meal.audio;
-
-      // Upload image if it's a local file
-      if (token && meal.image && meal.image?.startsWith("file://")) {
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("image", {
-          uri: meal.image,
-          name: "meal.jpg",
-          type: "image/jpeg",
-        });
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/image`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverImagePath = data.image_path;
-          displayImage = `${API_BASE_URL}/static/${serverImagePath}`;
-        }
-      }
-
-      // Upload audio if it's a local file
-      if (token && meal.audio && meal.audio?.startsWith("file://")) {
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("audio", {
-          uri: meal.audio,
-          name: "meal.m4a",
-          type: "audio/m4a",
-        });
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/audio`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverAudioPath = data.audio_path;
-          displayAudio = `${API_BASE_URL}/static/${serverAudioPath}`;
-        }
-      }
-
-      if (displayImage) {
-        meal.image = displayImage;
-      }
-      if (displayAudio) {
-        meal.audio = displayAudio;
-      }
-
       await StorageService.updateMeal(meal);
-      // Update state locally
       setMeals((prev) => prev.map((m) => (m.id === meal.id ? meal : m)));
 
-      if (token) {
-        const mealData = { ...meal };
-        if (serverImagePath) {
-          mealData.image = serverImagePath;
-        } else if (mealData.image && mealData.image.startsWith(API_BASE_URL)) {
-          mealData.image = mealData.image.replace(`${API_BASE_URL}/static/`, "");
-        }
-        if (serverAudioPath) {
-          mealData.audio = serverAudioPath;
-        } else if (mealData.audio && mealData.audio.startsWith(API_BASE_URL)) {
-          mealData.audio = mealData.audio.replace(`${API_BASE_URL}/static/`, "");
-        }
+      await QueueService.addToQueue({
+          id: meal.id,
+          type: 'UPDATE_MEAL',
+          payload: meal
+      });
 
-        await fetch(`${API_BASE_URL}/meals`, {
-          method: "POST", // server upserts by ID
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify(mealData),
-        });
+      const state = await NetInfo.fetch();
+      if (state.isConnected) {
+          processQueue();
       }
     } catch (error) {
       console.error("Failed to update meal", error);
@@ -322,12 +268,15 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       await StorageService.deleteMeal(mealId);
       setMeals(prev => prev.filter(m => m.id !== mealId));
 
-      const token = await AsyncStorage.getItem("auth_token");
-      if (token) {
-        await fetch(`${API_BASE_URL}/meals/${mealId}`, {
-          method: "DELETE",
-          headers: { "Authorization": `Bearer ${token}` },
-        });
+      await QueueService.addToQueue({
+          id: Math.random().toString(36).substring(7),
+          type: 'DELETE_MEAL',
+          payload: mealId
+      });
+
+      const state = await NetInfo.fetch();
+      if (state.isConnected) {
+          processQueue();
       }
     } catch (error) {
       console.error("Failed to delete meal", error);

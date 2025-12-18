@@ -1,8 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import date
-
+from datetime import date, datetime
+import enum
 import os
 
 # Ensure data directory exists
@@ -67,6 +67,7 @@ class Meal(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     timestamp = Column(Integer)
     category = Column(String)
+    name = Column(String, nullable=True)
     image_path = Column(String, nullable=True)
     audio_path = Column(String, nullable=True)
     transcription = Column(String, nullable=True)
@@ -85,6 +86,26 @@ class Meal(Base):
 
     user = relationship("User", back_populates="meals")
 
+class AnalysisStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+
+class AnalysisLog(Base):
+    __tablename__ = "analysis_logs"
+
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    image_path = Column(String, nullable=True)
+    audio_path = Column(String, nullable=True)
+    transcription_text = Column(String, nullable=True)
+    transcription_raw_response = Column(Text, nullable=True)
+    vlm_request_prompt = Column(Text, nullable=True)
+    vlm_raw_response = Column(Text, nullable=True)
+    status = Column(String, default=AnalysisStatus.PENDING.value)
+    processing_duration_ms = Column(Integer, nullable=True)
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
@@ -95,6 +116,8 @@ def init_db():
             cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(meals)").fetchall()]
             if "audio_path" not in cols:
                 conn.exec_driver_sql("ALTER TABLE meals ADD COLUMN audio_path VARCHAR")
+            if "name" not in cols:
+                conn.exec_driver_sql("ALTER TABLE meals ADD COLUMN name VARCHAR")
         except Exception:
             # meals table may not exist yet or PRAGMA may fail in edge cases
             pass
