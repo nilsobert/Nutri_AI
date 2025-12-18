@@ -16,8 +16,11 @@ export interface MealEntry {
   id: string;
   timestamp: number;
   category: MealCategory;
+  /** Human readable meal name, e.g. "Cookies" */
+  name?: string;
   image?: string;
   audio?: string;
+  /** Free-form note / voice transcription */
   transcription?: string;
   mealQuality: MealQuality;
   nutritionInfo: NutritionInfo;
@@ -27,6 +30,7 @@ export function createMealEntry(params: {
   category: MealCategory;
   mealQuality: MealQuality;
   nutritionInfo: NutritionInfo;
+  name?: string;
   image?: string;
   audio?: string;
   transcription?: string;
@@ -39,6 +43,7 @@ export function createMealEntry(params: {
     category: params.category,
     mealQuality: params.mealQuality,
     nutritionInfo: params.nutritionInfo,
+    name: params.name,
     image: params.image,
     audio: params.audio,
     transcription: params.transcription,
@@ -53,6 +58,7 @@ export function parseMealEntry(json: any): MealEntry {
     id: json.id,
     timestamp: json.timestamp,
     category: json.category,
+    name: json.name ?? json.mealName ?? json.meal_name,
     image: json.image,
     audio: json.audio,
     transcription: json.transcription,
