@@ -80,29 +80,11 @@ export default function ProfileScreen() {
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const { profileImage, setProfileImage, user, logout } = useUser();
-  const { fillLastXDays } = useMeals();
-  const [isFillingMeals, setIsFillingMeals] = useState(false);
 
   const handleLogout = async () => {
     await logout();
     router.dismissAll();
     router.replace("/");
-  };
-
-  const handleFillLastXDays = async (days: number) => {
-    setIsFillingMeals(true);
-    try {
-      await fillLastXDays(days);
-      Alert.alert(
-        "Success",
-        `Filled the last ${days} days with ${days * 4} generated meals!`
-      );
-    } catch (error) {
-      Alert.alert("Error", "Failed to fill meals. Check console for details.");
-      console.error("Error filling meals:", error);
-    } finally {
-      setIsFillingMeals(false);
-    }
   };
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
@@ -149,12 +131,34 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: 20,
+            backgroundColor: bgColor,
+          },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <Text style={[styles.headerTitle, { color: textColor }]}>Profile</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.closeButton}
+          >
+            <Ionicons
+              name="close-circle"
+              size={30}
+              color={isDark ? "#333" : "#E5E5EA"}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: 60 + insets.top },
-        ]}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Profile Header Card */}
         <View style={[styles.profileCard, { backgroundColor: cardBg }]}>
@@ -288,7 +292,10 @@ export default function ProfileScreen() {
               { backgroundColor: isDark ? "#333" : "#f0f0f0" },
             ]}
           />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/settings" as any)}
+          >
             <View style={styles.menuItemContent}>
               <View
                 style={[
@@ -336,133 +343,7 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
         </View>
-
-        {/* Debug Menu Section */}
-        <Text style={[styles.sectionTitle, { color: secondaryText }]}>
-          DEBUG MENU
-        </Text>
-        <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => handleFillLastXDays(7)}
-            disabled={isFillingMeals}
-          >
-            <View style={styles.menuItemContent}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
-                ]}
-              >
-                <Ionicons
-                  name="flask-outline"
-                  size={20}
-                  color={Colors.primary}
-                />
-              </View>
-              <Text style={[styles.menuItemText, { color: textColor }]}>
-                Fill Last 7 Days
-              </Text>
-            </View>
-            {isFillingMeals ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
-            )}
-          </TouchableOpacity>
-          <View
-            style={[
-              styles.divider,
-              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
-            ]}
-          />
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => handleFillLastXDays(30)}
-            disabled={isFillingMeals}
-          >
-            <View style={styles.menuItemContent}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
-                ]}
-              >
-                <Ionicons
-                  name="flask-outline"
-                  size={20}
-                  color={Colors.primary}
-                />
-              </View>
-              <Text style={[styles.menuItemText, { color: textColor }]}>
-                Fill Last 30 Days
-              </Text>
-            </View>
-            {isFillingMeals ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
-            )}
-          </TouchableOpacity>
-          <View
-            style={[
-              styles.divider,
-              { backgroundColor: isDark ? "#333" : "#f0f0f0" },
-            ]}
-          />
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => handleFillLastXDays(365)}
-            disabled={isFillingMeals}
-          >
-            <View style={styles.menuItemContent}>
-              <View
-                style={[
-                  styles.iconContainer,
-                  { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
-                ]}
-              >
-                <Ionicons
-                  name="flask-outline"
-                  size={20}
-                  color={Colors.primary}
-                />
-              </View>
-              <Text style={[styles.menuItemText, { color: textColor }]}>
-                Fill Last Year
-              </Text>
-            </View>
-            {isFillingMeals ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
-            )}
-          </TouchableOpacity>
-        </View>
       </ScrollView>
-
-      {/* Glass Header */}
-      <BlurView
-        intensity={80}
-        tint={isDark ? "dark" : "light"}
-        style={[
-          styles.absoluteHeader,
-          {
-            paddingTop: insets.top,
-            height: 44 + insets.top, // Force thin header
-            borderBottomColor: isDark ? "#333" : "#ccc",
-          },
-        ]}
-      >
-        <View style={styles.headerContent}>
-          <Text style={[styles.headerTitle, { color: textColor }]}>
-            Profile
-          </Text>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.doneButtonText}>Done</Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
     </View>
   );
 }
@@ -471,17 +352,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  absoluteHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    zIndex: 100,
-    justifyContent: "center",
-  },
-  headerContent: {
+  header: {
     paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+  },
+  headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -491,16 +366,15 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "bold",
     letterSpacing: 0.3,
-    lineHeight: 41, // Ensure line height fits
   },
-  doneButtonText: {
-    color: Colors.primary,
-    fontSize: 17,
-    fontWeight: "600",
+  closeButton: {
+    padding: 4,
+    marginRight: -4, // Align visually with the edge
   },
   scrollContent: {
     paddingBottom: 100,
     paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
   },
   profileCard: {
     borderRadius: BorderRadius["2xl"],

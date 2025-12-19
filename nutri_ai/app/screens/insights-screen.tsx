@@ -1748,15 +1748,13 @@ export default function InsightsScreen() {
                 style={[
                   styles.todayButton,
                   {
-                    backgroundColor: isDark
-                      ? "rgba(32, 150, 33, 0.2)"
-                      : "rgba(32, 150, 33, 0.1)",
+                    backgroundColor: segmentBg,
                   },
                 ]}
                 onPress={() => setCurrentDate(new Date())}
               >
                 <ThemedText
-                  style={[styles.todayButtonText, { color: Colors.primary }]}
+                  style={[styles.todayButtonText, { color: textColor }]}
                 >
                   Today
                 </ThemedText>
