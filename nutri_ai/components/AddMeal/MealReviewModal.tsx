@@ -125,13 +125,13 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
             <Text style={[styles.errorTitle, { color: isDark ? Colors.text.dark : Colors.text.light }]}>
               No Meal Detected
             </Text>
-            <Text style={[styles.errorMessage, { color: isDark ? '#CCC' : '#666' }]}>
+            <Text style={[styles.errorMessage, { color: isDark ? Colors.text.dark : Colors.text.light, opacity: 0.7 }]}>
               We couldn{"'"}t identify a meal in your photo. Please try again or enter details manually.
             </Text>
             
             <View style={styles.errorButtonContainer}>
               <TouchableOpacity 
-                style={[styles.errorButton, { backgroundColor: isDark ? '#333' : '#E5E5EA' }]} 
+                style={[styles.errorButton, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]} 
                 onPress={onClose}
               >
                 <Text style={[styles.errorButtonText, { color: isDark ? Colors.text.dark : Colors.text.light }]}>
