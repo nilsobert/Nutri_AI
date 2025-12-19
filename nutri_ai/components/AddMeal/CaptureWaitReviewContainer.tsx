@@ -461,7 +461,7 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         setAudioUri(null);
         setContextText('');
         setTranscription('');
-        setMode('CONTEXT_INPUT');
+        setMode('IMAGE_PREVIEW');
       }
     } catch (e) {
       console.error(e);
