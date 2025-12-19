@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { StorageService } from "../services/storage";
@@ -26,6 +26,10 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [lastSyncedUserId, setLastSyncedUserId] = useState<string | null>(null);
 
+  // Guard against concurrent queue processing (NetInfo reconnect, addMeal/updateMeal triggers, etc.)
+  // NOTE: useRef avoids races due to async state updates.
+  const isProcessingQueueRef = useRef(false);
+
   useEffect(() => {
     refreshMeals();
   }, [user]);
@@ -33,41 +37,52 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       if (state.isConnected) {
-        processQueue();
+        // fire and forget; internal lock prevents overlap
+        void processQueue();
       }
     });
     return () => unsubscribe();
   }, []);
 
   const processQueue = async () => {
-    const queue = await QueueService.getQueue();
-    if (queue.length === 0) return;
+    if (isProcessingQueueRef.current) {
+      console.log("[SyncQueue] Skipping processQueue() because a run is already in progress");
+      return;
+    }
 
-    console.log(`[SyncQueue] Processing queue, length: ${queue.length}`);
-    const token = await AsyncStorage.getItem("auth_token");
-    if (!token) return;
+    isProcessingQueueRef.current = true;
+    try {
+      const queue = await QueueService.getQueue();
+      if (queue.length === 0) return;
 
-    for (const item of queue) {
-      try {
-        console.log(`[SyncQueue] Processing item ${item.id} (${item.type})`);
-        if (item.type === 'CREATE_MEAL') {
-           await syncMeal(item.payload, token);
-        } else if (item.type === 'UPDATE_MEAL') {
-           await syncMeal(item.payload, token);
-        } else if (item.type === 'DELETE_MEAL') {
-           await fetch(`${API_BASE_URL}/meals/${item.payload}`, {
+      console.log(`[SyncQueue] Processing queue, length: ${queue.length}`);
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) return;
+
+      for (const item of queue) {
+        try {
+          console.log(`[SyncQueue] Processing item ${item.id} (${item.type})`);
+          if (item.type === "CREATE_MEAL") {
+            await syncMeal(item.payload, token);
+          } else if (item.type === "UPDATE_MEAL") {
+            await syncMeal(item.payload, token);
+          } else if (item.type === "DELETE_MEAL") {
+            await fetch(`${API_BASE_URL}/meals/${item.payload}`, {
               method: "DELETE",
-              headers: { "Authorization": `Bearer ${token}` },
-           });
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          }
+
+          await QueueService.removeFromQueue(item.id);
+          console.log(`[SyncQueue] Item ${item.id} processed successfully`);
+        } catch (e) {
+          console.error(`[SyncQueue] Failed to process item ${item.id}`, e);
+          item.retryCount = (item.retryCount || 0) + 1;
+          await QueueService.updateItem(item);
         }
-        
-        await QueueService.removeFromQueue(item.id);
-        console.log(`[SyncQueue] Item ${item.id} processed successfully`);
-      } catch (e) {
-        console.error(`[SyncQueue] Failed to process item ${item.id}`, e);
-        item.retryCount = (item.retryCount || 0) + 1;
-        await QueueService.updateItem(item);
       }
+    } finally {
+      isProcessingQueueRef.current = false;
     }
   };
 
@@ -236,7 +251,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          processQueue();
+          void processQueue();
       }
     } catch (error) {
       console.error("[MealContext] Failed to add meal", error);
@@ -256,7 +271,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          processQueue();
+          void processQueue();
       }
     } catch (error) {
       console.error("Failed to update meal", error);
@@ -276,7 +291,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          processQueue();
+          void processQueue();
       }
     } catch (error) {
       console.error("Failed to delete meal", error);
