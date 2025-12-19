@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useUser } from "../context/UserContext";
 
 interface MealImageProps {
   uri?: string;
@@ -18,6 +19,7 @@ export const MealImage: React.FC<MealImageProps> = ({
   resizeMode = "cover",
   showPlaceholder = true,
 }) => {
+  const { user } = useUser();
   const [token, setToken] = useState<string | null>(null);
   const [tokenLoaded, setTokenLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -42,7 +44,7 @@ export const MealImage: React.FC<MealImageProps> = ({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user]);
 
   // If URI or token changes, retry (prevents a failed unauthenticated first request
   // from permanently turning into a placeholder once the token arrives).

@@ -279,34 +279,36 @@ export default function EditGoalsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <BlurView
-        intensity={80}
-        tint={isDark ? "dark" : "light"}
+      {/* Header */}
+      <View
         style={[
           styles.header,
-          { paddingTop: insets.top, height: 44 + insets.top },
+          {
+            paddingTop: 20,
+            backgroundColor: bgColor,
+          },
         ]}
       >
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.headerButtonText}>Cancel</Text>
-          </TouchableOpacity>
+        <View style={styles.headerTopRow}>
           <Text style={[styles.headerTitle, { color: textColor }]}>
-            Edit Goals
+            Nutrition Goals
           </Text>
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={[styles.headerButtonText, { fontWeight: "bold" }]}>
-              Save
-            </Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.closeButton}
+          >
+            <Ionicons
+              name="close-circle"
+              size={30}
+              color={isDark ? "#333" : "#E5E5EA"}
+            />
           </TouchableOpacity>
         </View>
-      </BlurView>
+      </View>
 
       <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: 60 + insets.top },
-        ]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Preview Card */}
         <View style={[styles.card, { backgroundColor: cardBg }]}>
@@ -575,6 +577,25 @@ export default function EditGoalsScreen() {
         </View>
       </ScrollView>
 
+      {/* Save Button at Bottom */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: bgColor,
+            paddingBottom: insets.bottom + Spacing.md,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={handleSave}
+          style={styles.footerSaveButton}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.footerSaveButtonText}>Save Changes</Text>
+        </TouchableOpacity>
+      </View>
+
       <SelectionModal
         visible={modalVisible}
         title={modalType ? formatEnum(modalType).toUpperCase() : ""}
@@ -601,32 +622,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.1)",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  headerContent: {
-    flex: 1,
+  headerTopRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: Spacing.lg,
+    height: 44,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: "600",
+    fontSize: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.3,
   },
-  headerButtonText: {
-    fontSize: 17,
-    color: Colors.primary,
+  closeButton: {
+    padding: 4,
+    marginRight: -4,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 40,
+    paddingBottom: 120, // Extra padding for footer
+    paddingTop: Spacing.md,
   },
   card: {
     borderRadius: BorderRadius.xl,
@@ -735,5 +752,28 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  footerSaveButton: {
+    backgroundColor: Colors.primary,
+    height: 56,
+    borderRadius: BorderRadius.xl,
+    justifyContent: "center",
+    alignItems: "center",
+    ...Shadows.medium,
+  },
+  footerSaveButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
