@@ -96,6 +96,7 @@ interface CalorieChartProps {
   paddingX?: number;
   goalCalories?: number;
   onBarPress?: (index: number) => void;
+  selectedRange: string;
 }
 
 const CalorieChart = ({
@@ -109,6 +110,7 @@ const CalorieChart = ({
   paddingX = 0,
   goalCalories,
   onBarPress,
+  selectedRange,
 }: CalorieChartProps) => {
   const goalY = goalCalories
     ? CHART_HEIGHT - 30 - (goalCalories / chartMax) * (CHART_HEIGHT - 50)
@@ -209,6 +211,24 @@ const CalorieChart = ({
             </G>
           );
         })}
+
+        {/* Week Separators for Month View */}
+        {selectedRange === "Month" &&
+          Array.from({ length: Math.ceil(data.length / 7) }).map((_, weekIndex) => {
+            const xPos = paddingX + weekIndex * 7 * step;
+            return (
+              <Line
+                key={`week-separator-${weekIndex}`}
+                x1={xPos}
+                y1={0}
+                x2={xPos}
+                y2={CHART_HEIGHT - 30}
+                stroke={isDark ? "#666" : "#ddd"}
+                strokeWidth={1}
+                strokeDasharray="2, 2"
+              />
+            );
+          })}
 
         {/* X-Axis Labels */}
         {axisLabels.map((label, i) => {
@@ -321,7 +341,7 @@ function shiftDate(date: Date, range: string, offset: number) {
   } else if (range === "Week") {
     newDate.setDate(newDate.getDate() + offset * 7);
   } else if (range === "Month") {
-    newDate.setDate(newDate.getDate() + offset * 30);
+    newDate.setMonth(newDate.getMonth() + offset);
   } else if (range === "Year") {
     newDate.setFullYear(newDate.getFullYear() + offset);
   }
@@ -349,11 +369,17 @@ function getAxisLabels(range: string, dataLength: number, startDate: Date) {
       });
     }
   } else if (range === "Month") {
-    // Label every 5 days, but not the very last one to prevent clipping
-    for (let i = 0; i < dataLength - 1; i += 5) {
-      const d = new Date(baseDate);
-      d.setDate(baseDate.getDate() + i);
-      labels.push({ text: d.getDate().toString(), index: i });
+    const daysInMonth = dataLength;
+    for (let i = 0; i < daysInMonth; i++) {
+      // Label the first day, last day, and every 7th day
+      if (i === 0 || i === daysInMonth - 1 || (i + 1) % 7 === 0) {
+        const d = new Date(baseDate);
+        d.setDate(baseDate.getDate() + i);
+        labels.push({
+          text: d.getDate().toString(),
+          index: i,
+        });
+      }
     }
   } else if (range === "Year") {
     // Label every month
@@ -373,7 +399,10 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
   let dataPoints = 0;
   if (range === "Day") dataPoints = 18;
   else if (range === "Week") dataPoints = 7;
-  else if (range === "Month") dataPoints = 30;
+  else if (range === "Month") {
+    // Get number of days in the month
+    dataPoints = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
+  }
   else if (range === "Year") dataPoints = 12;
 
   const data = Array(dataPoints)
@@ -413,15 +442,13 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
       const diff = Math.floor(
         (mealDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24),
       );
-      if (diff >= 0 && diff < 30) {
+      if (diff >= 0 && diff < dataPoints) {
         index = diff;
       }
     } else if (range === "Year") {
-      const monthDiff =
-        (mealDate.getFullYear() - baseDate.getFullYear()) * 12 +
-        (mealDate.getMonth() - baseDate.getMonth());
-      if (monthDiff >= 0 && monthDiff < 12) {
-        index = monthDiff;
+      const diff = mealDate.getMonth() - baseDate.getMonth() + (12 * (mealDate.getFullYear() - baseDate.getFullYear()));
+      if (diff >= 0 && diff < dataPoints) {
+        index = diff;
       }
     }
 
@@ -970,7 +997,7 @@ export default function InsightsScreen() {
       const diff = startDate.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday (0)
       startDate.setDate(diff);
     } else if (range === "Month") {
-      startDate.setDate(baseDate.getDate() - 29);
+      startDate.setDate(1); // Set to the first day of the month
     } else if (range === "Year") {
       startDate.setMonth(0, 1);
     }
@@ -1131,10 +1158,9 @@ export default function InsightsScreen() {
     endDate.setDate(startDate.getDate() + 6);
     totalDaysInPeriod = 7;
   } else if (selectedRange === "Month") {
-    startDate = new Date(currentDate);
-    startDate.setDate(currentDate.getDate() - 29);
-    endDate = new Date(currentDate);
-    totalDaysInPeriod = 30;
+    startDate = getStartDate(selectedRange, currentDate);
+    endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // Last day of the month
+    totalDaysInPeriod = endDate.getDate();
   } else {
     // Year
     startDate = new Date(currentDate.getFullYear(), 0, 1);
@@ -1165,9 +1191,8 @@ export default function InsightsScreen() {
     prevPeriodEndDate.setDate(endDate.getDate() - 7);
   } else if (selectedRange === "Month") {
     prevPeriodStartDate = new Date(startDate);
-    prevPeriodStartDate.setDate(startDate.getDate() - 30);
-    prevPeriodEndDate = new Date(endDate);
-    prevPeriodEndDate.setDate(endDate.getDate() - 30);
+    prevPeriodStartDate.setMonth(startDate.getMonth() - 1);
+    prevPeriodEndDate = new Date(prevPeriodStartDate.getFullYear(), prevPeriodStartDate.getMonth() + 1, 0);
   } else {
     // Year
     prevPeriodStartDate = new Date(startDate.getFullYear() - 1, 0, 1);
@@ -1362,6 +1387,7 @@ export default function InsightsScreen() {
                   paddingX={CHART_PADDING_X}
                   goalCalories={calorieGoal}
                   onBarPress={(index) => handleBarPress(index, prevStartDate)}
+                  selectedRange={selectedRange}
                 />
                 <CalorieChart
                   data={currentData}
@@ -1376,6 +1402,7 @@ export default function InsightsScreen() {
                   onBarPress={(index) =>
                     handleBarPress(index, currentStartDate)
                   }
+                  selectedRange={selectedRange}
                 />
                 <CalorieChart
                   data={nextPageData}
@@ -1388,6 +1415,7 @@ export default function InsightsScreen() {
                   paddingX={CHART_PADDING_X}
                   goalCalories={calorieGoal}
                   onBarPress={(index) => handleBarPress(index, nextStartDate)}
+                  selectedRange={selectedRange}
                 />
               </ScrollView>
             </View>
