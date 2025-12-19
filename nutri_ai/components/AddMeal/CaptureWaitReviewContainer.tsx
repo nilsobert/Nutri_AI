@@ -82,7 +82,7 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   const [transcription, setTranscription] = useState("");
   const [contextText, setContextText] = useState("");
   const [mealType, setMealType] = useState<MealCategory>(MealCategory.Lunch);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(initialDate ? new Date(initialDate) : new Date());
   
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
@@ -461,7 +461,7 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         setAudioUri(null);
         setContextText('');
         setTranscription('');
-        setMode('CONTEXT_INPUT');
+        setMode('IMAGE_PREVIEW');
       }
     } catch (e) {
       console.error(e);

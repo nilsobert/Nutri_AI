@@ -125,7 +125,7 @@ export default function MealDetailScreen() {
   const { nutritionInfo, mealQuality } = meal;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
-  const bgColor = isDark ? "#000" : "#fff";
+  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
 
   const getQualityColor = (score: number) => {
     if (score >= 7) return "#34C759"; // Green
