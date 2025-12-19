@@ -126,10 +126,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       console.log("[UserContext] Saving profile image locally...");
       await StorageService.saveProfileImage(image);
 
-      // Upload to server
+      // Upload to server (non-blocking, with timeout)
       try {
         const token = await AsyncStorage.getItem("auth_token");
-        if (token) {
+        if (token && !token.startsWith("local_auth_")) {
           console.log("[UserContext] Uploading profile image to server...");
           const formData = new FormData();
           // @ts-ignore
@@ -139,6 +139,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             type: "image/jpeg",
           });
 
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
           const response = await fetch(`${API_BASE_URL}/profile/image`, {
             method: "POST",
             headers: {
@@ -146,8 +149,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
               "Content-Type": "multipart/form-data",
             },
             body: formData,
+            signal: controller.signal,
           });
 
+          clearTimeout(timeoutId);
           console.log(
             `[UserContext] Profile image upload response: ${response.status}`,
           );
@@ -160,10 +165,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             console.log("[UserContext] Profile image uploaded successfully");
           }
         } else {
-          console.log("[UserContext] No auth token, skipping server upload");
+          console.log("[UserContext] Using local mode, skipping server upload");
         }
       } catch (error) {
-        console.error("[UserContext] Error uploading profile image:", error);
+        console.log("[UserContext] Image upload skipped (working in local mode):", error.message);
       }
     } else {
       console.log("[UserContext] Removing profile image...");
@@ -176,10 +181,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     setUserState(newUser);
     await StorageService.saveUser(newUser);
 
-    // Sync with server
+    // Sync with server (non-blocking, with timeout)
     try {
       const token = await AsyncStorage.getItem("auth_token");
-      if (token) {
+      if (token && !token.startsWith("local_auth_")) {
         console.log("[UserContext] Syncing profile with server...");
         const profileData = {
           name: newUser.name,
@@ -204,6 +209,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
         console.log("[UserContext] Profile data to sync:", profileData);
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
         const response = await fetch(`${API_BASE_URL}/profile`, {
           method: "PUT",
           headers: {
@@ -211,8 +219,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(profileData),
+          signal: controller.signal,
         });
 
+        clearTimeout(timeoutId);
         console.log(`[UserContext] Profile sync response: ${response.status}`);
         if (!response.ok) {
           console.error(
@@ -225,10 +235,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           console.log("[UserContext] Profile synced with server successfully");
         }
       } else {
-        console.log("[UserContext] No auth token, skipping server sync");
+        console.log("[UserContext] Using local mode, skipping server sync");
       }
     } catch (error) {
-      console.error("[UserContext] Error syncing profile with server:", error);
+      console.log("[UserContext] Server sync skipped (working in local mode):", error.message);
     }
   };
 

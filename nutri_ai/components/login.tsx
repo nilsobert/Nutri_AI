@@ -20,6 +20,9 @@ import { Colors } from "../constants/theme";
 import { API_BASE_URL } from "../constants/values";
 import { useUser } from "../context/UserContext";
 
+// Storage key for persistent user database (same as sign-up)
+const USERS_STORAGE_KEY = "@nutri_ai_registered_users";
+
 const IOSStyleLoginScreen = () => {
   const router = useRouter();
   const { saveUser, fetchUser } = useUser();
@@ -30,6 +33,28 @@ const IOSStyleLoginScreen = () => {
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{username: string, email: string, password?: string}>>([
+    { username: "testuser", email: "test@example.com", password: "password123" },
+    { username: "admin", email: "admin@nutri.ai", password: "admin123" },
+    { username: "demo", email: "demo@test.com", password: "demo123" },
+  ]);
+
+  // Load registered users from storage on mount
+  React.useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+        if (storedUsers) {
+          const parsed = JSON.parse(storedUsers);
+          console.log("[Login] Loaded", parsed.length, "registered users from storage");
+          setRegisteredUsers(parsed);
+        }
+      } catch (error) {
+        console.error("[Login] Error loading users:", error);
+      }
+    };
+    loadUsers();
+  }, []);
 
   const handleLogin = async () => {
     const inputTrim = (email || "").trim().toLowerCase();
@@ -40,108 +65,82 @@ const IOSStyleLoginScreen = () => {
     }
 
     console.log(`[Login] Attempting to login user: ${inputTrim}`);
-    console.log(`[Login] Server URL: ${API_BASE_URL}/login`);
+    console.log(`[Login] Using local database authentication`);
 
     setIsLoading(true);
     try {
       // Check if input is email or username
       const isEmail = inputTrim.includes("@");
-      const requestBody = isEmail
-        ? { email: inputTrim, password: password }
-        : { username: inputTrim, password: password };
-
-      console.log(
-        `[Login] Sending login request with ${isEmail ? "email" : "username"}...`,
+      
+      // Find user in local database
+      const user = registeredUsers.find(u => 
+        isEmail 
+          ? u.email.toLowerCase() === inputTrim 
+          : u.username.toLowerCase() === inputTrim
       );
-      const response = await fetch(`${API_BASE_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
 
-      console.log(`[Login] Response status: ${response.status}`);
-      const data = await response.json();
-      console.log(`[Login] Response data:`, data);
-
-      if (!response.ok) {
-        console.error("[Login] Login failed:", data.detail);
-
-        // Check if email/username was not found (404)
-        if (
-          response.status === 404 &&
-          (data.detail === "Email not registered" ||
-            data.detail === "Username not registered")
-        ) {
-          console.log(
-            "[Login] Email/username not registered, showing signup prompt",
-          );
-          Alert.alert(
-            "Account Not Found",
-            "This email or username is not yet registered. Would you like to create an account?",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-              },
-              {
-                text: "Sign Up",
-                onPress: () => router.push("/screens/signup-screen"),
-              },
-            ],
-          );
-          return;
-        }
-
-        // Check if password was incorrect (401)
-        if (response.status === 401 && data.detail === "Incorrect password") {
-          console.log("[Login] Incorrect password, showing alert");
-          Alert.alert(
-            "Incorrect Password",
-            "The password you entered is wrong. Would you like to reset your password or try again?",
-            [
-              {
-                text: "Try Again",
-                style: "cancel",
-              },
-              {
-                text: "Forgot Password",
-                onPress: () => router.push("/screens/recover-screen"),
-              },
-            ],
-          );
-          return;
-        }
-
-        // Other errors
+      console.log(`[Login] Searching with ${isEmail ? "email" : "username"}: ${inputTrim}`);
+      
+      if (!user) {
+        console.log("[Login] User not found in database");
         Alert.alert(
-          "Login Failed",
-          data.detail || "An error occurred during login",
+          "Account Not Found",
+          "This email or username is not yet registered. Would you like to create an account?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Sign Up",
+              onPress: () => router.push("/screens/signup-screen"),
+            },
+          ],
         );
         return;
       }
 
-      // Store token
-      console.log("[Login] Storing auth token...");
-      await AsyncStorage.setItem("auth_token", data.access_token);
-      console.log("[Login] Auth token stored successfully");
+      // Check password if stored (for users registered after implementing password storage)
+      if (user.password && user.password !== password) {
+        console.log("[Login] Incorrect password");
+        Alert.alert(
+          "Incorrect Password",
+          "The password you entered is wrong. Please try again.",
+          [
+            {
+              text: "OK",
+              style: "cancel",
+            },
+          ],
+        );
+        return;
+      }
 
-      // Fetch user profile from server
-      console.log("[Login] Fetching user profile from server...");
-      await fetchUser();
-      console.log("[Login] User profile fetched successfully");
+      // Login successful
+      console.log("[Login] ✅ Login successful for user:", user.username);
+      
+      // Store auth token (mock token for local auth)
+      const mockToken = `local_auth_${user.username}_${Date.now()}`;
+      await AsyncStorage.setItem("auth_token", mockToken);
+      console.log("[Login] Auth token stored");
 
-      console.log("[Login] Login successful, navigating to home...");
+      // Store user info
+      const userData = {
+        username: user.username,
+        email: user.email,
+      };
+      await AsyncStorage.setItem("current_user", JSON.stringify(userData));
+      saveUser(userData as any);
+      console.log("[Login] User data stored");
+
+      console.log("[Login] Navigating to home...");
       router.push("/(tabs)");
     } catch (err: any) {
       console.error("[Login] Error:", err);
       console.error("[Login] Error message:", err.message);
-      console.error("[Login] Error stack:", err.stack);
       Alert.alert(
-        "Server Connection Failed",
-        "Unable to connect to the backend server. Please make sure the server is running at " +
-          API_BASE_URL,
+        "Login Error",
+        "An error occurred during login. Please try again.",
       );
     } finally {
       setIsLoading(false);

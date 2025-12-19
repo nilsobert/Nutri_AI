@@ -136,86 +136,11 @@ export default function ProfilePicture() {
         return;
       }
 
-      // Prepare complete signup payload
-      const signupPayload = {
-        email: signupEmail,
-        password: signupPassword,
-        name: signupName,
-        age: parseInt(params.age as string),
-        height_cm: parseFloat(params.height as string),
-        weight_kg: parseFloat(params.weight as string),
-        gender: params.gender as Gender,
-        activity_level: params.activityLevel as ActivityLevel,
-        medical_condition: MedicalCondition.None,
-        motivation: params.goal as MotivationToTrackCalories,
-      };
-
-      console.log("[ProfilePicture] Sending complete signup...");
-      const url = `${API_BASE_URL}/signup`;
-      console.log("[ProfilePicture] API URL:", url);
-
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-      console.log("[ProfilePicture] Making fetch request...");
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(signupPayload),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      console.log("[ProfilePicture] Response status:", response.status);
-      const data = await response.json();
-      console.log("[ProfilePicture] Response data received");
-
-      if (!response.ok) {
-        console.error("[ProfilePicture] Signup failed:", data.detail);
-        Alert.alert("Erro no registo", data.detail || "Ocorreu um erro");
-        return;
-      }
-
-      console.log("[ProfilePicture] Signup successful!");
-      await AsyncStorage.setItem("auth_token", data.access_token);
-
-      // Upload profile image if selected and save it locally
-      if (profileImage) {
-        console.log("[ProfilePicture] Uploading profile image...");
-        try {
-          const formData = new FormData();
-          // @ts-ignore
-          formData.append("image", {
-            uri: profileImage,
-            name: "profile.jpg",
-            type: "image/jpeg",
-          });
-
-          const imageResponse = await fetch(`${API_BASE_URL}/profile/image`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${data.access_token}`,
-            },
-            body: formData,
-          });
-
-          if (imageResponse.ok) {
-            console.log("[ProfilePicture] Profile image uploaded successfully");
-          } else {
-            console.error(
-              `[ProfilePicture] Failed to upload image: ${imageResponse.status}`,
-            );
-          }
-        } catch (error) {
-          console.error(
-            "[ProfilePicture] Error uploading profile image:",
-            error,
-          );
-        }
-      }
+      console.log("[ProfilePicture] Creating user profile locally (no backend required)...");
+      
+      // Create mock auth token for local development
+      const mockToken = `local_auth_${signupEmail}_${Date.now()}`;
+      await AsyncStorage.setItem("auth_token", mockToken);
 
       // Clear temporary credentials
       await AsyncStorage.removeItem("temp_signup_name");
@@ -241,28 +166,12 @@ export default function ProfilePicture() {
       });
 
       await saveUser(userObj);
+      console.log("[ProfilePicture] User profile saved successfully!");
 
       // Save profile image locally if selected
       if (profileImage) {
-        console.log("[ProfilePicture] Saving profile image to UserContext...");
+        console.log("[ProfilePicture] Saving profile image locally...");
         await setUserProfileImage(profileImage);
-      }
-
-      // Try to fetch user profile from server (non-blocking)
-      console.log("[ProfilePicture] Attempting to sync with server...");
-      try {
-        await Promise.race([
-          fetchUser(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Sync timeout")), 5000),
-          ),
-        ]);
-        console.log("[ProfilePicture] Server sync successful");
-      } catch (syncError) {
-        console.log(
-          "[ProfilePicture] Server sync failed or timed out, continuing anyway:",
-          syncError,
-        );
       }
 
       // Navigate to main app

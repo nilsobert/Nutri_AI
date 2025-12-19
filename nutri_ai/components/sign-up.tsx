@@ -19,6 +19,12 @@ import { API_BASE_URL } from "../constants/values";
 import { useUser } from "../context/UserContext";
 import { AppleStyleAlert } from "./ui/AppleStyleAlert";
 
+// Set to true to skip backend verification during development
+const DEV_MODE_SKIP_BACKEND = false; // Changed to false so backend check runs
+
+// Storage key for persistent user database
+const USERS_STORAGE_KEY = "@nutri_ai_registered_users";
+
 export default function SignUp() {
   const router = useRouter();
   const { saveUser } = useUser();
@@ -31,6 +37,32 @@ export default function SignUp() {
   const [confirm, setConfirm] = useState("");
   const [remember, setRemember] = useState(false);
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{username: string, email: string, password?: string}>>([
+    { username: "testuser", email: "test@example.com", password: "password123" },
+    { username: "admin", email: "admin@nutri.ai", password: "admin123" },
+    { username: "demo", email: "demo@test.com", password: "demo123" },
+  ]);
+
+  // Load registered users from storage on mount
+  React.useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const storedUsers = await AsyncStorage.getItem(USERS_STORAGE_KEY);
+        if (storedUsers) {
+          const parsed = JSON.parse(storedUsers);
+          console.log("[SignUp] Loaded", parsed.length, "registered users from storage");
+          setRegisteredUsers(parsed);
+        } else {
+          // First time - save initial mock users
+          await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(registeredUsers));
+          console.log("[SignUp] Initialized storage with", registeredUsers.length, "default users");
+        }
+      } catch (error) {
+        console.error("[SignUp] Error loading users:", error);
+      }
+    };
+    loadUsers();
+  }, []);
 
   const handleSignUp = async () => {
     try {
@@ -51,6 +83,26 @@ export default function SignUp() {
         console.log("[SignUp] Password filled:", !!password);
         console.log("[SignUp] Confirm filled:", !!confirm);
         Alert.alert("Required Fields", "Please fill in all fields");
+        return;
+      }
+
+      // Validate username length (at least 3 characters)
+      if (usernameTrim.length < 3) {
+        console.log("[SignUp] ❌ Username too short:", usernameTrim.length);
+        Alert.alert(
+          "Username Too Short",
+          "Username must be at least 3 characters long",
+        );
+        return;
+      }
+
+      // Validate username doesn't contain spaces
+      if (usernameTrim.includes(" ")) {
+        console.log("[SignUp] ❌ Username contains spaces");
+        Alert.alert(
+          "Invalid Username",
+          "Username cannot contain spaces",
+        );
         return;
       }
 
@@ -75,6 +127,16 @@ export default function SignUp() {
         return;
       }
 
+      // Validate password doesn't contain only spaces
+      if (password.trim().length === 0) {
+        console.log("[SignUp] ❌ Password is only spaces");
+        Alert.alert(
+          "Invalid Password",
+          "Password cannot contain only spaces",
+        );
+        return;
+      }
+
       // Validate password confirmation matches
       if (password !== confirm) {
         console.log("[SignUp] ❌ Password mismatch validation failed");
@@ -91,21 +153,77 @@ export default function SignUp() {
         "[SignUp] ✅ All validations passed. Checking availability...",
       );
 
+      // Track if we should proceed with navigation
+      let shouldProceed = false;
+
+      // For development: Show option to skip backend check if server is not running
+      const skipBackendCheck = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+          Alert.alert(
+            "Backend Server Not Running",
+            "The backend server is not accessible. You can:\n\n1. Start the backend server and try again\n2. Skip verification for now (development mode)",
+            [
+              { 
+                text: "Try Again", 
+                style: "cancel", 
+                onPress: () => {
+                  console.log("[SignUp] User chose to try again");
+                  resolve(false);
+                }
+              },
+              { 
+                text: "Skip for Now", 
+                style: "default", 
+                onPress: () => {
+                  console.log("[SignUp] User chose to skip backend check");
+                  resolve(true);
+                }
+              },
+            ]
+          );
+        });
+      };
+
       // Check if email or username already exists
-      try {
-        console.log("[SignUp] Checking if email/username is available...");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+      if (DEV_MODE_SKIP_BACKEND) {
+        console.log("[SignUp] ⚠️ DEV_MODE: Skipping backend verification");
+        shouldProceed = true;
+      } else {
+        // First, check against persistent database (simulates real database without backend)
+        const mockCheck = () => {
+          const emailTaken = registeredUsers.some(u => u.email.toLowerCase() === emailTrim);
+          const usernameTaken = registeredUsers.some(u => u.username.toLowerCase() === usernameTrim.toLowerCase());
+          return {
+            email_available: !emailTaken,
+            name_available: !usernameTaken,
+            is_mock: true
+          };
+        };
+
+        try {
+          console.log("[SignUp] Checking if email/username is available...");
+          console.log("[SignUp] API URL:", `${API_BASE_URL}/check-availability`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            console.log("[SignUp] ⏰ Request timed out after 5 seconds");
+            controller.abort();
+          }, 5000); // Reduced to 5 seconds
 
         const response = await fetch(
           `${API_BASE_URL}/check-availability?email=${encodeURIComponent(emailTrim)}&name=${encodeURIComponent(usernameTrim)}`,
           {
             method: "GET",
             signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
           },
         );
 
         clearTimeout(timeoutId);
+        console.log("[SignUp] Response status:", response.status);
 
         if (!response.ok) {
           console.error(
@@ -114,7 +232,7 @@ export default function SignUp() {
           );
           Alert.alert(
             "Connection Error",
-            "Could not verify availability. Check your connection and try again.",
+            "Could not verify availability. Please make sure the backend server is running on port 7770.",
           );
           return;
         }
@@ -166,22 +284,81 @@ export default function SignUp() {
         console.log(
           "[SignUp] ✅ Email and username are available. Proceeding to profile building...",
         );
+        shouldProceed = true;
       } catch (error: any) {
         console.error("[SignUp] ❌ Error checking availability:", error);
+        console.error("[SignUp] Error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        });
 
-        if (error.name === "AbortError") {
-          Alert.alert(
-            "Connection Timeout",
-            "The verification is taking too long. Check your internet connection and try again.",
-          );
+        if (error.name === "AbortError" || error.message?.includes("Network request failed") || error.message?.includes("Failed to fetch")) {
+          console.log("[SignUp] ❌ Backend server not reachable. Using mock database for verification...");
+          
+          // Use mock database check instead
+          const mockResult = mockCheck();
+          console.log("[SignUp] Mock check result:", mockResult);
+
+          if (!mockResult.email_available && !mockResult.name_available) {
+            Alert.alert(
+              "Email and Username Already Registered",
+              "The email and username you entered are already registered. Please use different credentials or log in if you already have an account.\n\n(Mock Database)",
+              [
+                { text: "Try Again", style: "cancel" },
+                {
+                  text: "Go to Login",
+                  onPress: () => router.push("/screens/login-screen"),
+                  style: "default",
+                },
+              ],
+            );
+            return;
+          } else if (!mockResult.email_available) {
+            Alert.alert(
+              "Email Already Registered",
+              "This email is already registered. Please use a different email or log in if you already have an account.\n\n(Mock Database)",
+              [
+                { text: "Try Again", style: "cancel" },
+                {
+                  text: "Go to Login",
+                  onPress: () => router.push("/screens/login-screen"),
+                  style: "default",
+                },
+              ],
+            );
+            return;
+          } else if (!mockResult.name_available) {
+            Alert.alert(
+              "Username Already Registered",
+              "This username is already registered. Please choose a different name.\n\n(Mock Database)",
+              [{ text: "OK", style: "default" }],
+            );
+            return;
+          }
+
+          // Both are available in mock database
+          console.log("[SignUp] ✅ Email and username available in mock database");
+          shouldProceed = true;
         } else {
+          console.error("[SignUp] Unexpected error, showing error alert");
           Alert.alert(
             "Connection Error",
-            "Could not verify availability. Check your connection and try again.",
+            `Could not verify availability.\n\nError: ${error.message || "Unknown error"}\n\nBackend URL: ${API_BASE_URL}`,
+            [{ text: "OK", style: "default" }]
           );
+          return;
         }
+      }
+      }
+
+      // Only proceed if backend check passed OR user chose to skip
+      if (!shouldProceed) {
+        console.log("[SignUp] ❌ Not proceeding - shouldProceed is false");
         return;
       }
+
+      console.log("[SignUp] ✅ Proceeding with signup process");
 
       // Store signup credentials temporarily in AsyncStorage
       console.log("[SignUp] Storing signup credentials temporarily...");
@@ -190,15 +367,26 @@ export default function SignUp() {
       await AsyncStorage.setItem("temp_signup_password", password);
       console.log("[SignUp] Credentials stored successfully");
 
-      // Navigate to welcome page first
-      console.log("[SignUp] Navigating to welcome page...");
+      // Add new user to persistent database
+      try {
+        const newUser = { username: usernameTrim, email: emailTrim, password: password };
+        const updatedUsers = [...registeredUsers, newUser];
+        await AsyncStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+        setRegisteredUsers(updatedUsers);
+        console.log("[SignUp] ✅ User added to persistent database. Total users:", updatedUsers.length);
+      } catch (error) {
+        console.error("[SignUp] Error saving user to database:", error);
+      }
+
+      // Navigate to onboarding after signup
+      console.log("[SignUp] Navigating to onboarding...");
       router.push("/screens/onboarding/welcome");
-    } catch (error: any) {
-      console.error("[SignUp] ❌ CRITICAL ERROR:", error);
-      console.error("[SignUp] Error stack:", error.stack);
+    } catch (outerError: any) {
+      console.error("[SignUp] ❌ CRITICAL ERROR:", outerError);
+      console.error("[SignUp] Error stack:", outerError.stack);
       Alert.alert(
         "Error",
-        `Could not process registration. ${error.message || "Please try again."}`,
+        `Could not process registration. ${outerError.message || "Please try again."}`,
       );
     }
   };
@@ -241,6 +429,10 @@ export default function SignUp() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="username"
+              textContentType="username"
+              maxLength={30}
             />
 
             <TextInput
@@ -254,6 +446,9 @@ export default function SignUp() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              textContentType="emailAddress"
             />
 
             <TextInput
@@ -266,6 +461,10 @@ export default function SignUp() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password-new"
+              textContentType="newPassword"
             />
 
             <TextInput
@@ -278,6 +477,10 @@ export default function SignUp() {
               secureTextEntry
               value={confirm}
               onChangeText={setConfirm}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password-new"
+              textContentType="newPassword"
             />
 
             <TouchableOpacity
