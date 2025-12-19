@@ -106,9 +106,13 @@ export default function MealDetailScreen() {
   if (!meal) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? Colors.background.dark : Colors.background.light }]}>
-        <View style={[styles.navHeader, { paddingTop: insets.top }]}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color={isDark ? Colors.text.dark : Colors.text.light} />
+        <View style={[styles.navHeader, { paddingTop: 20 }]}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+                <Ionicons 
+                  name="close-circle" 
+                  size={36} 
+                  color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"} 
+                />
             </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
@@ -233,13 +237,17 @@ export default function MealDetailScreen() {
         </View>
       </Animated.ScrollView>
 
-      {/* Floating Back Button */}
-      <View style={[styles.backButtonContainer, { top: insets.top + 10 }]}>
+      {/* Floating Close Button */}
+      <View style={[styles.closeButtonContainer, { top: 20 }]}>
         <TouchableOpacity 
           onPress={() => router.back()} 
-          style={[styles.backButtonCircle, { backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.8)' }]}
+          style={styles.closeButton}
         >
-          <Ionicons name="arrow-back" size={24} color={isDark ? "#fff" : "#000"} />
+          <Ionicons 
+            name="close-circle" 
+            size={36} 
+            color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)"} 
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -252,11 +260,12 @@ const styles = StyleSheet.create({
   },
   navHeader: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
-  backButton: {
+  closeButton: {
     padding: 4,
   },
   centerContent: {
@@ -410,17 +419,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
-  backButtonContainer: {
+  closeButtonContainer: {
     position: 'absolute',
-    left: Spacing.lg,
+    right: Spacing.lg,
     zIndex: 100,
-  },
-  backButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Shadows.medium,
   },
 });

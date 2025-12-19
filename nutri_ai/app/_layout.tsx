@@ -52,6 +52,14 @@ function RootLayoutNav() {
           options={{ presentation: "modal", headerShown: false }}
         />
         <Stack.Screen
+          name="settings"
+          options={{ presentation: "modal", headerShown: false }}
+        />
+        <Stack.Screen
+          name="screens/edit-goals"
+          options={{ presentation: "modal", headerShown: false }}
+        />
+        <Stack.Screen
           name="add-meal"
           options={{
             headerShown: false,
