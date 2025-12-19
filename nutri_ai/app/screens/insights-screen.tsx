@@ -1273,7 +1273,7 @@ export default function InsightsScreen() {
       }
       return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
     } else if (selectedRange === "Month") {
-      return start.toLocaleDateString("en-US", {
+      return currentDate.toLocaleDateString("en-US", {
         month: "long",
         year: "numeric",
       });
