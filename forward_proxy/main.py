@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import timedelta, date
 from typing import Optional, List
 from contextlib import asynccontextmanager
@@ -386,16 +387,23 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/meals", response_model=MealResponse)
 def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Create or update a meal.
+
+    This endpoint is intentionally **idempotent** by `meal.id` scoped to the authenticated user.
+
+    Why: the mobile app may retry / or run concurrent queue workers during reconnect.
+    We therefore must never return 500 for duplicate IDs.
+    """
     logger.info(f"[POST /meals] Creating/Updating meal {meal.id} for user {current_user.id} (email: {current_user.email})")
     logger.debug(f"[POST /meals] Meal data: category={meal.category}, timestamp={meal.timestamp}, name={meal.name}, has_image={bool(meal.image)}, has_audio={bool(meal.audio)}, has_transcription={bool(meal.transcription)}")
-    
-    # Check if meal already exists to avoid duplicates or handle updates
-    # IMPORTANT: Scope to the current user to prevent cross-user overwrites
+
+    # First try: normal read-then-update/insert path.
+    # IMPORTANT: Scope to the current user to prevent cross-user overwrites.
     existing_meal = db.query(Meal).filter(Meal.id == meal.id, Meal.user_id == current_user.id).first()
     if existing_meal:
         logger.info(f"[POST /meals] Updating existing meal {meal.id} for user {current_user.id}")
         logger.debug(f"[POST /meals] Old meal: category={existing_meal.category}, has_image={bool(existing_meal.image_path)}, has_audio={bool(existing_meal.audio_path)}")
-        # Update existing meal
+
         existing_meal.timestamp = meal.timestamp
         existing_meal.category = meal.category
         existing_meal.name = meal.name
@@ -413,7 +421,7 @@ def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user)
         db.commit()
         db.refresh(existing_meal)
         return meal
-    
+
     db_meal = Meal(
         id=meal.id,
         user_id=current_user.id,
@@ -432,8 +440,40 @@ def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user)
         goal_fit_percentage=meal.mealQuality.goalFitPercentage,
         meal_quality_score=meal.mealQuality.mealQualityScore
     )
+
     db.add(db_meal)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Race condition safe-guard: another request inserted the same primary key concurrently.
+        # Treat as idempotent success by fetching & updating.
+        db.rollback()
+        logger.warning(f"[POST /meals] IntegrityError on insert for meal {meal.id}. Falling back to update.")
+
+        existing_meal = db.query(Meal).filter(Meal.id == meal.id, Meal.user_id == current_user.id).first()
+        if not existing_meal:
+            # If this happens, it was likely a conflicting PK from another user (schema uses id as global PK).
+            # Signal conflict rather than 500.
+            raise HTTPException(status_code=409, detail="Meal ID already exists")
+
+        existing_meal.timestamp = meal.timestamp
+        existing_meal.category = meal.category
+        existing_meal.name = meal.name
+        existing_meal.image_path = meal.image
+        existing_meal.audio_path = meal.audio
+        existing_meal.transcription = meal.transcription
+        existing_meal.calories = meal.nutritionInfo.calories
+        existing_meal.carbs = meal.nutritionInfo.carbs
+        existing_meal.sugar = meal.nutritionInfo.sugar
+        existing_meal.protein = meal.nutritionInfo.protein
+        existing_meal.fat = meal.nutritionInfo.fat
+        existing_meal.calorie_density = meal.mealQuality.calorieDensity
+        existing_meal.goal_fit_percentage = meal.mealQuality.goalFitPercentage
+        existing_meal.meal_quality_score = meal.mealQuality.mealQualityScore
+        db.commit()
+        db.refresh(existing_meal)
+        return meal
+
     db.refresh(db_meal)
     logger.info(f"[POST /meals] Meal {meal.id} created successfully for user {current_user.id}")
     return meal
