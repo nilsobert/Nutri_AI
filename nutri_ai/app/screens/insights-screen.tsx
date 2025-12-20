@@ -8,6 +8,7 @@ import {
   useColorScheme,
   Text,
 } from "react-native";
+import { useRouter } from "expo-router";
 import {
   Svg,
   Rect,
@@ -36,7 +37,7 @@ import Animated, {
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { useUser } from "@/context/UserContext";
-import { MS_TO_S, DAILY_CALORIE_GOAL } from "@/constants/values";
+import { MS_TO_S, DAILY_CALORIE_GOAL, MIN_LOGGING_THRESHOLD } from "@/constants/values";
 import {
   Colors,
   Spacing,
@@ -457,8 +458,7 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
       data[index].carbs += info.carbs;
       data[index].protein += info.protein;
       data[index].fat += info.fat;
-      data[index].calories +=
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
+      data[index].calories += info.calories;
       data[index].quality += meal.mealQuality.mealQualityScore;
       data[index].count += 1;
     }
@@ -520,8 +520,7 @@ function getHistoricalData(
       data[index].carbs += info.carbs;
       data[index].protein += info.protein;
       data[index].fat += info.fat;
-      data[index].calories +=
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
+      data[index].calories += info.calories;
     }
   });
 
@@ -581,14 +580,12 @@ function getDailyGoalMetCount(
       })
       .reduce((sum, meal) => {
         const info = meal.nutritionInfo;
-        return (
-          sum + info.carbs * 4 + info.protein * 4 + info.fat * 9
-        );
+        return sum + info.calories;
       }, 0);
 
     if (
-      dayTotalCalories >= calorieGoal * 0.9 &&
-      dayTotalCalories <= calorieGoal * 1.1
+      dayTotalCalories >= MIN_LOGGING_THRESHOLD &&
+      dayTotalCalories <= calorieGoal
     ) {
       daysMet++;
     }
@@ -685,7 +682,8 @@ function getMaxMealInPeriod(
   startDate: Date,
   endDate: Date,
   meals: any[],
-): number {
+): any | null {
+  let maxMeal = null;
   let maxCalories = 0;
   const start = new Date(startDate);
   start.setHours(0, 0, 0, 0);
@@ -696,15 +694,15 @@ function getMaxMealInPeriod(
     const mealDate = new Date(meal.timestamp * MS_TO_S);
     if (mealDate >= start && mealDate <= end) {
       const info = meal.nutritionInfo;
-      const mealCalories =
-        info.carbs * 4 + info.protein * 4 + info.fat * 9;
+      const mealCalories = info.calories;
       if (mealCalories > maxCalories) {
         maxCalories = mealCalories;
+        maxMeal = meal;
       }
     }
   });
 
-  return maxCalories;
+  return maxMeal;
 }
 
 const generateSmoothPath = (
@@ -944,6 +942,7 @@ const TrendsChart = ({
 };
 
 export default function InsightsScreen() {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { meals, isLoading } = useMeals();
@@ -1211,7 +1210,8 @@ export default function InsightsScreen() {
       ? calculateLongestStreakOverall(meals)
       : calculateStreakInPeriod(startDate, endDate, meals);
 
-  const maxCalorieMeal = getMaxMealInPeriod(startDate, endDate, meals);
+  const maxMeal = getMaxMealInPeriod(startDate, endDate, meals);
+  const maxMealCalories = maxMeal ? maxMeal.nutritionInfo.calories : 0;
 
   const getMetricGradient = (metric: string) => {
     switch (metric) {
@@ -1470,11 +1470,12 @@ export default function InsightsScreen() {
           </ThemedText>
 
           <View style={styles.insightsGrid}>
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/quality-screen")}
             >
               <Ionicons name="star-outline" size={24} color="#FFD700" />
               <ThemedText
@@ -1487,13 +1488,14 @@ export default function InsightsScreen() {
               >
                 Avg Quality
               </ThemedText>
-            </View>
+            </TouchableOpacity>
 
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/streaks-screen")}
             >
               <Ionicons name="trophy-outline" size={24} color="#FF9500" />
               <ThemedText
@@ -1506,15 +1508,16 @@ export default function InsightsScreen() {
               >
                 {selectedRange === "Year" ? "Longest Streak" : "Current Streak"}
               </ThemedText>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.insightsGrid}>
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/goals-met-screen")}
             >
               <Ionicons
                 name="checkmark-circle-outline"
@@ -1529,15 +1532,24 @@ export default function InsightsScreen() {
               <ThemedText
                 style={[styles.insightBoxLabel, { color: secondaryText }]}
               >
-                Goal Met
+                Calorie Goal Met
               </ThemedText>
-            </View>
+            </TouchableOpacity>
 
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => {
+                if (maxMeal) {
+                  router.push({
+                    pathname: "/meal-detail",
+                    params: { id: maxMeal.id },
+                  });
+                }
+              }}
+              disabled={!maxMeal}
             >
               <Ionicons
                 name="restaurant-outline"
@@ -1547,14 +1559,14 @@ export default function InsightsScreen() {
               <ThemedText
                 style={[styles.insightBoxValue, { color: textColor }]}
               >
-                {Math.round(maxCalorieMeal)}
+                {Math.round(maxMealCalories)}
               </ThemedText>
               <ThemedText
                 style={[styles.insightBoxLabel, { color: secondaryText }]}
               >
                 Max Meal (kcal)
               </ThemedText>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View
