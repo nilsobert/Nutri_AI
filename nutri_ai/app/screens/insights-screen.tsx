@@ -1489,11 +1489,12 @@ export default function InsightsScreen() {
               </ThemedText>
             </View>
 
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/streaks-screen")}
             >
               <Ionicons name="trophy-outline" size={24} color="#FF9500" />
               <ThemedText
@@ -1506,7 +1507,7 @@ export default function InsightsScreen() {
               >
                 {selectedRange === "Year" ? "Longest Streak" : "Current Streak"}
               </ThemedText>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.insightsGrid}>
@@ -1529,7 +1530,7 @@ export default function InsightsScreen() {
               <ThemedText
                 style={[styles.insightBoxLabel, { color: secondaryText }]}
               >
-                Goal Met
+                Calorie Goal Met
               </ThemedText>
             </View>
 
