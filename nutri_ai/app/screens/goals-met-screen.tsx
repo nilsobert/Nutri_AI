@@ -11,7 +11,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,7 +20,8 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
-import { MS_TO_S, MIN_LOGGING_THRESHOLD } from "@/constants/values";
+import { useUser } from "@/context/UserContext";
+import { MS_TO_S, DAILY_CALORIE_GOAL, MIN_LOGGING_THRESHOLD } from "@/constants/values";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -34,7 +35,7 @@ if (
 
 // --- Helper Functions ---
 
-function calculateStreak(meals: any[]) {
+function calculateGoalStreak(meals: any[], calorieGoal: number) {
   const now = new Date();
   let streak = 0;
   let currentDay = new Date(now);
@@ -51,11 +52,18 @@ function calculateStreak(meals: any[]) {
       })
       .reduce((sum, m) => sum + m.nutritionInfo.calories, 0);
 
-    if (dayCalories >= MIN_LOGGING_THRESHOLD) {
+    // Check if goal met: logged enough AND didn't exceed
+    if (dayCalories >= MIN_LOGGING_THRESHOLD && dayCalories <= calorieGoal) {
       streak++;
       currentDay.setDate(currentDay.getDate() - 1);
     } else {
       if (i === 0) {
+        // If today is not met yet, check yesterday to see if streak is alive
+        // But for "current streak", usually we include today if met, or continue from yesterday
+        // If today is 0 or partial, we check yesterday.
+        // If yesterday was met, streak continues.
+        // However, strictly speaking, if today is not met, the streak is what it was yesterday?
+        // Or does it break? Usually apps allow "today" to be incomplete without breaking streak.
         currentDay.setDate(currentDay.getDate() - 1);
         continue;
       }
@@ -65,14 +73,17 @@ function calculateStreak(meals: any[]) {
   return streak;
 }
 
-function calculateLongestStreakOverall(meals: any[]): number {
+function calculateBestGoalStreak(meals: any[], calorieGoal: number): number {
   if (meals.length === 0) return 0;
 
   const mealDates = new Set<string>();
+  const dateToCals = new Map<string, number>();
+
   meals.forEach((meal) => {
     const d = new Date(meal.timestamp * MS_TO_S);
     const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     mealDates.add(dateKey);
+    dateToCals.set(dateKey, (dateToCals.get(dateKey) || 0) + meal.nutritionInfo.calories);
   });
 
   if (mealDates.size === 0) return 0;
@@ -84,33 +95,36 @@ function calculateLongestStreakOverall(meals: any[]): number {
     })
     .sort((a, b) => a.getTime() - b.getTime());
 
-  let longestStreak = 1;
-  let currentStreak = 1;
+  // We need to iterate through all days between first and last meal to check for breaks
+  if (sortedDates.length === 0) return 0;
 
-  for (let i = 1; i < sortedDates.length; i++) {
-    const prevDate = sortedDates[i - 1];
-    const currentDate = sortedDates[i];
+  const start = sortedDates[0];
+  const end = new Date(); // Up to today
+  end.setHours(0,0,0,0);
 
-    const diffTime = currentDate.getTime() - prevDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  let longestStreak = 0;
+  let currentStreak = 0;
 
-    if (diffDays === 1) {
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const cals = dateToCals.get(key) || 0;
+
+    if (cals >= MIN_LOGGING_THRESHOLD && cals <= calorieGoal) {
       currentStreak++;
     } else {
       longestStreak = Math.max(longestStreak, currentStreak);
-      currentStreak = 1;
+      currentStreak = 0;
     }
   }
-
+  
   longestStreak = Math.max(longestStreak, currentStreak);
   return longestStreak;
 }
 
 interface DayStatus {
   date: Date;
-  hasMeal: boolean;
+  status: 'met' | 'exceeded' | 'insufficient' | 'none' | 'future';
   isToday: boolean;
-  isFuture: boolean;
 }
 
 interface WeekData {
@@ -118,13 +132,13 @@ interface WeekData {
   startDate: Date;
   endDate: Date;
   days: DayStatus[];
-  loggedCount: number;
+  metCount: number;
   isCurrentWeek: boolean;
   score: 'perfect' | 'good' | 'low';
   yearLabel?: string;
 }
 
-function getWeeks(meals: any[], count: number): WeekData[] {
+function getWeeks(meals: any[], count: number, calorieGoal: number): WeekData[] {
   const weeks: WeekData[] = [];
   const now = new Date();
   
@@ -144,7 +158,7 @@ function getWeeks(meals: any[], count: number): WeekData[] {
     end.setHours(23, 59, 59, 999);
 
     const days: DayStatus[] = [];
-    let loggedCount = 0;
+    let metCount = 0;
 
     for (let j = 0; j < 7; j++) {
       const d = new Date(start);
@@ -161,8 +175,6 @@ function getWeeks(meals: any[], count: number): WeekData[] {
         })
         .reduce((sum, m) => sum + m.nutritionInfo.calories, 0);
 
-      const hasMeal = dayCalories >= MIN_LOGGING_THRESHOLD;
-
       const isToday =
         d.getDate() === now.getDate() &&
         d.getMonth() === now.getMonth() &&
@@ -170,21 +182,34 @@ function getWeeks(meals: any[], count: number): WeekData[] {
       
       const isFuture = d > now;
 
-      if (hasMeal) loggedCount++;
+      let status: 'met' | 'exceeded' | 'insufficient' | 'none' | 'future' = 'none';
 
-      days.push({ date: d, hasMeal, isToday, isFuture });
+      if (isFuture) {
+        status = 'future';
+      } else if (dayCalories === 0) {
+        status = 'none';
+      } else if (dayCalories < MIN_LOGGING_THRESHOLD) {
+        status = 'insufficient';
+      } else if (dayCalories <= calorieGoal) {
+        status = 'met';
+        metCount++;
+      } else {
+        status = 'exceeded';
+      }
+
+      days.push({ date: d, status, isToday });
     }
 
     let score: 'perfect' | 'good' | 'low' = 'low';
-    if (loggedCount === 7) score = 'perfect';
-    else if (loggedCount >= 4) score = 'good';
+    if (metCount === 7) score = 'perfect';
+    else if (metCount >= 4) score = 'good';
 
     weeks.push({
       id: start.toISOString(),
       startDate: start,
       endDate: end,
       days,
-      loggedCount,
+      metCount,
       isCurrentWeek: i === 0,
       score,
     });
@@ -220,7 +245,6 @@ const WeekNode = ({
   isDark: boolean;
   index: number;
 }) => {
-  const isLeft = index % 2 === 0;
   const bgColor = isDark ? "#333" : "#fff";
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
@@ -231,11 +255,11 @@ const WeekNode = ({
   let iconColor = secondaryText;
 
   if (week.score === 'perfect') {
-    nodeColor = Colors.secondary.carbs; // Orange/Gold-ish
+    nodeColor = Colors.primary; // Blue/Green
     iconName = "trophy";
     iconColor = "#fff";
   } else if (week.score === 'good') {
-    nodeColor = Colors.primary; // Blue
+    nodeColor = Colors.secondary.protein; // Green
     iconName = "star";
     iconColor = "#fff";
   } else {
@@ -274,7 +298,7 @@ const WeekNode = ({
               alignSelf: 'center',
             },
             week.score === 'perfect' && {
-              shadowColor: Colors.secondary.carbs,
+              shadowColor: Colors.primary,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 8,
@@ -293,7 +317,7 @@ const WeekNode = ({
                 {week.isCurrentWeek ? "Current Week" : dateRange}
               </ThemedText>
               <ThemedText style={[styles.nodeSubtitle, { color: secondaryText }]}>
-                {week.loggedCount}/7 Days
+                {week.metCount}/7 Days Met
               </ThemedText>
             </View>
             <Ionicons 
@@ -309,25 +333,55 @@ const WeekNode = ({
               style={styles.expandedContent}
             >
               <View style={styles.daysRow}>
-                {week.days.map((day, i) => (
-                  <View key={i} style={styles.dayColumn}>
-                    <ThemedText style={[styles.dayName, { color: secondaryText }]}>
-                      {day.date.toLocaleDateString("en-US", { weekday: "narrow" }).charAt(0)}
-                    </ThemedText>
-                    <View
-                      style={[
-                        styles.dayStatusCircle,
-                        day.hasMeal && { backgroundColor: Colors.secondary.carbs },
-                        !day.hasMeal && day.isToday && { borderWidth: 2, borderColor: Colors.secondary.carbs },
-                        !day.hasMeal && !day.isToday && { backgroundColor: isDark ? "#444" : "#f0f0f0" },
-                      ]}
-                    >
-                      {day.hasMeal && (
-                        <Ionicons name="flame" size={12} color="#fff" />
-                      )}
+                {week.days.map((day, i) => {
+                  let dayColor = isDark ? "#444" : "#f0f0f0";
+                  let dayIcon = null;
+                  let dayIconColor = "#fff";
+
+                  if (day.status === 'met') {
+                    dayColor = Colors.primary;
+                    dayIcon = "checkmark";
+                  } else if (day.status === 'exceeded') {
+                    dayColor = Colors.secondary.fat;
+                    dayIcon = "alert";
+                  }
+                  // Insufficient and None are treated as "No Logs" (Grey)
+
+                  return (
+                    <View key={i} style={styles.dayColumn}>
+                      <ThemedText style={[styles.dayName, { color: secondaryText }]}>
+                        {day.date.toLocaleDateString("en-US", { weekday: "narrow" }).charAt(0)}
+                      </ThemedText>
+                      <View
+                        style={[
+                          styles.dayStatusCircle,
+                          { backgroundColor: dayColor },
+                          day.isToday && (day.status === 'none' || day.status === 'insufficient') && { borderWidth: 2, borderColor: Colors.primary, backgroundColor: 'transparent' },
+                        ]}
+                      >
+                        {dayIcon && (
+                          <Ionicons name={dayIcon as any} size={12} color={dayIconColor} />
+                        )}
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
+              </View>
+              
+              {/* Legend for expanded view */}
+              <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                  <ThemedText style={styles.legendText}>Met</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Colors.secondary.fat }]} />
+                  <ThemedText style={styles.legendText}>Over</ThemedText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: isDark ? "#444" : "#f0f0f0" }]} />
+                  <ThemedText style={styles.legendText}>No Logs</ThemedText>
+                </View>
               </View>
             </Animated.View>
           )}
@@ -337,31 +391,40 @@ const WeekNode = ({
   );
 };
 
-export default function StreaksScreen() {
+export default function GoalsMetScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { meals } = useMeals();
+  const { goals } = useUser();
+  const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const currentStreak = useMemo(() => calculateStreak(meals), [meals]);
-  const longestStreak = useMemo(
-    () => calculateLongestStreakOverall(meals),
-    [meals],
-  );
-  const totalDaysLogged = useMemo(() => {
-    const uniqueDays = new Set(
-      meals.map((m) => {
+  const currentStreak = useMemo(() => calculateGoalStreak(meals, calorieGoal), [meals, calorieGoal]);
+  const bestStreak = useMemo(() => calculateBestGoalStreak(meals, calorieGoal), [meals, calorieGoal]);
+  
+  const totalDaysMet = useMemo(() => {
+    const uniqueDays = new Set<string>();
+    const dateToCals = new Map<string, number>();
+    
+    meals.forEach(m => {
         const d = new Date(m.timestamp * MS_TO_S);
-        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      }),
-    );
-    return uniqueDays.size;
-  }, [meals]);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        dateToCals.set(key, (dateToCals.get(key) || 0) + m.nutritionInfo.calories);
+    });
+
+    let count = 0;
+    dateToCals.forEach((cals) => {
+        if (cals >= MIN_LOGGING_THRESHOLD && cals <= calorieGoal) {
+            count++;
+        }
+    });
+    return count;
+  }, [meals, calorieGoal]);
 
   const [weeksCount, setWeeksCount] = useState(12);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const weeks = useMemo(() => getWeeks(meals, weeksCount), [meals, weeksCount]);
+  const weeks = useMemo(() => getWeeks(meals, weeksCount, calorieGoal), [meals, weeksCount, calorieGoal]);
   const [expandedWeekId, setExpandedWeekId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -378,7 +441,6 @@ export default function StreaksScreen() {
   const handleLoadMore = () => {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
-    // Simulate network delay or just wait a bit for UX
     setTimeout(() => {
       setWeeksCount(prev => prev + 12);
       setIsLoadingMore(false);
@@ -389,23 +451,24 @@ export default function StreaksScreen() {
 
   const renderHeader = () => (
     <View>
+      <Stack.Screen options={{ headerShown: false }} />
       {/* Hero Section */}
       <View style={styles.heroSection}>
         <LinearGradient
-          colors={[Colors.secondary.carbs, Colors.secondary.fat]}
+          colors={[Colors.primary, Colors.secondary.protein]}
           style={styles.streakRing}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
           <View style={[styles.streakRingInner, { backgroundColor: bgColor }]}>
             <Ionicons
-              name="flame"
+              name="trophy"
               size={40}
-              color={Colors.secondary.carbs}
+              color={Colors.primary}
               style={{ marginBottom: 2 }}
             />
             <ThemedText style={styles.streakCount}>{currentStreak}</ThemedText>
-            <ThemedText style={styles.streakLabel}>Day Streak</ThemedText>
+            <ThemedText style={styles.streakLabel}>Goal Streak</ThemedText>
           </View>
         </LinearGradient>
       </View>
@@ -413,12 +476,12 @@ export default function StreaksScreen() {
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
         <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
-          <ThemedText style={styles.statValue}>{longestStreak}</ThemedText>
-          <ThemedText style={styles.statLabel}>Longest Streak</ThemedText>
+          <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
+          <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
         </View>
         <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
-          <ThemedText style={styles.statValue}>{totalDaysLogged}</ThemedText>
-          <ThemedText style={styles.statLabel}>Total Days Logging</ThemedText>
+          <ThemedText style={styles.statValue}>{totalDaysMet}</ThemedText>
+          <ThemedText style={styles.statLabel}>Total Days Met</ThemedText>
         </View>
       </View>
     </View>
@@ -446,7 +509,7 @@ export default function StreaksScreen() {
             Back
           </ThemedText>
         </TouchableOpacity>
-        <ThemedText style={styles.headerTitle}>Your Journey</ThemedText>
+        <ThemedText style={styles.headerTitle}>Calorie Goals</ThemedText>
       </BlurView>
 
       <View style={styles.listContainer}>
@@ -519,7 +582,7 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#FF9500",
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -668,6 +731,26 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.md,
     fontSize: 14,
     fontWeight: '600',
+    color: '#8E8E93',
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: Spacing.md,
+    gap: Spacing.lg,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 10,
     color: '#8E8E93',
   },
 });
