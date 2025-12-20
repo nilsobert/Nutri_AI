@@ -44,6 +44,10 @@ function RootLayoutNav() {
           options={{ headerShown: false, presentation: "card" }}
         />
         <Stack.Screen
+          name="screens/streaks-screen"
+          options={{ headerShown: false, presentation: "card" }}
+        />
+        <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
