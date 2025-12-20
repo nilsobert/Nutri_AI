@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 // Colors
 export const Colors = {
   primary: "#3498DB", // replaced green with blue
+  danger: "#E74C3C", // Red color for bad meals
   secondary: {
     protein: "#2ECC71",
     carbs: "#F39C12",

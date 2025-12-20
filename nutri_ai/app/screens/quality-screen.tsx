@@ -19,6 +19,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { MS_TO_S } from "@/constants/values";
 import { Colors, Spacing, BorderRadius, Shadows, Typography } from "@/constants/theme";
+import { MealEntry } from "@/types/mealEntry";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CHART_HEIGHT = 200;
@@ -61,22 +62,24 @@ export default function QualityScreen() {
   const isDark = colorScheme === "dark";
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
-  const cardBg = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
+  const cardBg = isDark ? "#333" : "#fff";
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
 
   // --- Data Processing ---
 
-  const { avgQuality, totalMeals, highQualityMeals, chartData } = useMemo(() => {
+  const { avgQuality, totalMeals, top3Meals, worst3Meals, chartData } = useMemo(() => {
     if (meals.length === 0) {
-      return { avgQuality: 0, totalMeals: 0, highQualityMeals: [], chartData: [] };
+      return { avgQuality: 0, totalMeals: 0, top3Meals: [], worst3Meals: [], chartData: [] };
     }
 
     const totalQ = meals.reduce((sum, m) => sum + m.mealQuality.mealQualityScore, 0);
     const avg = totalQ / meals.length;
 
     // Top 10 meals by quality
-    const sortedMeals = [...meals].sort((a, b) => b.mealQuality.mealQualityScore - a.mealQuality.mealQualityScore).slice(0, 10);
+    const sortedMeals = [...meals].sort((a, b) => b.mealQuality.mealQualityScore - a.mealQuality.mealQualityScore);
+    const top3Meals = sortedMeals.slice(0, 3);
+    const worst3Meals = sortedMeals.slice(-3).reverse(); // Reverse to show worst first
 
     // Chart Data (Last 30 days)
     const now = new Date();
@@ -103,7 +106,8 @@ export default function QualityScreen() {
     return {
       avgQuality: avg,
       totalMeals: meals.length,
-      highQualityMeals: sortedMeals,
+      top3Meals: top3Meals,
+      worst3Meals: worst3Meals,
       chartData: data
     };
   }, [meals]);
@@ -236,7 +240,7 @@ export default function QualityScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             >
-              <View style={[styles.scoreRingInner, { backgroundColor: bgColor }]}>
+              <View style={[styles.scoreRingInner, { backgroundColor: cardBg }]}>
                 <ThemedText style={styles.scoreValue}>{avgQuality.toFixed(1)}</ThemedText>
                 <ThemedText style={styles.scoreLabel}>/ 10</ThemedText>
               </View>
@@ -252,11 +256,11 @@ export default function QualityScreen() {
         </View>
 
         {/* Top Meals Section */}
-        <View style={[styles.sectionHeader]}>
-            <ThemedText style={[styles.sectionTitle, { color: textColor }]}>Top Rated Meals</ThemedText>
+        <View style={[styles.card, styles.sectionHeader]}>
+            <ThemedText style={[styles.cardTitle, { color: textColor }]}>Top Rated Meals</ThemedText>
         </View>
 
-        {highQualityMeals.map((meal, index) => (
+        {top3Meals.map((meal: MealEntry, index: number) => (
             <TouchableOpacity 
                 key={meal.id} 
                 style={[styles.mealCard, { backgroundColor: cardBg }]}
@@ -274,7 +278,38 @@ export default function QualityScreen() {
                     </ThemedText>
                 </View>
                 <View style={styles.mealScore}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
+                    <Ionicons name="star" size={16} color={Colors.primary} />
+                    <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
+                        {meal.mealQuality.mealQualityScore.toFixed(1)}
+                    </ThemedText>
+                </View>
+            </TouchableOpacity>
+        ))}
+
+        {/* Worst Meals Section */}
+        <View style={[styles.card, styles.sectionHeader, { marginTop: Spacing.xl }]}>
+            <ThemedText style={[styles.cardTitle, { color: textColor }]}>Needs Improvement</ThemedText>
+        </View>
+
+        {worst3Meals.map((meal: MealEntry, index: number) => (
+            <TouchableOpacity 
+                key={meal.id} 
+                style={[styles.mealCard, { backgroundColor: cardBg }]}
+                onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
+            >
+                <View style={styles.mealRank}>
+                    <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
+                </View>
+                <View style={styles.mealInfo}>
+                    <ThemedText style={[styles.mealName, { color: textColor }]}>
+                        {meal.name || "Unknown Meal"}
+                    </ThemedText>
+                    <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
+                        {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
+                    </ThemedText>
+                </View>
+                <View style={styles.mealScore}>
+                    <Ionicons name="star" size={16} color={Colors.danger} />
                     <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
                         {meal.mealQuality.mealQualityScore.toFixed(1)}
                     </ThemedText>
