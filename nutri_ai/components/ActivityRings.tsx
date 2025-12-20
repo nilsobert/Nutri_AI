@@ -1,6 +1,14 @@
 import React, { useEffect } from "react";
-import { View, StyleSheet } from "react-native";
-import Svg, { Circle, G } from "react-native-svg";
+import { View, StyleSheet, useColorScheme } from "react-native";
+import Svg, {
+  Circle,
+  G,
+  Defs,
+  LinearGradient,
+  Stop,
+  Mask,
+  Rect,
+} from "react-native-svg";
 import Animated, {
   useAnimatedProps,
   useSharedValue,
@@ -46,6 +54,31 @@ const darkenColor = (color: string, amount: number = 0.3) => {
   );
 };
 
+const lightenColor = (color: string, amount: number = 0.3) => {
+  let c = color.replace("#", "");
+  if (c.length === 3)
+    c = c
+      .split("")
+      .map((char) => char + char)
+      .join("");
+  const num = parseInt(c, 16);
+  let r = (num >> 16) + Math.round(255 * amount);
+  let g = ((num >> 8) & 0x00ff) + Math.round(255 * amount);
+  let b = (num & 0x0000ff) + Math.round(255 * amount);
+
+  return (
+    "#" +
+    (
+      0x1000000 +
+      (r > 255 ? 255 : r) * 0x10000 +
+      (g > 255 ? 255 : g) * 0x100 +
+      (b > 255 ? 255 : b)
+    )
+      .toString(16)
+      .slice(1)
+  );
+};
+
 const Ring = ({
   radius,
   stroke,
@@ -56,7 +89,10 @@ const Ring = ({
 }: RingProps) => {
   const circumference = 2 * Math.PI * radius;
   const fill = useSharedValue(0);
-  const darkerStroke = darkenColor(stroke);
+  const colorScheme = useColorScheme();
+  const baseStroke =
+    colorScheme === "dark" ? darkenColor(stroke) : lightenColor(stroke);
+  const dotColor = colorScheme === "dark" ? "black" : "white";
 
   useEffect(() => {
     fill.value = withDelay(
@@ -68,25 +104,23 @@ const Ring = ({
     );
   }, [progress, delay]);
 
-  // Props for the bright overlay ring (current loop)
-  const animatedProps = useAnimatedProps(() => {
+  // Props for the first loop (no mask)
+  const firstLoopProps = useAnimatedProps(() => {
     const val = fill.value;
-    // If overlapping, we show the remainder. If not, we show full progress.
-    // When val > 1, we want to show (val % 1).
-    // But we need to handle the transition carefully.
-    // If val = 1.5, we want 0.5 of the circle to be bright (on top of dark).
-    const effectiveProgress = val > 1 ? val % 1 : val;
-    // Handle exact integer case where % 1 is 0 but we want full circle if it's exactly 1.0 (though >1 handles that)
-    // If val is exactly 2.0, effective is 0. We want full.
-    // Actually, if val > 1, the base is dark full. The overlay is bright partial.
-    // If val = 2.0, overlay is 0 (invisible) or full?
-    // Visually, 2.0 should look like a full bright circle (on top of dark).
-    // So if val % 1 === 0 && val > 0, effective = 1.
+    return {
+      strokeDashoffset: circumference * (1 - (val >= 1 ? 1 : val)),
+      opacity: val > 1 ? 0 : 1,
+    };
+  });
 
+  // Props for subsequent loops (with mask)
+  const laterLoopsProps = useAnimatedProps(() => {
+    const val = fill.value;
+    const effectiveProgress = val > 1 ? val % 1 : 0;
     const displayProgress = val > 1 && val % 1 === 0 ? 1 : effectiveProgress;
-
     return {
       strokeDashoffset: circumference * (1 - displayProgress),
+      opacity: val > 1 ? 1 : 0,
     };
   });
 
@@ -97,8 +131,44 @@ const Ring = ({
     };
   });
 
+  const dotProps = useAnimatedProps(() => {
+    const val = fill.value;
+    const effectiveProgress = val > 1 ? val % 1 : val;
+    const displayProgress = val > 1 && val % 1 === 0 ? 1 : effectiveProgress;
+
+    const angle = displayProgress * 2 * Math.PI;
+    return {
+      cx: center + radius * Math.cos(angle),
+      cy: center + radius * Math.sin(angle),
+      opacity: val > 0 ? 0.5 : 0,
+    };
+  });
+
   return (
     <G rotation="-90" origin={`${center}, ${center}`}>
+      <Defs>
+        <LinearGradient id={`grad-${radius}`} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="black" stopOpacity="1" />
+          <Stop offset="1" stopColor="black" stopOpacity="0" />
+        </LinearGradient>
+        <Mask id={`mask-${radius}`}>
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke="white"
+            strokeWidth={strokeWidth}
+            fill="transparent"
+          />
+          <Rect
+            x={center + radius - strokeWidth}
+            y={center - strokeWidth / 2}
+            width={strokeWidth * 2}
+            height={strokeWidth * 2}
+            fill={`url(#grad-${radius})`}
+          />
+        </Mask>
+      </Defs>
       {/* 1. Background Track */}
       <Circle
         cx={center}
@@ -115,13 +185,13 @@ const Ring = ({
         cx={center}
         cy={center}
         r={radius}
-        stroke={darkerStroke}
+        stroke={baseStroke}
         strokeWidth={strokeWidth}
         fill="transparent"
         animatedProps={darkBaseProps}
       />
 
-      {/* 3. Bright Overlay (Current Loop) */}
+      {/* 3a. Bright Overlay (First Loop - No Mask) */}
       <AnimatedCircle
         cx={center}
         cy={center}
@@ -129,9 +199,30 @@ const Ring = ({
         stroke={stroke}
         strokeWidth={strokeWidth}
         strokeDasharray={[circumference]}
-        animatedProps={animatedProps}
+        animatedProps={firstLoopProps}
         strokeLinecap="round"
         fill="transparent"
+      />
+
+      {/* 3b. Bright Overlay (Later Loops - With Mask) */}
+      <AnimatedCircle
+        cx={center}
+        cy={center}
+        r={radius}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
+        strokeDasharray={[circumference]}
+        animatedProps={laterLoopsProps}
+        strokeLinecap="round"
+        fill="transparent"
+        mask={`url(#mask-${radius})`}
+      />
+
+      {/* 4. Tip Highlight Dot */}
+      <AnimatedCircle
+        r={strokeWidth / 2.5}
+        fill={dotColor}
+        animatedProps={dotProps}
       />
     </G>
   );

@@ -38,6 +38,9 @@ export const Colors = {
   grey: {
     light: "#f0f0f0",
   },
+  error: "#FF3B30",
+  warning: "#FF9500",
+  success: "#34C759",
 };
 
 // Typography
@@ -279,9 +282,9 @@ export const TextStyles = {
     lineHeight: Typography.sizes["3xl"] * Typography.lineHeights.tight,
   },
   ringLabel: {
-    fontSize: Typography.sizes.sm,
+    fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.medium,
-    lineHeight: Typography.sizes.sm * Typography.lineHeights.normal,
+    lineHeight: Typography.sizes.xs * Typography.lineHeights.normal,
   },
   // Legend
   legendLabel: {

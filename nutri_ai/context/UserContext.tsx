@@ -84,6 +84,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         console.log("[UserContext] Profile saved locally");
       } else {
         console.error(`[UserContext] Failed to fetch profile: ${profileResponse.status}`);
+        if (profileResponse.status === 401) {
+          console.log("[UserContext] Token invalid or expired, logging out...");
+          await logout();
+          return;
+        }
       }
 
       console.log("[UserContext] Fetching profile image from server...");
@@ -105,6 +110,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         reader.readAsDataURL(blob);
       } else {
         console.log(`[UserContext] Profile image not found (${imageResponse.status})`);
+        if (imageResponse.status === 401) {
+          console.log("[UserContext] Token invalid or expired during image fetch, logging out...");
+          await logout();
+          return;
+        }
       }
     } catch (error) {
       console.error("[UserContext] Error fetching user data:", error);

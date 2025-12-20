@@ -1,10 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
-  LayoutAnimation,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,6 +13,7 @@ import {
   Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  FlatList,
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -170,24 +169,8 @@ const DayItem: React.FC<DayItemProps> = ({
   const isToday = isSameDay(date, new Date());
 
   const animatedStyle = useAnimatedStyle(() => {
-    // snapOffset is the scroll position where this item is the first visible one
-    // When scrollX == snapOffset, the item is at dynamicPadding
-    // We want to calculate the item's visual position relative to the viewport left edge
-    // itemVisualX = dynamicPadding + (snapOffset - scrollX.value)
-    // Wait, snapOffset is the offset of the item start.
-    // itemAbsoluteX = snapOffset + dynamicPadding? No.
-    // snapOffsets in parent are calculated as `currentX`.
-    // `currentX` starts at 0.
-    // So `snapOffset` is the position of the item relative to content start (ignoring padding).
-    // But content has paddingLeft = dynamicPadding.
-    // So absolute position of item is `snapOffset + dynamicPadding`.
-    // Visual position `visualX = (snapOffset + dynamicPadding) - scrollX.value`.
-
     const visualX = snapOffset + dynamicPadding - scrollX.value;
 
-    // Fade out items that are to the left of the centered list start
-    // dynamicPadding: start of the list
-    // dynamicPadding - 20: fully transparent
     const opacity = interpolate(
       visualX,
       [dynamicPadding - 20, dynamicPadding],
@@ -266,10 +249,6 @@ const MealCard: React.FC<MealCardProps> = ({
   const scrollX = useSharedValue(0);
   const { width: screenWidth } = useWindowDimensions();
 
-  // Calculate content width for the slider
-  // Screen padding: Spacing.xl (20) * 2 = 40
-  // Card padding: Spacing.lg (16) * 2 = 32
-  // Total deduction: 72
   const contentWidth = screenWidth - Spacing.xl * 2 - Spacing.lg * 2;
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -309,6 +288,8 @@ const MealCard: React.FC<MealCardProps> = ({
         return "fast-food-outline";
     }
   };
+
+  const mealWithImage = meals.find((m) => m.image);
 
   const cardBg = isDark
     ? Colors.cardBackground.dark
@@ -434,13 +415,22 @@ const MealCard: React.FC<MealCardProps> = ({
           style={[
             styles.mealIcon,
             { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
+            mealWithImage && { overflow: "hidden" },
           ]}
         >
-          <Ionicons
-            name={getMealIcon(category) as any}
-            size={24}
-            color={Colors.primary}
-          />
+          {mealWithImage ? (
+            <MealImage
+              uri={mealWithImage.image}
+              style={styles.mealIconImage}
+              showPlaceholder={false}
+            />
+          ) : (
+            <Ionicons
+              name={getMealIcon(category) as any}
+              size={24}
+              color={Colors.primary}
+            />
+          )}
         </View>
 
         <View style={styles.mealHeaderInfo}>
@@ -553,6 +543,216 @@ const MealCard: React.FC<MealCardProps> = ({
   );
 };
 
+interface DayContentProps {
+  date: Date;
+  isDark: boolean;
+  insetsTop: number;
+  screenWidth: number;
+  onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+}
+
+const DayContent = React.memo(function DayContent({
+  date,
+  isDark,
+  insetsTop,
+  screenWidth,
+  onScroll,
+}: DayContentProps) {
+  const { meals: allMeals } = useMeals();
+  const { goals } = useUser();
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
+  };
+
+  const meals = useMemo(() => {
+    return allMeals.filter((meal) => {
+      const mealDate = new Date(meal.timestamp * 1000);
+      return isSameDay(mealDate, date);
+    });
+  }, [allMeals, date]);
+
+  const groupedMeals = useMemo(() => {
+    const groups = new Map<MealCategory, MealEntry[]>();
+    meals.forEach((meal) => {
+      const cat = meal.category;
+      if (!groups.has(cat)) {
+        groups.set(cat, []);
+      }
+      groups.get(cat)?.push(meal);
+    });
+    return groups;
+  }, [meals]);
+
+  const categoryOrder = [
+    MealCategory.Breakfast,
+    MealCategory.Lunch,
+    MealCategory.Dinner,
+    MealCategory.Snack,
+    MealCategory.Other,
+  ];
+
+  const totalCalories = meals.reduce(
+    (sum, meal) => sum + meal.nutritionInfo.calories,
+    0,
+  );
+  const totalCarbs = meals.reduce((sum, meal) => sum + meal.nutritionInfo.carbs, 0);
+  const totalProtein = meals.reduce(
+    (sum, meal) => sum + meal.nutritionInfo.protein,
+    0,
+  );
+  const totalFat = meals.reduce((sum, meal) => sum + meal.nutritionInfo.fat, 0);
+
+  const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
+  const carbsGoal = goals?.carbs || 300;
+  const proteinGoal = goals?.protein || 150;
+  const fatGoal = goals?.fat || 80;
+
+  const remainingCalories = calorieGoal - totalCalories;
+
+  const cardBg = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
+  const textColor = isDark ? Colors.text.dark : Colors.text.light;
+  const secondaryText = isDark ? "#999" : "#666";
+
+  return (
+    <Animated.ScrollView
+      onScroll={onScroll}
+      scrollEventThrottle={16}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={[
+        styles.scrollContent,
+        { paddingTop: 160 + insetsTop, width: screenWidth },
+      ]}
+    >
+      <View style={[styles.summaryCard, { backgroundColor: cardBg }]}>
+        <Text style={[styles.summaryTitle, { color: textColor }]}>Daily Summary</Text>
+        <View style={styles.summaryContent}>
+          <View style={styles.ringsContainer}>
+            <ActivityRings
+              carbs={totalCarbs}
+              carbsGoal={carbsGoal}
+              protein={totalProtein}
+              proteinGoal={proteinGoal}
+              fat={totalFat}
+              fatGoal={fatGoal}
+              size={180}
+            />
+            <View style={styles.ringsOverlay}>
+              <Text
+                style={[
+                  styles.ringsOverlayValue,
+                  { color: remainingCalories < 0 ? Colors.error : textColor },
+                ]}
+              >
+                {Math.abs(remainingCalories)}
+              </Text>
+              <Text
+                style={[
+                  styles.ringsOverlayLabel,
+                  { color: remainingCalories < 0 ? Colors.error : secondaryText },
+                ]}
+              >
+                {remainingCalories < 0 ? "kcal over" : "kcal left"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: Colors.primary }]}>Calories</Text>
+              <View style={styles.legendValues}>
+                <Text
+                  style={[
+                    styles.legendValue,
+                    { color: totalCalories > calorieGoal ? Colors.error : textColor },
+                  ]}
+                >
+                  {totalCalories}
+                </Text>
+                <Text style={[styles.legendGoal, { color: secondaryText }]}>/ {calorieGoal} kcal</Text>
+              </View>
+            </View>
+
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: Colors.secondary.carbs }]}>Carbs</Text>
+              <View style={styles.legendValues}>
+                <Text
+                  style={[
+                    styles.legendValue,
+                    { color: totalCarbs > carbsGoal ? Colors.error : textColor },
+                  ]}
+                >
+                  {totalCarbs}g
+                </Text>
+                <Text style={[styles.legendGoal, { color: secondaryText }]}>/ {carbsGoal}g</Text>
+              </View>
+            </View>
+
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: Colors.secondary.protein }]}>Protein</Text>
+              <View style={styles.legendValues}>
+                <Text
+                  style={[
+                    styles.legendValue,
+                    { color: totalProtein > proteinGoal ? Colors.error : textColor },
+                  ]}
+                >
+                  {totalProtein}g
+                </Text>
+                <Text style={[styles.legendGoal, { color: secondaryText }]}>/ {proteinGoal}g</Text>
+              </View>
+            </View>
+
+            <View style={styles.legendItem}>
+              <Text style={[styles.legendLabel, { color: Colors.secondary.fat }]}>Fat</Text>
+              <View style={styles.legendValues}>
+                <Text
+                  style={[
+                    styles.legendValue,
+                    { color: totalFat > fatGoal ? Colors.error : textColor },
+                  ]}
+                >
+                  {totalFat}g
+                </Text>
+                <Text style={[styles.legendGoal, { color: secondaryText }]}>/ {fatGoal}g</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.mealsSection}>
+        <Text style={[styles.sectionTitle, { color: textColor }]}>
+          {isSameDay(date, new Date()) ? "Today's Meals" : "Meals"}
+        </Text>
+        {meals.length > 0 ? (
+          categoryOrder.map((category) => {
+            const categoryMeals = groupedMeals.get(category);
+            if (!categoryMeals || categoryMeals.length === 0) return null;
+            return (
+              <MealCard
+                key={category}
+                category={category}
+                meals={categoryMeals}
+                isDark={isDark}
+                currentDate={date}
+              />
+            );
+          })
+        ) : (
+          <Text style={{ color: secondaryText, textAlign: "center" }}>
+            No meals recorded for this day
+          </Text>
+        )}
+      </View>
+    </Animated.ScrollView>
+  );
+});
+
 const IOSStyleHomeScreen: React.FC = () => {
   const { isServerReachable } = useNetwork();
   const router = useRouter();
@@ -561,9 +761,9 @@ const IOSStyleHomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const scrollViewRef = React.useRef<Animated.ScrollView>(null);
-  const { profileImage, goals } = useUser();
-  const { meals: allMeals } = useMeals();
+  const dateStripRef = useRef<Animated.ScrollView>(null);
+  const pagerRef = useRef<FlatList>(null);
+  const { profileImage } = useUser();
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
@@ -580,24 +780,9 @@ const IOSStyleHomeScreen: React.FC = () => {
   });
 
   const dateStripAnimatedStyle = useAnimatedStyle(() => {
-    const height = interpolate(
-      scrollY.value,
-      [0, 100],
-      [60, 0],
-      Extrapolation.CLAMP,
-    );
-    const opacity = interpolate(
-      scrollY.value,
-      [0, 80],
-      [1, 0],
-      Extrapolation.CLAMP,
-    );
-    const translateY = interpolate(
-      scrollY.value,
-      [0, 100],
-      [0, -20],
-      Extrapolation.CLAMP,
-    );
+    const height = interpolate(scrollY.value, [0, 100], [60, 0], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [0, 80], [1, 0], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [0, 100], [0, -20], Extrapolation.CLAMP);
 
     return {
       height,
@@ -607,70 +792,43 @@ const IOSStyleHomeScreen: React.FC = () => {
     };
   });
 
-  // Layout calculations for date strip
   const itemWidth = 32;
   const normalGap = 14;
   const weekGap = 40;
   const itemFullWidth = itemWidth + normalGap;
   const basePadding = Spacing.xl;
 
-  // Calculate dynamic padding to ensure integer number of items are visible
   const availableWidth = screenWidth - basePadding * 2;
-  // Force 7 items to be visible as requested
   const numVisibleItems = 7;
   const totalItemWidth = numVisibleItems * itemFullWidth - normalGap;
   const remainingSpace = availableWidth - totalItemWidth;
-  // Ensure padding doesn't go below basePadding if screen is too small (though 7 items fit on 375px+)
-  const dynamicPadding = Math.max(
-    basePadding,
-    basePadding + remainingSpace / 2,
-  );
+  const dynamicPadding = Math.max(basePadding, basePadding + remainingSpace / 2);
 
-  // Generate 30 days of dates ending with today
-  const days = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i)); // 29 days ago to today
-    return date;
-  });
+  const days = useMemo(() => {
+    return Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      return date;
+    });
+  }, []);
 
-  // Calculate snap offsets and gaps
-  const { snapOffsets, gaps } = React.useMemo(() => {
+  const { snapOffsets, gaps } = useMemo(() => {
     const offsets: number[] = [];
     const gaps: number[] = [];
-    let currentX = 0; // Start at 0 relative to content (padding handled by container style)
+    let currentX = 0;
 
     days.forEach((_, index) => {
-      // Snap to the start of each item
-      // Note: contentContainerStyle adds paddingLeft, so the first item starts at dynamicPadding
-      // But snapToOffsets is relative to scroll offset 0.
-      // If scroll offset is 0, the view starts at dynamicPadding.
-      // We want to snap such that the item is at dynamicPadding?
-      // Yes, if we snap to 0, item 0 is at dynamicPadding.
-      // If we snap to X, the view starts at X.
-      // We want item i to be at dynamicPadding.
-      // Item i position = dynamicPadding + sum(widths + gaps before i).
-      // So we want scrollOffset = sum(widths + gaps before i).
-
       offsets.push(currentX);
-
       const isLast = index === days.length - 1;
-      // Add larger gap every 7 days (counting from end)
-      // Index 29 is last. 29-22=7. So after 22.
       const isWeekBreak = (days.length - 1 - index) % 7 === 0 && !isLast;
       const currentGap = isWeekBreak ? weekGap : normalGap;
-
       gaps.push(currentGap);
       currentX += itemWidth + currentGap;
     });
     return { snapOffsets: offsets, gaps };
-  }, [days, itemWidth, normalGap, weekGap]);
+  }, [days]);
 
-  React.useEffect(() => {
-    // Scroll to end (today) on mount
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: false });
-    }, 100);
-  }, []);
+  const todayIndex = days.length - 1;
 
   const isSameDay = (d1: Date, d2: Date) => {
     return (
@@ -680,221 +838,72 @@ const IOSStyleHomeScreen: React.FC = () => {
     );
   };
 
+  const handleDateChange = useCallback((date: Date) => {
+    setCurrentDate(date);
+    const index = days.findIndex((d) => isSameDay(d, date));
+    if (index !== -1) {
+      pagerRef.current?.scrollToIndex({ index, animated: true });
+      dateStripRef.current?.scrollTo({ x: snapOffsets[index], animated: true });
+    }
+  }, [days, snapOffsets]);
+
   const scrollToToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    scrollViewRef.current?.scrollToEnd({ animated: true });
+    handleDateChange(new Date());
   };
 
-  const meals: MealEntry[] = allMeals.filter((meal) => {
-    const mealDate = new Date(meal.timestamp * 1000);
-    return isSameDay(mealDate, currentDate);
-  });
+  const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+    const newDate = days[index];
+    if (newDate && !isSameDay(newDate, currentDate)) {
+      setCurrentDate(newDate);
+      dateStripRef.current?.scrollTo({ x: snapOffsets[index], animated: true });
+    }
+  };
 
-  // Group meals by category
-  const groupedMeals = React.useMemo(() => {
-    const groups = new Map<MealCategory, MealEntry[]>();
-    meals.forEach((meal) => {
-      const cat = meal.category;
-      if (!groups.has(cat)) {
-        groups.set(cat, []);
-      }
-      groups.get(cat)?.push(meal);
-    });
-    return groups;
-  }, [meals]);
 
-  // Order of categories
-  const categoryOrder = [
-    MealCategory.Breakfast,
-    MealCategory.Lunch,
-    MealCategory.Dinner,
-    MealCategory.Snack,
-    MealCategory.Other,
-  ];
-
-  const totalCalories = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.calories,
-    0,
-  );
-
-  const totalCarbs = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.carbs,
-    0,
-  );
-
-  const totalProtein = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.protein,
-    0,
-  );
-
-  const totalFat = meals.reduce(
-    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.fat,
-    0,
-  );
-
-  const calorieGoal = goals?.calories || DAILY_CALORIE_GOAL;
-  const carbsGoal = goals?.carbs || 300;
-  const proteinGoal = goals?.protein || 150;
-  const fatGoal = goals?.fat || 80;
-
-  const remainingCalories = calorieGoal - totalCalories;
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
-  const cardBg = isDark
-    ? Colors.cardBackground.dark
-    : Colors.cardBackground.light;
+  const cardBg = isDark ? Colors.cardBackground.dark : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
-      <Animated.ScrollView
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: 160 + insets.top },
-        ]}
-      >
-        {/* Calorie Summary Card */}
-        <View style={[styles.summaryCard, { backgroundColor: cardBg }]}>
-          <Text style={[styles.summaryTitle, { color: textColor }]}>
-            Daily Summary
-          </Text>
+      <FlatList
+        ref={pagerRef}
+        data={days}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        keyExtractor={(_, index) => index.toString()}
+        initialScrollIndex={todayIndex}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        windowSize={3}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        onScrollToIndexFailed={({ index }) => {
+          requestAnimationFrame(() => {
+            pagerRef.current?.scrollToIndex({ index, animated: false });
+          });
+        }}
+        getItemLayout={(_, index) => ({
+          length: screenWidth,
+          offset: screenWidth * index,
+          index,
+        })}
+        renderItem={({ item }) => (
+          <DayContent
+            date={item}
+            isDark={isDark}
+            insetsTop={insets.top}
+            screenWidth={screenWidth}
+            onScroll={scrollHandler}
+          />
+        )}
+      />
 
-          <View style={styles.summaryContent}>
-            {/* Rings Section */}
-            <View style={styles.ringsContainer}>
-              <ActivityRings
-                carbs={totalCarbs}
-                carbsGoal={carbsGoal}
-                protein={totalProtein}
-                proteinGoal={proteinGoal}
-                fat={totalFat}
-                fatGoal={fatGoal}
-                size={180}
-              />
-              <View style={styles.ringsOverlay}>
-                <Text style={[styles.ringsOverlayValue, { color: textColor }]}>
-                  {remainingCalories}
-                </Text>
-                <Text
-                  style={[styles.ringsOverlayLabel, { color: secondaryText }]}
-                >
-                  kcal left
-                </Text>
-              </View>
-            </View>
-
-            {/* Legend Section */}
-            <View style={styles.legendContainer}>
-              {/* Calories */}
-              <View style={styles.legendItem}>
-                <Text style={[styles.legendLabel, { color: Colors.primary }]}>
-                  Calories
-                </Text>
-                <View style={styles.legendValues}>
-                  <Text style={[styles.legendValue, { color: textColor }]}>
-                    {totalCalories}
-                  </Text>
-                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
-                    / {calorieGoal} kcal
-                  </Text>
-                </View>
-              </View>
-
-              {/* Carbs */}
-              <View style={styles.legendItem}>
-                <Text
-                  style={[
-                    styles.legendLabel,
-                    { color: Colors.secondary.carbs },
-                  ]}
-                >
-                  Carbs
-                </Text>
-                <View style={styles.legendValues}>
-                  <Text style={[styles.legendValue, { color: textColor }]}>
-                    {totalCarbs}g
-                  </Text>
-                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
-                    / {carbsGoal}g
-                  </Text>
-                </View>
-              </View>
-
-              {/* Protein */}
-              <View style={styles.legendItem}>
-                <Text
-                  style={[
-                    styles.legendLabel,
-                    { color: Colors.secondary.protein },
-                  ]}
-                >
-                  Protein
-                </Text>
-                <View style={styles.legendValues}>
-                  <Text style={[styles.legendValue, { color: textColor }]}>
-                    {totalProtein}g
-                  </Text>
-                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
-                    / {proteinGoal}g
-                  </Text>
-                </View>
-              </View>
-
-              {/* Fat */}
-              <View style={styles.legendItem}>
-                <Text
-                  style={[styles.legendLabel, { color: Colors.secondary.fat }]}
-                >
-                  Fat
-                </Text>
-                <View style={styles.legendValues}>
-                  <Text style={[styles.legendValue, { color: textColor }]}>
-                    {totalFat}g
-                  </Text>
-                  <Text style={[styles.legendGoal, { color: secondaryText }]}>
-                    / {fatGoal}g
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Meals Section */}
-        <View style={styles.mealsSection}>
-          <Text style={[styles.sectionTitle, { color: textColor }]}>
-            {isSameDay(currentDate, new Date()) ? "Today's Meals" : "Meals"}
-          </Text>
-          {meals.length > 0 ? (
-            categoryOrder.map((category) => {
-              const categoryMeals = groupedMeals.get(category);
-              if (!categoryMeals || categoryMeals.length === 0) return null;
-              return (
-                <MealCard
-                  key={category}
-                  category={category}
-                  meals={categoryMeals}
-                  isDark={isDark}
-                  currentDate={currentDate}
-                />
-              );
-            })
-          ) : (
-            <Text style={{ color: secondaryText, textAlign: "center" }}>
-              No meals recorded for this day
-            </Text>
-          )}
-        </View>
-      </Animated.ScrollView>
-
-      {/* Blur Header */}
       <BlurView
         intensity={80}
         tint={isDark ? "dark" : "light"}
@@ -929,32 +938,21 @@ const IOSStyleHomeScreen: React.FC = () => {
                 style={[styles.todayButton, { backgroundColor: cardBg }]}
                 onPress={scrollToToday}
               >
-                <Text
-                  style={[styles.todayButtonText, { color: Colors.primary }]}
-                >
-                  Today
-                </Text>
+                <Text style={[styles.todayButtonText, { color: Colors.primary }]}>Today</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: cardBg }]}
               onPress={() => router.push("/screens/calendar-screen")}
             >
-              <Ionicons
-                name="calendar-outline"
-                size={20}
-                color={Colors.primary}
-              />
+              <Ionicons name="calendar-outline" size={20} color={Colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.iconButton, { backgroundColor: cardBg }]}
               onPress={() => router.push("/profile")}
             >
               {profileImage ? (
-                <Image
-                  source={{ uri: profileImage }}
-                  style={styles.profileImage}
-                />
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
               ) : (
                 <Ionicons name="person" size={20} color={Colors.primary} />
               )}
@@ -968,12 +966,9 @@ const IOSStyleHomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Date Strip */}
-        <Animated.View
-          style={[styles.dateStripContainer, dateStripAnimatedStyle]}
-        >
+        <Animated.View style={[styles.dateStripContainer, dateStripAnimatedStyle]}>
           <Animated.ScrollView
-            ref={scrollViewRef}
+            ref={dateStripRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             onScroll={dateScrollHandler}
@@ -992,7 +987,7 @@ const IOSStyleHomeScreen: React.FC = () => {
                 date={day}
                 index={index}
                 currentDate={currentDate}
-                setCurrentDate={setCurrentDate}
+                setCurrentDate={handleDateChange}
                 gap={gaps[index]}
                 isLast={index === days.length - 1}
                 isDark={isDark}
@@ -1007,7 +1002,6 @@ const IOSStyleHomeScreen: React.FC = () => {
         </Animated.View>
       </BlurView>
 
-      {/* Floating Action Button */}
       <AnimatedTouchableOpacity
         style={[styles.fab, !isServerReachable && { opacity: 0.5 }]}
         onPress={() => {
@@ -1070,7 +1064,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    // overflow: "hidden", // Removed to allow dot to overflow if needed, but dot is inside
   },
   profileImage: {
     width: 40,
@@ -1105,12 +1098,11 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   dateStripContent: {
-    // paddingHorizontal is handled dynamically
   },
   dateItem: {
     alignItems: "center",
     gap: 6,
-    width: 32, // Fixed width for alignment
+    width: 32,
   },
   dayName: {
     fontSize: 11,
@@ -1214,6 +1206,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: Spacing.md,
+  },
+  mealIconImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   mealHeaderInfo: {
     flex: 1,
