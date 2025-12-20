@@ -259,64 +259,74 @@ export default function QualityScreen() {
         </View>
 
         {/* Best Meals Section */}
-        <View style={[styles.sectionHeader]}>
-            <ThemedText style={[styles.sectionTitle, { color: textColor }]}>Best Meals</ThemedText>
+        <View style={[styles.card, { backgroundColor: cardBg, alignItems: 'stretch' }]}>
+            <ThemedText style={[styles.cardTitle, { color: textColor, marginBottom: Spacing.md }]}>Best Meals</ThemedText>
+            {bestMeals.map((meal, index) => (
+                <TouchableOpacity 
+                    key={meal.id} 
+                    style={[
+                        styles.mealRow, 
+                        { 
+                            backgroundColor: isDark ? '#333' : '#f9f9f9',
+                            marginBottom: index === bestMeals.length - 1 ? 0 : Spacing.sm
+                        }
+                    ]}
+                    onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
+                >
+                    <View style={styles.mealRank}>
+                        <Ionicons name="trophy" size={20} color={Colors.secondary.protein} />
+                    </View>
+                    <View style={styles.mealInfo}>
+                        <ThemedText style={[styles.mealName, { color: textColor }]}>
+                            {meal.name || "Unknown Meal"}
+                        </ThemedText>
+                        <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
+                            {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
+                        </ThemedText>
+                    </View>
+                    <View style={[styles.mealScore, { backgroundColor: Colors.secondary.protein + '20' }]}>
+                        <ThemedText style={[styles.mealScoreValue, { color: Colors.secondary.protein }]}>
+                            {meal.mealQuality.mealQualityScore.toFixed(1)}
+                        </ThemedText>
+                    </View>
+                </TouchableOpacity>
+            ))}
         </View>
-
-        {bestMeals.map((meal, index) => (
-            <TouchableOpacity 
-                key={meal.id} 
-                style={[styles.mealCard, { backgroundColor: cardBg }]}
-                onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
-            >
-                <View style={styles.mealRank}>
-                    <Ionicons name="trophy" size={20} color="#FFD700" />
-                </View>
-                <View style={styles.mealInfo}>
-                    <ThemedText style={[styles.mealName, { color: textColor }]}>
-                        {meal.name || "Unknown Meal"}
-                    </ThemedText>
-                    <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
-                        {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
-                    </ThemedText>
-                </View>
-                <View style={[styles.mealScore, { backgroundColor: "rgba(255, 215, 0, 0.1)" }]}>
-                    <ThemedText style={[styles.mealScoreValue, { color: "#FFD700" }]}>
-                        {meal.mealQuality.mealQualityScore.toFixed(1)}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
-        ))}
 
         {/* Worst Meals Section */}
-        <View style={[styles.sectionHeader, { marginTop: Spacing.lg }]}>
-            <ThemedText style={[styles.sectionTitle, { color: textColor }]}>Needs Improvement</ThemedText>
+        <View style={[styles.card, { backgroundColor: cardBg, alignItems: 'stretch' }]}>
+            <ThemedText style={[styles.cardTitle, { color: textColor, marginBottom: Spacing.md }]}>Needs Improvement</ThemedText>
+            {worstMeals.map((meal, index) => (
+                <TouchableOpacity 
+                    key={meal.id} 
+                    style={[
+                        styles.mealRow, 
+                        { 
+                            backgroundColor: isDark ? '#333' : '#f9f9f9',
+                            marginBottom: index === worstMeals.length - 1 ? 0 : Spacing.sm
+                        }
+                    ]}
+                    onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
+                >
+                    <View style={styles.mealRank}>
+                        <Ionicons name="alert-circle" size={20} color={Colors.secondary.carbs} />
+                    </View>
+                    <View style={styles.mealInfo}>
+                        <ThemedText style={[styles.mealName, { color: textColor }]}>
+                            {meal.name || "Unknown Meal"}
+                        </ThemedText>
+                        <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
+                            {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
+                        </ThemedText>
+                    </View>
+                    <View style={[styles.mealScore, { backgroundColor: Colors.secondary.carbs + '20' }]}>
+                        <ThemedText style={[styles.mealScoreValue, { color: Colors.secondary.carbs }]}>
+                            {meal.mealQuality.mealQualityScore.toFixed(1)}
+                        </ThemedText>
+                    </View>
+                </TouchableOpacity>
+            ))}
         </View>
-
-        {worstMeals.map((meal, index) => (
-            <TouchableOpacity 
-                key={meal.id} 
-                style={[styles.mealCard, { backgroundColor: cardBg }]}
-                onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
-            >
-                <View style={styles.mealRank}>
-                    <Ionicons name="alert-circle" size={20} color={Colors.secondary.fat} />
-                </View>
-                <View style={styles.mealInfo}>
-                    <ThemedText style={[styles.mealName, { color: textColor }]}>
-                        {meal.name || "Unknown Meal"}
-                    </ThemedText>
-                    <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
-                        {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
-                    </ThemedText>
-                </View>
-                <View style={[styles.mealScore, { backgroundColor: "rgba(236, 64, 122, 0.1)" }]}>
-                    <ThemedText style={[styles.mealScoreValue, { color: Colors.secondary.fat }]}>
-                        {meal.mealQuality.mealQualityScore.toFixed(1)}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
-        ))}
 
         <View style={{ height: Spacing.xl }} />
       </ScrollView>
@@ -426,6 +436,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     marginBottom: Spacing.md,
     ...Shadows.small,
+  },
+  mealRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
   mealRank: {
     width: 30,
