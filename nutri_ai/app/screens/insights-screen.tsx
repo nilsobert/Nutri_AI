@@ -37,7 +37,7 @@ import Animated, {
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { useUser } from "@/context/UserContext";
-import { MS_TO_S, DAILY_CALORIE_GOAL } from "@/constants/values";
+import { MS_TO_S, DAILY_CALORIE_GOAL, MIN_LOGGING_THRESHOLD } from "@/constants/values";
 import {
   Colors,
   Spacing,
@@ -584,8 +584,8 @@ function getDailyGoalMetCount(
       }, 0);
 
     if (
-      dayTotalCalories >= calorieGoal * 0.9 &&
-      dayTotalCalories <= calorieGoal * 1.1
+      dayTotalCalories >= MIN_LOGGING_THRESHOLD &&
+      dayTotalCalories <= calorieGoal
     ) {
       daysMet++;
     }
@@ -1470,11 +1470,12 @@ export default function InsightsScreen() {
           </ThemedText>
 
           <View style={styles.insightsGrid}>
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/quality-screen")}
             >
               <Ionicons name="star-outline" size={24} color="#FFD700" />
               <ThemedText
@@ -1487,7 +1488,7 @@ export default function InsightsScreen() {
               >
                 Avg Quality
               </ThemedText>
-            </View>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[
@@ -1511,11 +1512,12 @@ export default function InsightsScreen() {
           </View>
 
           <View style={styles.insightsGrid}>
-            <View
+            <TouchableOpacity
               style={[
                 styles.insightBox,
                 { backgroundColor: isDark ? "#333" : "#f5f5f5" },
               ]}
+              onPress={() => router.push("/screens/goals-met-screen")}
             >
               <Ionicons
                 name="checkmark-circle-outline"
@@ -1532,7 +1534,7 @@ export default function InsightsScreen() {
               >
                 Calorie Goal Met
               </ThemedText>
-            </View>
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[
