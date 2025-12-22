@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   StyleSheet,
   Text,
   TextInput,
@@ -12,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors, Spacing } from "../../../constants/theme";
 
+// NOTE: This screen is no longer used. Weight-goal functionality was removed.
 export default function TargetWeight() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -19,26 +21,37 @@ export default function TargetWeight() {
   const isDark = colorScheme === "dark";
 
   const currentWeight = parseFloat(params.weight as string) || 70;
-  const [targetWeight, setTargetWeight] = useState(currentWeight);
-  const [unit, setUnit] = useState<"KG" | "LB">("KG");
+  const [targetWeight, setTargetWeight] = useState(currentWeight.toString());
+  const [error, setError] = useState("");
+  const progressAnim = useRef(new Animated.Value(0.42)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 0.56,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
 
-  const kgToLb = (kg: number) => Math.round(kg * 2.20462);
-  const lbToKg = (lb: number) => Math.round(lb / 2.20462);
-
-  const displayWeight = unit === "KG" ? targetWeight : kgToLb(targetWeight);
-
-  const handleUnitToggle = (newUnit: "KG" | "LB") => {
-    setUnit(newUnit);
+  const validate = () => {
+    const num = parseFloat(targetWeight);
+    if (isNaN(num) || num < 20 || num > 500) {
+      setError("Weight must be between 20 and 500 kg");
+      return false;
+    }
+    setError("");
+    return true;
   };
 
   const handleNext = () => {
-    router.push({
+    // Weight goal removed; keep this screen as a no-op fallback.
+    router.replace({
       pathname: "/screens/onboarding/activity-level",
-      params: { ...params, targetWeight: targetWeight.toString() },
+      params: { ...params },
     });
   };
 
@@ -50,13 +63,19 @@ export default function TargetWeight() {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: "56%" }]} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
-        <TouchableOpacity
-          onPress={() => router.push("/screens/onboarding/activity-level")}
-        >
-          <Text style={[styles.skipText, { color: secondaryText }]}>Skip</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}
@@ -65,70 +84,27 @@ export default function TargetWeight() {
           {"Let's set the goal you are going to crush!"}
         </Text>
 
-        {/* Unit Toggle */}
-        <View style={styles.unitToggle}>
-          <TouchableOpacity
-            style={[
-              styles.unitButton,
-              unit === "KG" && styles.unitButtonActive,
-            ]}
-            onPress={() => handleUnitToggle("KG")}
-          >
-            <Text
-              style={[
-                styles.unitButtonText,
-                { color: unit === "KG" ? "#fff" : secondaryText },
-              ]}
-            >
-              KG
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.unitButton,
-              unit === "LB" && styles.unitButtonActive,
-            ]}
-            onPress={() => handleUnitToggle("LB")}
-          >
-            <Text
-              style={[
-                styles.unitButtonText,
-                { color: unit === "LB" ? "#fff" : secondaryText },
-              ]}
-            >
-              LB
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Weight Display */}
         <View style={styles.weightDisplay}>
           <Text style={[styles.weightLabel, { color: secondaryText }]}>
             Target weight
           </Text>
           <TextInput
-            style={[styles.weightInput, { color: textColor }]}
-            value={displayWeight.toString()}
+            style={[
+              styles.weightInput,
+              { color: textColor },
+              error ? styles.inputError : null,
+            ]}
+            value={targetWeight}
             onChangeText={(text) => {
-              const num = parseFloat(text);
-              if (!isNaN(num)) {
-                const kgValue = unit === "KG" ? num : lbToKg(num);
-                const minValue = unit === "KG" ? 30 : 66;
-                const maxValue = unit === "KG" ? 200 : 440;
-
-                if (num >= minValue && num <= maxValue) {
-                  setTargetWeight(kgValue);
-                }
-              } else if (text === "") {
-                setTargetWeight(currentWeight);
-              }
+              setTargetWeight(text);
+              if (error) setError("");
             }}
             keyboardType="decimal-pad"
-            placeholder={displayWeight.toString()}
+            placeholder={currentWeight.toString()}
           />
-          <Text style={[styles.unitLabel, { color: secondaryText }]}>
-            {unit === "KG" ? "kg" : "lb"}
-          </Text>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Text style={[styles.unitLabel, { color: secondaryText }]}>kg</Text>
         </View>
 
         {/* Weight adjustment buttons */}
@@ -136,14 +112,9 @@ export default function TargetWeight() {
           <TouchableOpacity
             style={styles.adjustButton}
             onPress={() => {
-              if (unit === "KG") {
-                setTargetWeight(Math.max(30, targetWeight - 1));
-              } else {
-                // Decrement by 1 LB (convert from current display)
-                const currentLb = kgToLb(targetWeight);
-                const newLb = Math.max(66, currentLb - 1);
-                setTargetWeight(lbToKg(newLb));
-              }
+              const val = parseFloat(targetWeight) || currentWeight;
+              setTargetWeight(Math.max(20, val - 1).toString());
+              if (error) setError("");
             }}
           >
             <Ionicons name="remove" size={24} color={Colors.primary} />
@@ -151,14 +122,9 @@ export default function TargetWeight() {
           <TouchableOpacity
             style={styles.adjustButton}
             onPress={() => {
-              if (unit === "KG") {
-                setTargetWeight(Math.min(200, targetWeight + 1));
-              } else {
-                // Increment by 1 LB (convert from current display)
-                const currentLb = kgToLb(targetWeight);
-                const newLb = Math.min(440, currentLb + 1);
-                setTargetWeight(lbToKg(newLb));
-              }
+              const val = parseFloat(targetWeight) || currentWeight;
+              setTargetWeight(Math.min(500, val + 1).toString());
+              if (error) setError("");
             }}
           >
             <Ionicons name="add" size={24} color={Colors.primary} />
@@ -244,6 +210,15 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
     minWidth: 150,
+  },
+  inputError: {
+    color: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: "center",
   },
   unitLabel: {
     fontSize: 20,

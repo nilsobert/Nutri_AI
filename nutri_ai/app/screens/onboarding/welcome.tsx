@@ -37,10 +37,23 @@ export default function Welcome() {
           Monitor your daily{"\n"}calorie intake easily.
         </Text>
 
-        {/* Start Button */}
+        {/* Login Button */}
+        <TouchableOpacity
+          style={styles.loginButton}
+          onPress={() => router.push("/screens/login-screen")}
+        >
+          <Text style={[styles.loginButtonText, { color: textColor }]}>
+            Already have an account?{" "}
+            <Text style={{ color: Colors.primary }}>Log In</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
         <TouchableOpacity
           style={styles.startButton}
-          onPress={() => router.push("/screens/onboarding/gender-selection")}
+          onPress={() => router.push("/screens/signup-screen")}
         >
           <Text style={styles.startButtonText}>Start Now</Text>
         </TouchableOpacity>
@@ -58,6 +71,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
   },
   imageContainer: {
     width: "100%",
@@ -74,26 +88,30 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: Spacing.xl * 3,
+    marginBottom: Spacing.xl * 2,
     lineHeight: 36,
+  },
+  footer: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
   },
   startButton: {
     backgroundColor: Colors.primary,
     paddingVertical: 16,
-    paddingHorizontal: 60,
-    borderRadius: 30,
-    shadowColor: Colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    borderRadius: 12,
+    alignItems: "center",
   },
   startButtonText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
+  },
+  loginButton: {
+    marginTop: Spacing.xl,
+    paddingVertical: Spacing.md,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

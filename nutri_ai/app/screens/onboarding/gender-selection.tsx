@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,9 +15,19 @@ import { Gender } from "../../../types/user";
 
 export default function GenderSelection() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [gender, setGender] = useState<Gender | null>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 0.14,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
@@ -28,7 +39,7 @@ export default function GenderSelection() {
     if (!gender) return;
     router.push({
       pathname: "/screens/onboarding/goal-selection",
-      params: { gender: gender.toString() },
+      params: { ...params, gender: gender.toString() },
     });
   };
 
@@ -40,21 +51,25 @@ export default function GenderSelection() {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: "14%" }]} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
-        <TouchableOpacity
-          onPress={() => router.push("/screens/onboarding/goal-selection")}
-        >
-          <Text style={[styles.skipText, { color: isDark ? "#999" : "#666" }]}> 
-            Skip
-          </Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}
       <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>
-          Identify your gender
+          Slect your gender
         </Text>
 
           <View style={styles.genderOptions}>
