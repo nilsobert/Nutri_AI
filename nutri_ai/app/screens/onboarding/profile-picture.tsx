@@ -3,9 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import CryptoJS from "crypto-js";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Image,
   StyleSheet,
   Text,
@@ -38,6 +39,15 @@ export default function ProfilePicture() {
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const progressAnim = useRef(new Animated.Value(0.7)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 1.0,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
@@ -51,8 +61,8 @@ export default function ProfilePicture() {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permissão necessária",
-          "Por favor, conceda permissões de câmera.",
+          "Permission required",
+          "Please grant camera permissions.",
         );
         return;
       }
@@ -67,7 +77,7 @@ export default function ProfilePicture() {
         setProfileImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível tirar a foto.");
+      Alert.alert("Error", "Could not take photo.");
     }
   };
 
@@ -77,8 +87,8 @@ export default function ProfilePicture() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permissão necessária",
-          "Por favor, conceda permissões de galeria.",
+          "Permission required",
+          "Please grant gallery permissions.",
         );
         return;
       }
@@ -94,25 +104,25 @@ export default function ProfilePicture() {
         setProfileImage(result.assets[0].uri);
       }
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível escolher a foto.");
+      Alert.alert("Error", "Could not choose photo.");
     }
   };
 
   const showImageOptions = () => {
     Alert.alert(
-      "Foto de Perfil",
-      "Escolha uma opção",
+      "Profile Picture",
+      "Choose an option",
       [
         {
-          text: "Tirar Foto",
+          text: "Take Photo",
           onPress: takePhoto,
         },
         {
-          text: "Escolher da Galeria",
+          text: "Choose from Gallery",
           onPress: pickImage,
         },
         {
-          text: "Cancelar",
+          text: "Cancel",
           style: "cancel",
         },
       ],
@@ -123,13 +133,16 @@ export default function ProfilePicture() {
   const handleFinish = async () => {
     setIsLoading(true);
     try {
-      // Get signup credentials
-      const signupName = await AsyncStorage.getItem("temp_signup_name");
-      const signupEmail = await AsyncStorage.getItem("temp_signup_email");
-      const signupPassword = await AsyncStorage.getItem("temp_signup_password");
+      // Get signup credentials from params
+      const signupName = params.name as string;
+      const signupEmail = params.email as string;
+      const signupPassword = params.password as string;
 
       if (!signupName || !signupEmail || !signupPassword) {
-        Alert.alert("Erro", "Dados de registo não encontrados.");
+        Alert.alert(
+          "Signup Information Missing",
+          "Please start from the signup screen to create your account.",
+        );
         router.push("/screens/signup-screen");
         return;
       }
@@ -173,7 +186,7 @@ export default function ProfilePicture() {
 
       if (!response.ok) {
         console.error("[ProfilePicture] Signup failed:", data.detail);
-        Alert.alert("Erro no registo", data.detail || "Ocorreu um erro");
+        Alert.alert("Registration Error", data.detail || "An error occurred");
         return;
       }
 
@@ -215,11 +228,6 @@ export default function ProfilePicture() {
         }
       }
 
-      // Clear temporary credentials
-      await AsyncStorage.removeItem("temp_signup_name");
-      await AsyncStorage.removeItem("temp_signup_email");
-      await AsyncStorage.removeItem("temp_signup_password");
-
       // Create user object
       const passwordHash = CryptoJS.SHA256(signupPassword).toString();
       const userObj: User = {
@@ -233,9 +241,6 @@ export default function ProfilePicture() {
         activityLevel: params.activityLevel as ActivityLevel,
         medicalCondition: MedicalCondition.None,
         motivation: params.goal as MotivationToTrackCalories,
-        targetWeightKg: params.targetWeight
-          ? parseFloat(params.targetWeight as string)
-          : undefined,
       };
 
       await saveUser(userObj);
@@ -288,17 +293,13 @@ export default function ProfilePicture() {
         );
       } else {
         Alert.alert(
-          "Erro",
-          `Não foi possível criar o perfil. ${error.message || ""}`,
+          "Error",
+          `Could not create profile. ${error.message || ""}`,
         );
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSkip = () => {
-    handleFinish();
   };
 
   return (
@@ -309,11 +310,19 @@ export default function ProfilePicture() {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: "100%" }]} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
-        <TouchableOpacity onPress={handleSkip}>
-          <Text style={[styles.skipText, { color: secondaryText }]}>Skip</Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}

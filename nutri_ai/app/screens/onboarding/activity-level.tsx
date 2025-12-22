@@ -2,9 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CryptoJS from "crypto-js";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -34,6 +35,15 @@ export default function ActivityLevelScreen() {
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const progressAnim = useRef(new Animated.Value(0.56)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 0.7,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
@@ -74,102 +84,6 @@ export default function ActivityLevelScreen() {
     });
   };
 
-  const handleFinish = async () => {
-    if (!activityLevel) return;
-
-    setIsLoading(true);
-    try {
-      // Get signup credentials
-      const signupName = await AsyncStorage.getItem("temp_signup_name");
-      const signupEmail = await AsyncStorage.getItem("temp_signup_email");
-      const signupPassword = await AsyncStorage.getItem("temp_signup_password");
-
-      if (!signupName || !signupEmail || !signupPassword) {
-        Alert.alert(
-          "Erro",
-          "Dados de registo não encontrados. Por favor, tente novamente.",
-        );
-        router.push("/screens/signup-screen");
-        return;
-      }
-
-      // Prepare complete signup payload
-      const signupPayload = {
-        email: signupEmail,
-        password: signupPassword,
-        name: signupName,
-        age: parseInt(params.age as string),
-        height_cm: parseFloat(params.height as string),
-        weight_kg: parseFloat(params.weight as string),
-        gender: params.gender as Gender,
-        activity_level: activityLevel,
-        medical_condition: MedicalCondition.None,
-        motivation: params.goal as MotivationToTrackCalories,
-      };
-
-      console.log("[ActivityLevel] Sending complete signup...");
-      const url = `${API_BASE_URL}/signup`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(signupPayload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("[ActivityLevel] Signup failed:", data.detail);
-        Alert.alert("Erro no registo", data.detail || "Ocorreu um erro");
-        return;
-      }
-
-      console.log("[ActivityLevel] Signup successful!");
-      await AsyncStorage.setItem("auth_token", data.access_token);
-
-      // Clear temporary credentials
-      await AsyncStorage.removeItem("temp_signup_name");
-      await AsyncStorage.removeItem("temp_signup_email");
-      await AsyncStorage.removeItem("temp_signup_password");
-
-      // Create user object
-      const passwordHash = CryptoJS.SHA256(signupPassword).toString();
-      const userObj: User = {
-        name: signupName,
-        email: signupEmail,
-        password: passwordHash,
-        age: parseInt(params.age as string),
-        heightCm: parseFloat(params.height as string),
-        weightKg: parseFloat(params.weight as string),
-        gender: params.gender as Gender,
-        activityLevel: activityLevel,
-        medicalCondition: MedicalCondition.None,
-        motivation: params.goal as MotivationToTrackCalories,
-        targetWeightKg: params.targetWeight
-          ? parseFloat(params.targetWeight as string)
-          : undefined,
-      };
-
-      await saveUser(userObj);
-
-      Alert.alert("Sucesso!", "Perfil criado com sucesso!", [
-        {
-          text: "OK",
-          onPress: () => router.push("/(tabs)"),
-        },
-      ]);
-    } catch (error: any) {
-      console.error("[ActivityLevel] Error:", error);
-      Alert.alert(
-        "Erro",
-        `Não foi possível criar o perfil. ${error.message || ""}`,
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: bgColor }]}>
       {/* Header */}
@@ -178,7 +92,17 @@ export default function ActivityLevelScreen() {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: "100%" }]} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
       </View>
 

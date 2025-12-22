@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -24,6 +25,16 @@ export default function BasicInfo() {
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
+  const [errors, setErrors] = useState({ age: "", height: "", weight: "" });
+  const progressAnim = useRef(new Animated.Value(0.28)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 0.42,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
@@ -31,12 +42,48 @@ export default function BasicInfo() {
   const inputBg = isDark ? "#2a2a2a" : "#f5f5f5";
   const placeholderColor = isDark ? "#888" : "#9aa5a0";
 
+  const validate = () => {
+    const newErrors = { age: "", height: "", weight: "" };
+    let isValid = true;
+
+    const ageNum = parseInt(age);
+    if (!age) {
+      newErrors.age = "Age is required";
+      isValid = false;
+    } else if (isNaN(ageNum) || ageNum < 10 || ageNum > 120) {
+      newErrors.age = "Age must be between 10 and 120";
+      isValid = false;
+    }
+
+    const heightNum = parseFloat(height);
+    if (!height) {
+      newErrors.height = "Height is required";
+      isValid = false;
+    } else if (isNaN(heightNum) || heightNum < 50 || heightNum > 250) {
+      newErrors.height = "Height must be between 50 and 250 cm";
+      isValid = false;
+    }
+
+    const weightNum = parseFloat(weight);
+    if (!weight) {
+      newErrors.weight = "Weight is required";
+      isValid = false;
+    } else if (isNaN(weightNum) || weightNum < 20 || weightNum > 500) {
+      newErrors.weight = "Weight must be between 20 and 500 kg";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleNext = () => {
-    if (!age || !height || !weight) return;
-    router.push({
-      pathname: "/screens/onboarding/target-weight",
-      params: { ...params, age, height, weight },
-    });
+    if (validate()) {
+      router.push({
+        pathname: "/screens/onboarding/activity-level",
+        params: { ...params, age, height, weight },
+      });
+    }
   };
 
   return (
@@ -51,15 +98,19 @@ export default function BasicInfo() {
             <Ionicons name="chevron-back" size={24} color={textColor} />
           </TouchableOpacity>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: "42%" }]} />
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["0%", "100%"],
+                  }),
+                },
+              ]}
+            />
           </View>
-          <TouchableOpacity
-            onPress={() => router.push("/screens/onboarding/target-weight")}
-          >
-            <Text style={[styles.skipText, { color: secondaryText }]}>
-              Skip
-            </Text>
-          </TouchableOpacity>
+          <View style={{ width: 40 }} />
         </View>
 
         <ScrollView
@@ -67,7 +118,7 @@ export default function BasicInfo() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={[styles.title, { color: textColor }]}>
-            Tell me about yourself!
+            Tell us about yourself!
           </Text>
 
           <View style={styles.form}>
@@ -87,13 +138,20 @@ export default function BasicInfo() {
                   style={[
                     styles.input,
                     { backgroundColor: inputBg, color: textColor },
+                    errors.age ? styles.inputError : null,
                   ]}
                   placeholder="Enter your age"
                   placeholderTextColor={placeholderColor}
                   value={age}
-                  onChangeText={setAge}
+                  onChangeText={(text) => {
+                    setAge(text);
+                    if (errors.age) setErrors({ ...errors, age: "" });
+                  }}
                   keyboardType="number-pad"
                 />
+                {errors.age ? (
+                  <Text style={styles.errorText}>{errors.age}</Text>
+                ) : null}
               </View>
             </View>
 
@@ -113,13 +171,20 @@ export default function BasicInfo() {
                   style={[
                     styles.input,
                     { backgroundColor: inputBg, color: textColor },
+                    errors.height ? styles.inputError : null,
                   ]}
                   placeholder="cm"
                   placeholderTextColor={placeholderColor}
                   value={height}
-                  onChangeText={setHeight}
+                  onChangeText={(text) => {
+                    setHeight(text);
+                    if (errors.height) setErrors({ ...errors, height: "" });
+                  }}
                   keyboardType="decimal-pad"
                 />
+                {errors.height ? (
+                  <Text style={styles.errorText}>{errors.height}</Text>
+                ) : null}
               </View>
             </View>
 
@@ -139,20 +204,25 @@ export default function BasicInfo() {
                   style={[
                     styles.input,
                     { backgroundColor: inputBg, color: textColor },
+                    errors.weight ? styles.inputError : null,
                   ]}
                   placeholder="kg"
                   placeholderTextColor={placeholderColor}
                   value={weight}
-                  onChangeText={setWeight}
+                  onChangeText={(text) => {
+                    setWeight(text);
+                    if (errors.weight) setErrors({ ...errors, weight: "" });
+                  }}
                   keyboardType="decimal-pad"
                 />
+                {errors.weight ? (
+                  <Text style={styles.errorText}>{errors.weight}</Text>
+                ) : null}
               </View>
             </View>
           </View>
 
-          <Text style={[styles.helperText, { color: secondaryText }]}>
-            Backed by results: 80% of users achieve sustainable weight loss.
-          </Text>
+          
         </ScrollView>
 
         {/* Footer */}
@@ -237,6 +307,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     fontSize: 16,
     fontWeight: "600",
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   helperText: {
     fontSize: 12,

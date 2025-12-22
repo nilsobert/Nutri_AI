@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +20,15 @@ export default function GoalSelection() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const [goal, setGoal] = useState<MotivationToTrackCalories | null>(null);
+  const progressAnim = useRef(new Animated.Value(0.14)).current;
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: 0.28,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
@@ -46,9 +56,9 @@ export default function GoalSelection() {
       color: "#95E1D3",
     },
     {
-      label: "Improve Athletics",
-      value: MotivationToTrackCalories.ImproveAthletics,
-      icon: "fitness" as const,
+      label: "Lose Weight",
+      value: MotivationToTrackCalories.LoseWeight,
+      icon: "trending-down" as const,
       color: "#F38181",
     },
   ];
@@ -69,15 +79,19 @@ export default function GoalSelection() {
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: "28%" }]} />
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0%", "100%"],
+                }),
+              },
+            ]}
+          />
         </View>
-        <TouchableOpacity
-          onPress={() => router.push("/screens/onboarding/basic-info")}
-        >
-          <Text style={[styles.skipText, { color: isDark ? "#999" : "#666" }]}> 
-            Skip
-          </Text>
-        </TouchableOpacity>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Content */}
