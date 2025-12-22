@@ -29,8 +29,6 @@ import {
 import {
   ActivityLevel,
   MotivationToTrackCalories,
-  WeightGoalType,
-  WeightLossRate,
   User,
 } from "@/types/user";
 import { calculateGoals } from "@/lib/utils/goals";
@@ -137,15 +135,6 @@ export default function EditGoalsScreen() {
     user?.activityLevel || ActivityLevel.Moderate,
   );
   const [weight, setWeight] = useState(user?.weightKg?.toString() || "");
-  const [targetWeight, setTargetWeight] = useState(
-    user?.targetWeightKg?.toString() || "",
-  );
-  const [weightGoalType, setWeightGoalType] = useState<WeightGoalType>(
-    user?.weightGoalType || WeightGoalType.Maintain,
-  );
-  const [weightLossRate, setWeightLossRate] = useState<WeightLossRate>(
-    user?.weightLossRate || WeightLossRate.Moderate,
-  );
 
   // Custom Goals State
   const [isCustomGoals, setIsCustomGoals] = useState(
@@ -165,7 +154,7 @@ export default function EditGoalsScreen() {
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<
-    "motivation" | "activity" | "goalType" | "rate" | null
+    "motivation" | "activity" | null
   >(null);
 
   // Derived values for preview
@@ -180,9 +169,6 @@ export default function EditGoalsScreen() {
       motivation,
       activityLevel,
       weightKg: parseFloat(weight) || user.weightKg,
-      targetWeightKg: parseFloat(targetWeight) || undefined,
-      weightGoalType,
-      weightLossRate,
       isCustomGoals,
       customCalories: parseFloat(customCalories) || undefined,
       customProtein: parseFloat(customProtein) || undefined,
@@ -195,9 +181,6 @@ export default function EditGoalsScreen() {
     motivation,
     activityLevel,
     weight,
-    targetWeight,
-    weightGoalType,
-    weightLossRate,
     isCustomGoals,
     customCalories,
     customProtein,
@@ -215,9 +198,6 @@ export default function EditGoalsScreen() {
         motivation,
         activityLevel,
         weightKg: parseFloat(weight) || user.weightKg,
-        targetWeightKg: parseFloat(targetWeight) || undefined,
-        weightGoalType,
-        weightLossRate,
         isCustomGoals,
         customCalories: isCustomGoals ? parseFloat(customCalories) : undefined,
         customProtein: isCustomGoals ? parseFloat(customProtein) : undefined,
@@ -232,7 +212,7 @@ export default function EditGoalsScreen() {
     }
   };
 
-  const openModal = (type: "motivation" | "activity" | "goalType" | "rate") => {
+  const openModal = (type: "motivation" | "activity") => {
     setModalType(type);
     setModalVisible(true);
   };
@@ -243,10 +223,6 @@ export default function EditGoalsScreen() {
         return Object.values(MotivationToTrackCalories);
       case "activity":
         return Object.values(ActivityLevel);
-      case "goalType":
-        return Object.values(WeightGoalType);
-      case "rate":
-        return Object.values(WeightLossRate);
       default:
         return [];
     }
@@ -259,12 +235,6 @@ export default function EditGoalsScreen() {
         break;
       case "activity":
         setActivityLevel(value as ActivityLevel);
-        break;
-      case "goalType":
-        setWeightGoalType(value as WeightGoalType);
-        break;
-      case "rate":
-        setWeightLossRate(value as WeightLossRate);
         break;
     }
   };
@@ -423,73 +393,6 @@ export default function EditGoalsScreen() {
           </View>
         </View>
 
-        {/* Weight Goal Settings */}
-        <Text style={[styles.sectionHeader, { color: secondaryText }]}>
-          WEIGHT GOAL
-        </Text>
-        <View style={[styles.card, { backgroundColor: cardBg, padding: 0 }]}>
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => openModal("goalType")}
-          >
-            <Text style={[styles.rowLabel, { color: textColor }]}>
-              Goal Type
-            </Text>
-            <View style={styles.rowRight}>
-              <Text style={[styles.rowValue, { color: secondaryText }]}>
-                {formatEnum(weightGoalType)}
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={secondaryText}
-              />
-            </View>
-          </TouchableOpacity>
-
-          {weightGoalType !== WeightGoalType.Maintain && (
-            <>
-              <View
-                style={[styles.divider, { backgroundColor: borderColor }]}
-              />
-              <View style={styles.row}>
-                <Text style={[styles.rowLabel, { color: textColor }]}>
-                  Target Weight (kg)
-                </Text>
-                <TextInput
-                  style={[styles.input, { color: textColor }]}
-                  value={targetWeight}
-                  onChangeText={setTargetWeight}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  placeholderTextColor={secondaryText}
-                />
-              </View>
-              <View
-                style={[styles.divider, { backgroundColor: borderColor }]}
-              />
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => openModal("rate")}
-              >
-                <Text style={[styles.rowLabel, { color: textColor }]}>
-                  Pace
-                </Text>
-                <View style={styles.rowRight}>
-                  <Text style={[styles.rowValue, { color: secondaryText }]}>
-                    {formatEnum(weightLossRate)}
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={secondaryText}
-                  />
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-
         {/* Custom Goals Toggle */}
         <Text style={[styles.sectionHeader, { color: secondaryText }]}>
           ADVANCED
@@ -603,11 +506,7 @@ export default function EditGoalsScreen() {
         selectedValue={
           modalType === "motivation"
             ? motivation
-            : modalType === "activity"
-              ? activityLevel
-              : modalType === "goalType"
-                ? weightGoalType
-                : weightLossRate
+            : activityLevel
         }
         onSelect={handleModalSelect}
         onClose={() => setModalVisible(false)}

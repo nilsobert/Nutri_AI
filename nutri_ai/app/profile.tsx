@@ -24,9 +24,8 @@ import {
   Shadows,
 } from "@/constants/theme";
 import {
-  IUser,
+  User,
   MedicalCondition,
-  MotivationToTrackCalories,
 } from "@/types/user";
 import { useUser } from "@/context/UserContext";
 import { useMeals } from "@/context/MealContext";

@@ -3,8 +3,6 @@ import {
   Gender, 
   User, 
   MotivationToTrackCalories,
-  WeightGoalType,
-  WeightLossRate 
 } from "@/types/user";
 
 export interface NutritionGoals {
@@ -17,9 +15,8 @@ export interface NutritionGoals {
   bmr: number; // Basal Metabolic Rate
   tdee: number; // Total Daily Energy Expenditure
   
-  // Weight goal information
+  // Informational-only estimate derived from motivation.
   estimatedWeeklyWeightChange?: number; // kg per week (negative for loss, positive for gain)
-  estimatedTimeToGoal?: number; // weeks
   recommendedCalorieAdjustment?: number; // daily calorie adjustment from maintenance
 }
 
@@ -85,35 +82,6 @@ export const calculateTDEE = (user: User): number => {
   
   const activityMultiplier = getActivityMultiplier(user.activityLevel);
   return bmr * activityMultiplier;
-};
-
-/**
- * Get calorie adjustment based on weight loss/gain rate
- * 1 kg of body weight ≈ 7700 calories
- */
-export const getCalorieAdjustmentForRate = (
-  weightLossRate: WeightLossRate,
-  goalType: WeightGoalType
-): number => {
-  const CALORIES_PER_KG = 7700;
-  let weeklyKgChange = 0;
-  
-  switch (weightLossRate) {
-    case WeightLossRate.Slow:
-      weeklyKgChange = 0.25; // ~250 cal/day deficit
-      break;
-    case WeightLossRate.Moderate:
-      weeklyKgChange = 0.5; // ~550 cal/day deficit
-      break;
-    case WeightLossRate.Aggressive:
-      weeklyKgChange = 0.75; // ~825 cal/day deficit
-      break;
-  }
-  
-  const dailyCalorieChange = (weeklyKgChange * CALORIES_PER_KG) / 7;
-  
-  // Negative for weight loss, positive for weight gain
-  return goalType === WeightGoalType.Lose ? -dailyCalorieChange : dailyCalorieChange;
 };
 
 /**
@@ -272,59 +240,43 @@ export const calculateGoals = (user: User): NutritionGoals => {
       bmr: Math.round(bmr),
       tdee: Math.round(tdee),
       estimatedWeeklyWeightChange: 0, // Cannot estimate without knowing the deficit/surplus logic
-      estimatedTimeToGoal: undefined,
       recommendedCalorieAdjustment: 0,
     };
   }
   
-  // Determine calorie target based on goals
+  // Determine calorie target based on motivation
   let targetCalories = tdee;
   let calorieAdjustment = 0;
   let weeklyWeightChange = 0;
-  
-  // If user has specific weight goals with rate
-  if (user.weightGoalType && user.weightLossRate) {
-    calorieAdjustment = getCalorieAdjustmentForRate(
-      user.weightLossRate,
-      user.weightGoalType
-    );
-    targetCalories += calorieAdjustment;
-    
-    // Calculate weekly weight change
-    const CALORIES_PER_KG = 7700;
-    weeklyWeightChange = (calorieAdjustment * 7) / CALORIES_PER_KG;
-  } 
-  // Fallback to motivation-based adjustments
-  else {
-    switch (user.motivation) {
-      case MotivationToTrackCalories.LoseWeight:
-        calorieAdjustment = -500; // Moderate deficit
-        targetCalories -= 500;
-        weeklyWeightChange = -0.5;
-        break;
-        
-      case MotivationToTrackCalories.GainWeight:
-      case MotivationToTrackCalories.GainMuscle:
-        calorieAdjustment = 300; // Moderate surplus
-        targetCalories += 300;
-        weeklyWeightChange = 0.25;
-        break;
-        
-      case MotivationToTrackCalories.ImproveAthletics:
-        // Slight surplus for performance
-        calorieAdjustment = 200;
-        targetCalories += 200;
-        weeklyWeightChange = 0.15;
-        break;
-        
-      case MotivationToTrackCalories.LeadAHealthyLife:
-      case MotivationToTrackCalories.TrackMedicalCondition:
-      default:
-        // Maintenance
-        calorieAdjustment = 0;
-        weeklyWeightChange = 0;
-        break;
-    }
+
+  switch (user.motivation) {
+    case MotivationToTrackCalories.LoseWeight:
+      calorieAdjustment = -500; // Moderate deficit
+      targetCalories -= 500;
+      weeklyWeightChange = -0.5;
+      break;
+
+    case MotivationToTrackCalories.GainWeight:
+    case MotivationToTrackCalories.GainMuscle:
+      calorieAdjustment = 300; // Moderate surplus
+      targetCalories += 300;
+      weeklyWeightChange = 0.25;
+      break;
+
+    case MotivationToTrackCalories.ImproveAthletics:
+      // Slight surplus for performance
+      calorieAdjustment = 200;
+      targetCalories += 200;
+      weeklyWeightChange = 0.15;
+      break;
+
+    case MotivationToTrackCalories.LeadAHealthyLife:
+    case MotivationToTrackCalories.TrackMedicalCondition:
+    default:
+      // Maintenance
+      calorieAdjustment = 0;
+      weeklyWeightChange = 0;
+      break;
   }
   
   // Apply safety limits
@@ -353,11 +305,6 @@ export const calculateGoals = (user: User): NutritionGoals => {
   const carbs = Math.round((remainingCalories * carbsRatio) / 4);
   
   
-  // Calculate time to goal if applicable
-  const timeToGoal = user.targetWeightKg 
-    ? calculateTimeToGoal(user.weightKg, user.targetWeightKg, Math.abs(weeklyWeightChange))
-    : undefined;
-  
   return {
     calories,
     protein,
@@ -366,7 +313,6 @@ export const calculateGoals = (user: User): NutritionGoals => {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
     estimatedWeeklyWeightChange: weeklyWeightChange,
-    estimatedTimeToGoal: timeToGoal,
     recommendedCalorieAdjustment: calorieAdjustment,
   };
 };
@@ -390,10 +336,6 @@ export const getGoalSummary = (user: User, goals: NutritionGoals): string => {
     parts.push(`Estimated weekly weight ${direction}: ${Math.abs(goals.estimatedWeeklyWeightChange).toFixed(2)} kg`);
   }
   
-  if (user.targetWeightKg && goals.estimatedTimeToGoal) {
-    parts.push(`Estimated time to reach ${user.targetWeightKg} kg: ${goals.estimatedTimeToGoal} weeks`);
-  }
-  
   parts.push(`\nMacros: ${goals.protein}g protein | ${goals.carbs}g carbs | ${goals.fat}g fat`);
   
   return parts.join("\n");
@@ -402,38 +344,10 @@ export const getGoalSummary = (user: User, goals: NutritionGoals): string => {
 /**
  * Validate if user's goals are realistic and safe
  */
-export const validateGoals = (user: User): { valid: boolean; warnings: string[] } => {
-  const warnings: string[] = [];
-  
-  // Check if target weight is realistic
-  if (user.targetWeightKg) {
-    const weightDifference = Math.abs(user.targetWeightKg - user.weightKg);
-    const bmi = user.weightKg / Math.pow(user.heightCm / 100, 2);
-    const targetBMI = user.targetWeightKg / Math.pow(user.heightCm / 100, 2);
-    
-    if (targetBMI < 16) {
-      warnings.push("Target weight results in severely underweight BMI. Please consult a healthcare professional.");
-    }
-    
-    if (targetBMI > 40) {
-      warnings.push("Target weight results in very high BMI. Consider setting intermediate goals.");
-    }
-    
-    if (weightDifference > 30) {
-      warnings.push("Large weight change goal detected. Consider breaking this into smaller, achievable milestones.");
-    }
-  }
-  
-  // Check if weight loss rate is too aggressive
-  if (user.weightGoalType === WeightGoalType.Lose && user.weightLossRate === WeightLossRate.Aggressive) {
-    const bmi = user.weightKg / Math.pow(user.heightCm / 100, 2);
-    if (bmi < 25) {
-      warnings.push("Aggressive weight loss rate not recommended for individuals with BMI < 25.");
-    }
-  }
-  
+export const validateGoals = (_user: User): { valid: boolean; warnings: string[] } => {
+  // With weight-goal functionality removed, we currently have nothing to validate here.
   return {
-    valid: warnings.length === 0,
-    warnings
+    valid: true,
+    warnings: [],
   };
 };

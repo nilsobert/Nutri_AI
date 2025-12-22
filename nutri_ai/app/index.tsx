@@ -1,6 +1,6 @@
 import React from "react";
-import FirstPageScreen from "./screens/first_screen";
+import Welcome from "./screens/onboarding/welcome";
 
 export default function Index() {
-  return <FirstPageScreen />;
+  return <Welcome />;
 }

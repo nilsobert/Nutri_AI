@@ -1,5 +1,4 @@
-import { validateNonNegative } from "@/lib/utils/validation";
-import log from "../lib/logger";
+// Note: weight-goal (lose/gain/maintain) functionality was removed in favor of using `motivation` only.
 
 // TODO: Add supported medical conditions later on
 export enum MedicalCondition {
@@ -13,18 +12,6 @@ export enum MotivationToTrackCalories {
   LeadAHealthyLife = "LeadAHealthyLife",
   TrackMedicalCondition = "TrackMedicalCondition",
   ImproveAthletics = "ImproveAthletics",
-}
-
-export enum WeightGoalType {
-  Lose = "Lose",
-  Gain = "Gain",
-  Maintain = "Maintain",
-}
-
-export enum WeightLossRate {
-  Slow = "Slow", // 0.25 kg/week (~0.5 lbs/week)
-  Moderate = "Moderate", // 0.5 kg/week (~1 lb/week)
-  Aggressive = "Aggressive", // 0.75-1 kg/week (~1.5-2 lbs/week)
 }
 
 export enum Gender {
@@ -49,13 +36,7 @@ export interface User {
   motivation: MotivationToTrackCalories;
   email: string;
   password: string;
-  
-  // Weight goal tracking
-  targetWeightKg?: number;
-  weightGoalType?: WeightGoalType;
-  weightLossRate?: WeightLossRate;
-  targetDate?: Date; // When user wants to reach their goal
-  
+
   // Body composition (optional, for more accurate calculations)
   bodyFatPercentage?: number;
   
@@ -82,10 +63,6 @@ export function parseUser(json: any): User {
     motivation: json.motivation,
     email: json.email,
     password: json.password ?? "",
-    targetWeightKg: json.targetWeightKg ?? json.target_weight_kg,
-    weightGoalType: json.weightGoalType ?? json.weight_goal_type,
-    weightLossRate: json.weightLossRate ?? json.weight_loss_rate,
-    targetDate: json.targetDate ? new Date(json.targetDate) : (json.target_date ? new Date(json.target_date) : undefined),
     bodyFatPercentage: json.bodyFatPercentage ?? json.body_fat_percentage,
     proteinPreference: json.proteinPreference ?? json.protein_preference,
     customCalories: json.customCalories ?? json.custom_calories,
