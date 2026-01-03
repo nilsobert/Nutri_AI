@@ -1,0 +1,121 @@
+% Header: Here are all packages used and some additional definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[onehalfspacing]{setspace}
+\usepackage{graphicx} % zum Einbinden von Graphiken
+\usepackage[breaklinks=true,colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref} % f. Referenzen
+\usepackage{amsmath,amsthm,amssymb} % Mathematik Umgebung 
+\usepackage{icomma} % Intelligentes Komma, das den richtigen Abstand zwischen Dezimalzahlen als auch in Formeln wählt.
+\usepackage[english]{babel} % Deutsche Bezeichnungen bei Inhaltsangabe etc
+\usepackage[T1]{fontenc}    % andere Schriftsatzkodierung für richtige Silbentrennung bei Umlauten
+\usepackage[locale = US, space-before-unit=true, per-mode=symbol]{siunitx} % Bessere Einheiten
+\usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)
+% \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
+% \usepackage[backend=biber]{biblatex}
+\usepackage[utf8]{inputenc}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{caption}
+
+% \addbibresource{MyBibliography.bib} % Ort der .bib Datei, die die Datenbank für Literatur/Referenzen enthält.
+
+\graphicspath{{Images/}}
+
+\DeclareSIUnit{\dBm}{dBm}
+\DeclareSIUnit[per-mode=reciprocal]\WN{\per\centi\meter}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+%
+\title{\includegraphics[width=3.5cm]{logo.png} \\ \vspace{1cm} \textbf{Project Management Report}}
+\author{Laura Kotalczyk \\ Manuel Mühlberger \\ Joana Silva \\ Eduardo Pinto \\ Nils Harrer \\ \\ \textbf{Group 4}}
+\date{\today}
+\maketitle
+\vfill
+\newpage
+%
+%
+% \tableofcontents
+\thispagestyle{empty}
+\cleardoublepage
+\pagenumbering{arabic} 
+\newpage
+%
+%
+\section{Project Vision and Scope}
+\label{sec:project_vision}
+%
+\noindent
+The vision of this project is to develop a more accurate and user-friendly mobile application for tracking daily nutritional intake by combining visual and spoken input through AI, addressing the common pain points of current calorie-tracking tools, such as time-consuming manual entry and limited context in meal logging.
+
+\noindent
+Many users struggle to track self-cooked meals, mixed dishes, or food eaten outside the home (e.g., at restaurants or similar), because existing apps require users to manually search, estimate, or break down ingredients. This often leads to under-estimation, inconsistent logging, and user frustration.
+By enabling users to log meals using a simple photo and a brief voice description such as “pancakes with milk, no sugar, 3 eggs, 2 cups of flour, topped with some maple syrup”,  the app leverages modern AI technologies to generate a more reliable estimate of calories and nutrients. The goal is to reduce user effort and improve accuracy through its multi-modal approach, particularly for home-cooked and complex meals that are frequently misclassified or under-estimated in existing tools.
+This solution aims to make nutrition tracking simpler, smarter, and more accessible, helping users stay aware of their intake and make informed choices, without requiring expertise meticulous manual logging.
+
+\subsection{Project objectives, key deliverables, and defined boundaries}
+
+\subsubsection{Key Deliverables}
+\begin{table}[ht]
+    \centering
+    \label{tab:deliverables}
+    \small
+    \begin{tabularx}{\textwidth}{l X}
+        \toprule
+        \textbf{Deliverable} & \textbf{Description} \\
+        \midrule
+        Mobile App Prototype & A basic app (Android/iOS or web-based) that lets users: take a photo of a meal and record a voice note (e.g., "pancakes with milk, no sugar, 3 eggs"). \\
+        \addlinespace[10pt]
+        Voice-to-Text Feature & The app automatically turns the voice description into text using an AI audio transcription model such as Whisper. \\
+        \addlinespace[10pt]
+        AI Nutrient Analyzer & Uses a Vision Language Model (VLM) (e.g., GPT-4V or Qwen-VL) to analyze the photo and text, and returns estimated calories and nutrients (e.g., "250 kcal, 12g protein"). \\
+        \addlinespace[10pt]
+        Simple Dashboard & Shows daily calorie and nutrient intake in a calendar view. \\
+        \addlinespace[10pt]
+        Test Data \& Results & Uses 10–20 real example meals (e.g., homemade pancakes, homemade spaghetti Bolognese) with known nutrition values to test how accurate the app is. \\
+        \addlinespace[10pt]
+        Benchmarking Results & Uses the ground-truth real example meals for benchmarking the prototype against other competitor apps, evaluating its accuracy in estimation of nutrients and calories. \\
+        \addlinespace[10pt]
+        Project Report & A written report illustrating the design and functioning of the app, test results, and lessons learned from the project, in particular referring to the use of GenAI. \\
+        \bottomrule
+    \end{tabularx}
+    \caption{Project Key Deliverables}
+
+\end{table}
+
+
+
+
+
+
+\end{document}
+
+
+
+Project Timeline and Milestones
+
+Summary Gantt chart and critical phases (e.g., design, development, testing, launch)
+
+System Architecture and Technical Design
+
+High-level system structure, core components, and technology stack
+
+Project Management Methodology
+
+Agile/Scrum framework, sprint cycles, and key tools (Jira, Trello, Confluence)
+
+Prompt Engineering Strategy
+
+Key techniques used (e.g., role prompting, chain-of-thought), refinement process, and impact on GenAI performance
+
+Team Structure and Collaboration
+
+Team roles, responsibilities, and how collaboration was managed (e.g., daily standups, review sessions)
+
+Progress Status and Roadmap to Completion
+
+Current status (completed/in-progress/pending), key achievements, risks, and final steps
+
+Project Pitch Video (Attached)
