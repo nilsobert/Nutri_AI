@@ -18,6 +18,16 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{caption}
+\usepackage{pgfgantt}
+\usepackage{pdflscape} % Key package for single-page landscape
+
+\usepackage{xcolor}
+
+% Color definitions for better styling
+\definecolor{barblue}{RGB}{51, 102, 204}
+\definecolor{groupblue}{RGB}{51, 102, 204}
+\definecolor{linkred}{RGB}{165, 0, 33}
+
 
 % \addbibresource{MyBibliography.bib} % Ort der .bib Datei, die die Datenbank für Literatur/Referenzen enthält.
 
@@ -52,13 +62,16 @@ The vision of this project is to develop a more accurate and user-friendly mobil
 
 \noindent
 Many users struggle to track self-cooked meals, mixed dishes, or food eaten outside the home (e.g., at restaurants or similar), because existing apps require users to manually search, estimate, or break down ingredients. This often leads to under-estimation, inconsistent logging, and user frustration.
-By enabling users to log meals using a simple photo and a brief voice description such as “pancakes with milk, no sugar, 3 eggs, 2 cups of flour, topped with some maple syrup”,  the app leverages modern AI technologies to generate a more reliable estimate of calories and nutrients. The goal is to reduce user effort and improve accuracy through its multi-modal approach, particularly for home-cooked and complex meals that are frequently misclassified or under-estimated in existing tools.
+By enabling users to log meals using a simple photo and a brief voice description such as “pancakes with milk, no sugar, 3 eggs, 2 cups of flour, topped with some maple syrup”,  the app leverages modern AI technologies to generate a more reliable estimate of calories and nutrients. The goal is to reduce user effort and improve accuracy through its multi-modal approach, particularly for home-cooked and complex meals that are frequently misclassified or under-estimated in existing tools. The user can also browse a simple calendar view to display daily food intake and progress towards goals. Insights are provided to the user as well, so he can gain information on metrics such as average meal quality, longest logging streaks and many others.
+\\
 This solution aims to make nutrition tracking simpler, smarter, and more accessible, helping users stay aware of their intake and make informed choices, without requiring expertise meticulous manual logging.
 
-\subsection{Project objectives, key deliverables, and defined boundaries}
+\subsection{Key Deliverables and Defined Boundaries}
 
 \subsubsection{Key Deliverables}
-\begin{table}[ht]
+
+\noindent
+\begin{minipage}{\textwidth}
     \centering
     \label{tab:deliverables}
     \small
@@ -81,41 +94,72 @@ This solution aims to make nutrition tracking simpler, smarter, and more accessi
         Project Report & A written report illustrating the design and functioning of the app, test results, and lessons learned from the project, in particular referring to the use of GenAI. \\
         \bottomrule
     \end{tabularx}
-    \caption{Project Key Deliverables}
+    \captionof{table}{Project Key Deliverables}
 
-\end{table}
+\end{minipage}
 
+\subsubsection{Project Boundaries}
+To keep the project focused and manageable, we decided on the following project boundaries as well as mandatory and optional app features.
+\newline
 
+\noindent
+\textbf{In Scope}
+\begin{itemize}
+    \item User can record one photo and voice note per meal
+    \item Use of open-source AI models for voice transcription and nutrient estimation (e.g., OpenAI API, Hugging Face, available ones on GitHub)
+    \item Output includes estimated calories and macronutrients (carbs, protein, fat)
+    \item Simple, modern and intuitive user interface
+    \item Testing using 10–20 example meals with known nutritional values (manually calculated)
+    \item User has the possibility to see real-time insights considering his meal tracking activities
+\end{itemize}
 
+\newpage
+\noindent
+\textbf{Out of Scope}
+\begin{itemize}
+    \item Support for multiple languages or complex dishes with many unknown ingredients
+    \item Integration with wearables or fitness trackers
+    \item Integration of a user's training activities to increase available calories
+    \item Nutrient Database Integration for more accurate results
+    \item Possibility for data import/export
+\end{itemize}
 
-
-
-\end{document}
-
-
-
-Project Timeline and Milestones
+\section{Project Timeline \& Milestones}
+- Woche vom 02.11. (bis Sonntag muss fertig sein!): Ideenfindung, Ideen fuer das Project proposal (mandatory features etc.)
+- Submit Topic Proposal (bis 03.11.)
+- Github Repo, Setup initial expo skeleton (Woche vom 3.11.) + agree on NFRs and FRs + Backend data classes we need for later sys architecture
+- Jeder versucht, App mit Simulator lokal laufen zu lassen (bis Woche vom 10.11)
+- Protect main branch (2.12)
 
 Summary Gantt chart and critical phases (e.g., design, development, testing, launch)
 
-System Architecture and Technical Design
+\section{System Architecture and Technical Design}
 
 High-level system structure, core components, and technology stack
 
-Project Management Methodology
+\section{Project Management Methodology}
+To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members. \\
+\begin{figure}
+    \begin{center}
+    \includegraphics[width=0.8\textwidth]{trello.png}
+    \caption{Project Management Board used for Development of NutriAI}
+    \label{fig:trello}
+    \end{center}
+\end{figure}
+\noindent
+To keep track of the tickets and overall tasks concerning our project, we used \href{https://trello.com/}{Trello}, a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done". For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
+Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates, keep us updated and discuss immediate questions or provide advice quicklier.
 
-Agile/Scrum framework, sprint cycles, and key tools (Jira, Trello, Confluence)
-
-Prompt Engineering Strategy
+\subsection{Prompt Engineering Strategies}
 
 Key techniques used (e.g., role prompting, chain-of-thought), refinement process, and impact on GenAI performance
 
-Team Structure and Collaboration
+\section{Team roles, responsibilities, and how collaboration was managed}
 
-Team roles, responsibilities, and how collaboration was managed (e.g., daily standups, review sessions)
-
+\section{Current Progress and Future Plans}
 Progress Status and Roadmap to Completion
-
 Current status (completed/in-progress/pending), key achievements, risks, and final steps
 
-Project Pitch Video (Attached)
+\section{Project Pitch Video (Attached)}
+
+\end{document}
