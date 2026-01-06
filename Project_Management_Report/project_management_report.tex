@@ -13,12 +13,13 @@
 \usepackage[locale = US, space-before-unit=true, per-mode=symbol]{siunitx} % Bessere Einheiten
 \usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)
 % \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
-% \usepackage[backend=biber]{biblatex}
+\usepackage[backend=biber]{biblatex}
+\usepackage{svg}
+\usepackage{amsmath} % usually needed if your SVG has text
 \usepackage[utf8]{inputenc}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{caption}
-\usepackage{pgfgantt}
 \usepackage{pdflscape} % Key package for single-page landscape
 
 \usepackage{xcolor}
@@ -29,7 +30,7 @@
 \definecolor{linkred}{RGB}{165, 0, 33}
 
 
-% \addbibresource{MyBibliography.bib} % Ort der .bib Datei, die die Datenbank für Literatur/Referenzen enthält.
+\addbibresource{MyBibliography.bib} % Ort der .bib Datei, die die Datenbank für Literatur/Referenzen enthält.
 
 \graphicspath{{Images/}}
 
@@ -125,27 +126,76 @@ To keep the project focused and manageable, we decided on the following project 
 \end{itemize}
 
 \section{Project Timeline \& Milestones}
-- Woche vom 02.11. (bis Sonntag muss fertig sein!): Ideenfindung, Ideen fuer das Project proposal (mandatory features etc.)
-- Submit Topic Proposal (bis 03.11.)
-- Github Repo, Setup initial expo skeleton (Woche vom 3.11.) + agree on NFRs and FRs + Backend data classes we need for later sys architecture
-- Jeder versucht, App mit Simulator lokal laufen zu lassen (bis Woche vom 10.11)
-- Protect main branch (2.12)
-
-Summary Gantt chart and critical phases (e.g., design, development, testing, launch)
+\begin{figure}[h]
+    \centering
+    \includesvg[width=0.9\textwidth]{gantt.svg}
+    \caption{Project Timeline and Milestones}
+\end{figure}
 
 \section{System Architecture and Technical Design}
 
-High-level system structure, core components, and technology stack
+\subsection{High-Level System Design}
+\noindent
+With respect to system design, we decided on a proxy-enabled server-client architecture, involving three different instances of servers, all of whom are locally hosted. 
+First of all, there is the main "physical" server (1) acting as the database storing all user data.
+Secondly, server two (2) runs a dockerized reimplementation of OpenAI's Whisper model \cite{whisper}, that is used for transcribing a user's recorded voice note in the AI-assisted meal logging workflow. Thirdly, server three (3) is a dockerized proxy that forwards ...
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[width=0.9\textwidth]{system_design.svg}
+    \caption{High-Level System Architecture of NutriAI}
+    \label{fig:system_design}
+\end{figure}
+
+\noindent
+By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive user information. This allows us to maintain full control over the data, ensuring enhanced privacy and security.
+Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. This approach guarantees that no sensitive voice information is exposed, and helps maintain privacy protections.
+Finally, our proxy solution, ....
+
+- wie werden Passis abgelegt (mit Salt + Hash?)
+
+
+
+\subsection{Core Technical Components}
+Since we were aiming at building a mobile app that runs cross-platform, we opted for Expo, after some research on possible options. Expo is a full-stack React Native framework that offers a rich ecosystem of pre-built components and tools, known for its simple setup, fast prototyping, and smooth development workflow \cite{expo}. Its accessibility made it a strong fit for our team, particularly given the varying levels of experience among team members. In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
+
+\subsubsection{Client}
+
+\noindent
+\textbf{Frontend}
+
+
+\noindent
+\textbf{Backend}
+
+
+\subsubsection{Proxy}
+
+
+\subsubsection{Server}
+
+- what is stored on the server and how
+
+\noindent
+\textbf{Audio Transcription with Whisper}
+
+\noindent
+\textbf{Nutriant Estimation with Vision Language Model (VLM) }
+Multi-modal Input (Transcription + Image)
+
+\subsection{Scalability and Security Considerations}
+
 
 \section{Project Management Methodology}
-To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members. \\
-\begin{figure}
+To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members.
+\begin{figure}[h]
     \begin{center}
     \includegraphics[width=0.8\textwidth]{trello.png}
     \caption{Project Management Board used for Development of NutriAI}
     \label{fig:trello}
     \end{center}
 \end{figure}
+
 \noindent
 To keep track of the tickets and overall tasks concerning our project, we used \href{https://trello.com/}{Trello}, a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done". For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates, keep us updated and discuss immediate questions or provide advice quicklier.
@@ -161,5 +211,13 @@ Progress Status and Roadmap to Completion
 Current status (completed/in-progress/pending), key achievements, risks, and final steps
 
 \section{Project Pitch Video (Attached)}
+
+\section{Usage of GenAI during the Document's Creation}
+\noindent
+Generative AI was used during the writing process to help with brainstorming and organizing initial notes.
+It was also used to assist with debugging certain problems occuring with LaTeX.
+
+
+\printbibliography
 
 \end{document}
