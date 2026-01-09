@@ -1,0 +1,9 @@
+# Core dependencies for meal analysis and benchmarking
+openai>=1.0.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+
+# Benchmarking dependencies
+datasets>=2.14.0
+numpy>=1.24.0
+
