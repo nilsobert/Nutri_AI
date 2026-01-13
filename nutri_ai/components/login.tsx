@@ -80,7 +80,8 @@ const IOSStyleLoginScreen = () => {
       console.log("[Login] User profile fetched successfully");
 
       console.log("[Login] Login successful, navigating to home...");
-      router.push("/(tabs)");
+      router.dismissAll();
+      router.replace("/(tabs)");
     } catch (err: any) {
       console.error("[Login] Error:", err);
       console.error("[Login] Error message:", err.message);
