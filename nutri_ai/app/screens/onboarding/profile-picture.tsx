@@ -270,6 +270,7 @@ export default function ProfilePicture() {
 
       // Navigate to main app
       console.log("[ProfilePicture] Navigating to home screen...");
+      router.dismissAll();
       router.replace("/(tabs)");
     } catch (error: any) {
       console.error("[ProfilePicture] Error:", error);

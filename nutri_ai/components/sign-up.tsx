@@ -49,7 +49,7 @@ export default function SignUp() {
 
     try {
       // Proceed to onboarding with credentials in params
-      router.push({
+      router.replace({
         pathname: "/screens/onboarding/gender-selection",
         params: {
           name: usernameTrim,
