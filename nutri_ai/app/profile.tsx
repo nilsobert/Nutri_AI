@@ -10,6 +10,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  TextInput,
+  ActionSheetIOS,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -24,9 +26,9 @@ import {
   Shadows,
 } from "@/constants/theme";
 import {
-  IUser,
+  User,
   MedicalCondition,
-  MotivationToTrackCalories,
+  Gender,
 } from "@/types/user";
 import { useUser } from "@/context/UserContext";
 import { useMeals } from "@/context/MealContext";
@@ -37,6 +39,10 @@ interface InfoRowProps {
   icon: string;
   isLast?: boolean;
   isDark: boolean;
+  editable?: boolean;
+  onChangeText?: (text: string) => void;
+  keyboardType?: "default" | "numeric" | "email-address";
+  onPress?: () => void;
 }
 
 const InfoRow: React.FC<InfoRowProps> = ({
@@ -45,10 +51,15 @@ const InfoRow: React.FC<InfoRowProps> = ({
   icon,
   isLast,
   isDark,
+  editable,
+  onChangeText,
+  keyboardType,
+  onPress,
 }) => {
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
   const secondaryText = isDark ? "#999" : "#666";
   const borderColor = isDark ? "#333" : "#f0f0f0";
+  const inputBorder = isDark ? "#555" : "#ddd";
 
   return (
     <View style={styles.infoRowContainer}>
@@ -61,11 +72,49 @@ const InfoRow: React.FC<InfoRowProps> = ({
         >
           <Ionicons name={icon as any} size={20} color={Colors.primary} />
         </View>
-        <View style={styles.infoTextContainer}>
+        <View style={[styles.infoTextContainer, { flex: 1 }]}>
           <Text style={[styles.infoLabel, { color: secondaryText }]}>
             {label}
           </Text>
-          <Text style={[styles.infoValue, { color: textColor }]}>{value}</Text>
+          {editable && (onChangeText || onPress) ? (
+            onPress ? (
+              <TouchableOpacity onPress={onPress}>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    {
+                      color: Colors.primary,
+                      paddingVertical: 4,
+                      borderBottomWidth: 1,
+                      borderBottomColor: inputBorder,
+                    },
+                  ]}
+                >
+                  {value}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TextInput
+                style={[
+                  styles.infoValue,
+                  {
+                    color: textColor,
+                    paddingVertical: 4,
+                    borderBottomWidth: 1,
+                    borderBottomColor: inputBorder,
+                    minHeight: 28,
+                  },
+                ]}
+                value={value}
+                onChangeText={onChangeText}
+                keyboardType={keyboardType}
+                placeholder={`Enter ${label}`}
+                placeholderTextColor={secondaryText}
+              />
+            )
+          ) : (
+            <Text style={[styles.infoValue, { color: textColor }]}>{value}</Text>
+          )}
         </View>
       </View>
       {!isLast && (
@@ -79,7 +128,32 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-  const { profileImage, setProfileImage, user, logout } = useUser();
+  const { profileImage, setProfileImage, user, saveUser, logout } = useUser();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<User | null>(null);
+
+  React.useEffect(() => {
+    if (user) {
+      setFormData(user);
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!formData) return;
+    try {
+      await saveUser(formData);
+      setIsEditing(false);
+      Alert.alert("Success", "Profile updated successfully");
+    } catch (error) {
+      Alert.alert("Error", "Failed to update profile");
+    }
+  };
+
+  const handleCancel = () => {
+    if (user) setFormData(user);
+    setIsEditing(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -96,6 +170,21 @@ export default function ProfileScreen() {
 
   const formatMotivation = (motivation: string) => {
     return motivation.replace(/([A-Z])/g, " $1").trim();
+  };
+
+  const pickGender = () => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: [...Object.values(Gender), "Cancel"],
+        cancelButtonIndex: Object.values(Gender).length,
+      },
+      (buttonIndex) => {
+        if (buttonIndex < Object.values(Gender).length) {
+          const selected = Object.values(Gender)[buttonIndex];
+          setFormData((prev) => (prev ? { ...prev, gender: selected } : null));
+        }
+      }
+    );
   };
 
   const pickImage = async () => {
@@ -143,16 +232,46 @@ export default function ProfileScreen() {
       >
         <View style={styles.headerTopRow}>
           <Text style={[styles.headerTitle, { color: textColor }]}>Profile</Text>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={styles.closeButton}
-          >
-            <Ionicons
-              name="close-circle"
-              size={30}
-              color={isDark ? "#333" : "#E5E5EA"}
-            />
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+            {isEditing ? (
+              <>
+                <TouchableOpacity onPress={handleCancel}>
+                  <Text style={{ color: secondaryText, fontSize: 17 }}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSave}>
+                  <Text
+                    style={{
+                      color: Colors.primary,
+                      fontSize: 17,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Save
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity onPress={() => setIsEditing(true)}>
+                  <Text style={{ color: Colors.primary, fontSize: 17 }}>
+                    Edit
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.back()}
+                  style={styles.closeButton}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={30}
+                    color={isDark ? "#333" : "#E5E5EA"}
+                  />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </View>
       </View>
 
@@ -184,9 +303,29 @@ export default function ProfileScreen() {
               </View>
             </TouchableOpacity>
             <View style={styles.profileHeaderText}>
-              <Text style={[styles.userName, { color: textColor }]}>
-                {user?.name}
-              </Text>
+              {isEditing ? (
+                <TextInput
+                  style={[
+                    styles.userName,
+                    {
+                      color: textColor,
+                      borderBottomWidth: 1,
+                      borderBottomColor: isDark ? "#555" : "#ddd",
+                      paddingVertical: 0,
+                    },
+                  ]}
+                  value={formData?.name}
+                  onChangeText={(text) =>
+                    setFormData((prev) =>
+                      prev ? { ...prev, name: text } : null
+                    )
+                  }
+                />
+              ) : (
+                <Text style={[styles.userName, { color: textColor }]}>
+                  {user?.name}
+                </Text>
+              )}
               <Text style={[styles.userEmail, { color: secondaryText }]}>
                 {user?.email}
               </Text>
@@ -201,27 +340,50 @@ export default function ProfileScreen() {
         <View style={[styles.sectionCard, { backgroundColor: cardBg }]}>
           <InfoRow
             label="Age"
-            value={`${user?.age} years`}
+            value={isEditing ? `${formData?.age}` : `${user?.age} years`}
             icon="calendar-outline"
             isDark={isDark}
+            editable={isEditing}
+            keyboardType="numeric"
+            onChangeText={(text) =>
+              setFormData((prev) =>
+                prev ? { ...prev, age: parseInt(text) || 0 } : null
+              )
+            }
           />
           <InfoRow
             label="Gender"
-            value={user.gender}
+            value={isEditing ? formData?.gender || "" : user.gender}
             icon="person-outline"
             isDark={isDark}
+            editable={isEditing}
+            onPress={pickGender}
           />
           <InfoRow
             label="Height"
-            value={`${user.heightCm} cm`}
+            value={isEditing ? `${formData?.heightCm}` : `${user.heightCm} cm`}
             icon="resize-outline"
             isDark={isDark}
+            editable={isEditing}
+            keyboardType="numeric"
+            onChangeText={(text) =>
+              setFormData((prev) =>
+                prev ? { ...prev, heightCm: parseFloat(text) || 0 } : null
+              )
+            }
           />
           <InfoRow
             label="Weight"
-            value={`${user?.weightKg} kg`}
+            value={isEditing ? `${formData?.weightKg}` : `${user?.weightKg} kg`}
             icon="scale-outline"
             isDark={isDark}
+            editable={isEditing}
+            keyboardType="numeric"
+            onChangeText={(text) =>
+              setFormData((prev) =>
+                prev ? { ...prev, weightKg: parseFloat(text) || 0 } : null
+              )
+            }
           />
           <InfoRow
             label="Email"
