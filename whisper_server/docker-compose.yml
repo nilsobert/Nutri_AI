@@ -1,0 +1,45 @@
+services:
+  faster-whisper:
+    image: lscr.io/linuxserver/faster-whisper:latest
+    container_name: faster-whisper
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - WHISPER_MODEL=tiny-int8
+      - WHISPER_BEAM=1
+      - WHISPER_LANG=en
+    volumes:
+      - /home/manu/whisper/config:/config
+    restart: unless-stopped
+    networks:
+      - whisper-net
+
+  whisper-http-api:
+    build: .
+    container_name: whisper-http-api
+    environment:
+      - WHISPER_API_KEY=nice try :)
+      - WHISPER_HOST=faster-whisper
+      # Internal port of the faster-whisper container
+      - WHISPER_PORT=10300
+    # You can actually remove "ports:" if you only access via tunnel, 
+    # but keeping it doesn't hurt.
+    ports:
+      - "10303:8000"
+    depends_on:
+      - faster-whisper
+    restart: unless-stopped
+    # ----------------------------------------
+    # ADD THE SHARED NETWORK HERE
+    networks:
+      - whisper-net   # To talk to faster-whisper
+      - pangolin_net  # To talk to Newt
+    # ----------------------------------------
+
+networks:
+  whisper-net:
+    driver: bridge
+  # DEFINE THE EXTERNAL NETWORK
+  pangolin_net:
+    external: true
