@@ -83,11 +83,13 @@ This solution aims to make nutrition tracking simpler, smarter, and more accessi
         \toprule
         \textbf{Deliverable} & \textbf{Description} \\
         \midrule
-        Mobile App Prototype & A basic app (Android/iOS or web-based) that lets users: take a photo of a meal and record a voice note (e.g., "pancakes with milk, no sugar, 3 eggs"). \\
+        Mobile App Prototype & A basic app (Android/iOS) that lets users: take a photo of a meal and record a voice note (e.g., "pancakes with milk, no sugar, 3 eggs"). \\
         \addlinespace[10pt]
         Voice-to-Text Feature & The app automatically turns the voice description into text using an AI audio transcription model such as Whisper. \\
         \addlinespace[10pt]
         AI Nutrient Analyzer & Uses a Vision Language Model (VLM) (e.g., GPT-4V or Qwen-VL) to analyze the photo and text, and returns estimated calories and nutrients (e.g., "250 kcal, 12g protein"). \\
+        \addlinespace[10pt]
+        Central Server & Self-hosted Server taking care of input processing, forwarding, user authentication and data storage.  \\
         \addlinespace[10pt]
         Simple Dashboard & Shows daily calorie and nutrient intake in a calendar view. \\
         \addlinespace[10pt]
@@ -124,8 +126,9 @@ To keep the project focused and manageable, we decided on the following project 
     \item Support for multiple languages or complex dishes with many unknown ingredients
     \item Integration with wearables or fitness trackers
     \item Integration of a user's training activities to increase available calories
-    \item Nutrient Database Integration for more accurate results
+    \item Nutrient database integration for more accurate results
     \item Possibility for data import/export
+    \item Universally trusted server certificate
 \end{itemize}
 
 \section{Project Timeline \& Milestones}
@@ -139,9 +142,9 @@ To keep the project focused and manageable, we decided on the following project 
 
 \subsection{High-Level System Design}
 \noindent
-With respect to system design, we decided on a proxy-enabled server-client architecture, involving three different instances of servers, all of whom are locally hosted. 
-First of all, there is the main "physical" server (1) acting as the database storing all user data.
-Secondly, server two (2) runs a dockerized reimplementation of OpenAI's Whisper model \cite{whisper}, that is used for transcribing a user's recorded voice note in the AI-assisted meal logging workflow. Thirdly, server three (3) is a dockerized proxy that forwards ...
+With respect to system design, we decided on a server-client architecture, involving two locally hosted servers and one externally hosted proxy server.
+First and foremost, the NutriAI server (1) serves as the central communication hub, orchestrating all internal and external data flows. It manages and routes interactions between clients, the database, and external APIs, handling critical functions such as user sign-up, authentication, rate limiting, and database operations, ensuring seamless and secure system performance. \\
+Secondly, server two (2) runs a reimplementation of OpenAI's Whisper model \cite{whisper}, that is used for transcribing a user's recorded voice note in the AI-assisted meal logging workflow. \\ Thirdly, the proxy server (3) handles the connectivity between the server and the clients. It acts as a load balancer \cite{pangolin, traefik} and a firewall that blocks malicious actors from reaching the server \cite{pangolin, crowdsec}. The client connects to the server domain, which points to the proxy server, forwarding all requests to the main NutriAI server. A more in-depth technical explanation is given in chapter \ref{chap:3.2}.
 
 \begin{figure}[htbp]
     \centering
@@ -151,45 +154,32 @@ Secondly, server two (2) runs a dockerized reimplementation of OpenAI's Whisper 
 \end{figure}
 
 \noindent
-By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive user information. This allows us to maintain full control over the data, ensuring enhanced privacy and security.
-Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. This approach guarantees that no sensitive voice information is exposed, and helps maintain privacy protections.
-Finally, our proxy solution, ....
-
-- wie werden Passis abgelegt (mit Salt + Hash?)
-
-
+By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive information, allowing us to maintain a better control over the data. Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. A more detailed explanation on data privacy and possible improvements in this regard for our service is given in the Project Safety and Reflection Report.
 
 \subsection{Core Technical Components}
-Since we were aiming at building a mobile app that runs cross-platform, we opted for Expo, after some research on possible options. Expo is a full-stack React Native framework that offers a rich ecosystem of pre-built components and tools, known for its simple setup, fast prototyping, and smooth development workflow \cite{expo}. Its accessibility made it a strong fit for our team, particularly given the varying levels of experience among team members. In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
+\label{chap:3.2}
+In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
 
 \subsubsection{Client}
-
 \noindent
-\textbf{Frontend}
-
-
-\noindent
-\textbf{Backend}
-
+Since we were aiming at building a mobile app that runs cross-platform, we opted for Expo (version 54), after some research on possible options. Expo is a full-stack React Native framework that offers a rich ecosystem of pre-built components and tools, known for its simple setup, fast prototyping, and smooth development workflow \cite{expo}. Its accessibility made it a strong fit for our team, particularly given the varying levels of experience among team members. Thus, the client can either be an iOS or Android user. In the current development build, the app requires the user to have a custom certificate installed on their device, for encrypted communication with the NutriAI server. This limitation is due to time constraints, and for a production build it would be possible to host a universally trusted Let's Encrypt certificate on the server \cite{lets}.\\
+The client does not manage a conventional database itself, but rather only has a minimal key-value store (react-native-async-storage) \cite{async} functioning as a caching layer. Here, frequently accessed data like the user profile, recent meal data (pictures, nutrients), etc. are stored. This enables the app to have a partially functional offline mode, where the user can still interact, although with limited functionality. 
 
 \subsubsection{Proxy}
+When the user uses the app to sign up, login or log a meal, corresponding requests are sent to the proxy server.
+ This server is hosted as a docker stack on a Virtual Private Server (VPS) supplied by a Cloud Provider (Hetzner). It comprises of two main parts: Traefik and CrowdSec and the main Pangolin server. \\
+ The NutriAI domain points directly to Traefik, which acts as the initial entry point for all incoming application traffic on the VPS. Traefik serves as a reverse proxy and load balancer, utilizing a specific middleware integration with CrowdSec to identify and block malicious requests before they reach the backend.
+ Pangolin manages the "allowed" request flow by utilizing Newt, a user-space WireGuard tunnel client, to securely forward traffic to the on-premise server. This distributed architecture shields the internal infrastructure from malicious actors by punching through NAT and firewall restrictions without requiring open inbound ports. Furthermore, this setup facilitates high availability and failover, as a single Pangolin instance can coordinate and route traffic across multiple Newt site connectors.
 
 
 \subsubsection{Server}
+The On-Premise Server operates as a composed Docker stack on a shared Docker network, consisting of three primary components: the Newt connector, the Whisper transcription service, and the main NutriAI executable. As detailed in the Proxy section, the Newt container maintains the secure WireGuard tunnel, receiving forwarded requests from the upstream Pangolin instance and returning Nutri AI server responses. For voice processing, the system utilizes faster-whisper; however, to mitigate the lack of security in the stock container, a custom wrapper was implemented to handle authentication via API keys.
+\\
+The core NutriAI server handles the main application logic, utilizing the aforementioned custom SSL certificate for encrypted communication to the clients and an SQLite database for persistent storage. User credentials are secured using bcrypt to salt and hash passwords, and successful login or sign-up events issue a JSON Web Token (JWT) to authenticate subsequent requests. When processing a meal log, the server forwards the audio (.wav) file internally to Whisper, then combines the resulting transcription with the user’s image and a system prompt to send to an external OpenAI-compatible VLM endpoint. This design enables flexibility in model selection. While locally hosting the VLM would be an ideal feature to keep all data on-premise and the open source selection of VLM's is great, hardware constraints necessitated an external solution for this project. The server parses the VLM's structured JSON response — containing the meal name, description, and nutritional info — and stores it alongside the media in the database for the client to retrieve.
 
-- what is stored on the server and how
+\section{Methodology}
 
-\noindent
-\textbf{Audio Transcription with Whisper}
-
-\noindent
-\textbf{Nutriant Estimation with Vision Language Model (VLM) }
-Multi-modal Input (Transcription + Image)
-
-\subsection{Scalability and Security Considerations}
-
-
-\section{Project Management Methodology}
+\subsection{Project Management}
 To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members.
 \begin{figure}[h]
     \begin{center}
@@ -200,14 +190,30 @@ To organize our team and the development process of the mobile application prope
 \end{figure}
 
 \noindent
-To keep track of the tickets and overall tasks concerning our project, we used \href{https://trello.com/}{Trello}, a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done". For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
+To keep track of the tickets and overall tasks concerning our project, we used Trello a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done" \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates, keep us updated and discuss immediate questions or provide advice quicklier.
 
-\subsection{Prompt Engineering Strategies}
+\subsection{System Design}
+
+
+\subsection{Database Design}
+
+\subsection{Prompt Engineering}
 
 Key techniques used (e.g., role prompting, chain-of-thought), refinement process, and impact on GenAI performance
 
+- System Prompt: You are an expert nutrition assistant. Respond only with the requested JSON object
+- Specified Output format specifically (JSON)
+- Provieded Examples for the desired output (Meal with Nutriant Facts) to give more context to the model (wtihin prompt)
+- Provided some rules to the model for deterministic results
+- prompt: "Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts
+- Make table with the rules: RULES:
+
 \section{Team roles, responsibilities, and how collaboration was managed}
+\begin{itemize}
+    \item 
+\end{itemize}
+
 
 \section{Current Progress and Future Plans}
 Progress Status and Roadmap to Completion
@@ -217,7 +223,7 @@ Current status (completed/in-progress/pending), key achievements, risks, and fin
 
 \section{Usage of GenAI during the Document's Creation}
 \noindent
-Generative AI was used during the writing process to help with brainstorming and organizing initial notes.
+Generative AI was used during the writing process to help with brainstorming and organizing initial notes, and rephrasing passages.
 It was also used to assist with debugging certain problems occuring with LaTeX.
 
 
