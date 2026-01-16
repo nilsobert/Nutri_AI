@@ -877,28 +877,25 @@ async def analyze_image_vlm(image_path: str, context: str = ""):
       "errorMessage": null
     }
     """
+    prefix = f"""Analyze the attached meal image and provide ONE aggregate meal object for the whole meal. Estimate the meal’s weight in grams, and list its core nutritional facts.  Return a JSON object matching this exact schema: {json_schema_template}\n""" 
     
-    prompt_text = f"""Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts.
-
-Return a JSON object matching this exact schema:
-{json_schema_template}
-
-RULES:
-- `success`: Set to `true` if food is found, `false` otherwise.
-- `requestId`: Generate a unique ID for this analysis.
-- `items`: Create one object for *each* distinct food item in the image.
-- `confidence`: Your confidence (0.0 to 1.0).
-- `serving_size_grams`: Your best estimate of the item's weight in grams.
-- `nutrition`: The nutritional info for that *single item*.
-- `meal_quality`: Estimate a reasonable natural number between 0 and 10, where 0 is worst meal quality.
-- `goal_fit_percent`: Set to a reasonable value between 0 and 1 based on the user's selected goal.
-- `calorie_density_cal_per_gram`: With the estimated meal calories and weight, calculate the calorie density of the meal.
-- `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
-
-Return *only* the JSON object and nothing else."""
+    rules = f"""
+            RULES: - `success`: Set to `true` if food is found, `false` otherwise.
+            - `requestId`: Generate a unique ID for this analysis.
+            - `items`: Create one object for _each_ distinct food item in the image.
+            - `confidence`: Your confidence (0.0 to 1.0).
+            - `serving_size_grams`: Your best estimate of the item's weight in grams.
+            - `nutrition`: The nutritional info for that _single item_.
+            - `meal_quality`: Estimate a reasonable natural number between 0 and 10, where 0 is worst meal quality.
+            - `goal_fit_percent`: Set to a reasonable value between 0 and 1 based on the user's selected goal.
+            - `calorie_density_cal_per_gram`: With the estimated meal calories and weight, calculate the calorie density of the meal.
+            - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.  
+            Return _only_ the JSON object and nothing else.\n """
+    
+    prompt = prefix + rules
 
     if context:
-        prompt_text += f"\n\n{context}"
+        prompt += f"\n Additional Context: {context}"
 
     headers = {
         "Authorization": f"Bearer {openai_api_key}",
@@ -917,7 +914,7 @@ Return *only* the JSON object and nothing else."""
                 "content": [
                     {
                         "type": "text",
-                        "text": prompt_text
+                        "text": prompt
                     },
                     {
                         "type": "image_url",
@@ -933,8 +930,8 @@ Return *only* the JSON object and nothing else."""
     }
     
     logger.info(f"[ExternalAPI] Calling VLM API at {openai_base_url}")
-    logger.info(f"Prompt (truncated): {prompt_text[:500]}...")
-    logger.debug(f"Full Prompt: {prompt_text}")
+    logger.info(f"Prompt (truncated): {prompt[:500]}...")
+    logger.debug(f"Full Prompt: {prompt}")
     
     start_time = time.time()
     async with httpx.AsyncClient(timeout=60.0) as client:
@@ -945,7 +942,7 @@ Return *only* the JSON object and nothing else."""
         
     if response.status_code != 200:
          logger.error(f"AI Provider Error: {response.status_code} - {response.text}")
-         return {"error": response.text}, response.json() if response.headers.get("content-type") == "application/json" else response.text, prompt_text
+         return {"error": response.text}, response.json() if response.headers.get("content-type") == "application/json" else response.text, prompt
          
     ai_result = response.json()
     content = ai_result["choices"][0]["message"]["content"]
@@ -961,11 +958,11 @@ Return *only* the JSON object and nothing else."""
         
         json_obj = json.loads(parsed_content)
         logger.info("[Parser] Successfully extracted JSON")
-        return json_obj, ai_result, prompt_text
+        return json_obj, ai_result, prompt
     except Exception as e:
         logger.error(f"[Parser] Failed to parse JSON: {e}")
         logger.debug(f"Raw content: {content}")
-        return {"error": "Failed to parse JSON", "raw": content}, ai_result, prompt_text
+        return {"error": "Failed to parse JSON", "raw": content}, ai_result, prompt
 
 @app.post("/api/analyze")
 async def analyze_meal(
