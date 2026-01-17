@@ -6,8 +6,11 @@
 \usepackage[onehalfspacing]{setspace}
 \usepackage{graphicx} % zum Einbinden von Graphiken
 \usepackage[breaklinks=true,colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref} % f. Referenzen
+\usepackage{listings} % for code
 \usepackage{amsmath,amsthm,amssymb} % Mathematik Umgebung 
 \usepackage{icomma} % Intelligentes Komma, das den richtigen Abstand zwischen Dezimalzahlen als auch in Formeln wählt.
+\usepackage[most]{tcolorbox}
+\tcbset{promptstyle/.style={enhanced, boxrule=0.5pt, arc=2pt, fonttitle=\bfseries\sffamily\small, left=8pt, right=8pt, top=8pt, bottom=8pt}}
 \usepackage[english]{babel} % Deutsche Bezeichnungen bei Inhaltsangabe etc
 \usepackage[T1]{fontenc}    % andere Schriftsatzkodierung für richtige Silbentrennung bei Umlauten
 \usepackage[locale = US, space-before-unit=true, per-mode=symbol]{siunitx} % Bessere Einheiten
@@ -23,6 +26,45 @@
 \usepackage{pdflscape} % Key package for single-page landscape
 
 \usepackage{xcolor}
+
+% prompt stuff:
+% Configuration for the JSON/Code blocks
+\lstset{
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    breakatwhitespace=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    literate={’}{{'}}1 {“}{{"}}1 {”}{{"}}1 % Fixes the UTF-8 Quote errors
+}
+
+% Reusable prompt style
+\tcbset{
+    promptstyle/.style={
+        enhanced,
+        boxrule=0.8pt,
+        arc=3pt,
+        fonttitle=\bfseries\sffamily\small,
+        left=8pt, right=8pt, top=10pt, bottom=10pt,
+        shadow={1mm}{-1mm}{0mm}{black!10}
+    }
+}
+
+
+% for prompt diagram
+% --- Design for the UI Boxes ---
+\tcbset{
+    promptstyle/.style={
+        enhanced,
+        boxrule=0.5pt,
+        arc=2pt,
+        fonttitle=\bfseries\sffamily\small,
+        upper box=normal,
+        left=8pt, right=8pt, top=8pt, bottom=8pt,
+        toptitle=3pt, bottomtitle=3pt
+    }
+}
 
 % Color definitions for better styling
 \definecolor{barblue}{RGB}{51, 102, 204}
@@ -199,15 +241,24 @@ Apart from using a project management tool, we also created a WhatsApp group wit
 \subsection{Database Design}
 
 \subsection{Prompt Engineering}
+During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets - one simpler and one more complex. The prompt set includes the system and user prompt. 
+For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
+\noindent
+For the second prompt set, we utilized various prompt engineering techniques presented in the lecture.
+Adopting a meta-prompting approach, we used Google’s Gemini 3 Flash Preview model to generate a suitable prompt for our use case. We began by providing it with a foundational context for the task, then explicitly instructed it to adopt the persona of a prompt engineer. We asked it to analyze the requirements and clearly articulate exactly what information it needed to craft an effective, targeted, and well-structured prompt. In addition, we instructed the model to request further context or clarification if any ambiguity or imprecision remained, and to explicitly signal when the prompt had reached a sufficiently accurate state, ensuring we could collaboratively finalize it confidently. Following our initial prompt, the model requested clarification, particularly regarding which input to prioritize in cases of ambiguity between image and text/transcription. After addressing these unclear aspects, we received a precise and sophisticated system prompt, along with a rather simple user prompt. We opted for a structured prompt, used delimiters to clearly indicate distinct parts of input and specifically stated our desired output format, a custom JSON. Additionally, during the development of prompt set two, we incorporated a full example, comprising an image and its corresponding transcription, to guide and inform prompt design. For both prompt sets, we also provided an example output to facilitate in-context learning.\\
+\noindent
+With these two versions, we now proceeded evaluating and comparing the performance of both prompt sets with different models and a set of ground truth meals\footnote{Ground truth meals are those for which we have both an image and complete nutritional data, enabling us to accurately assess and compare the performance of different prompt sets.}.
+\\
+\noindent
+Against all expectations, the simpler prompt set performed much better in meal calorie and nutriant estimation than the second, more detailed prompt set.
+Although both prompt sets, across all tested models, were overestimating calorie and nutriant values, prompt set one was still the more precise one of the two. Consequently, we kept prompt set one as our production-level prompt set.
 
-Key techniques used (e.g., role prompting, chain-of-thought), refinement process, and impact on GenAI performance
+- ggf. write that we adapted prompt s.t. fats are not as heavily overstimated anymore
 
 - System Prompt: You are an expert nutrition assistant. Respond only with the requested JSON object
-- Specified Output format specifically (JSON)
-- Provieded Examples for the desired output (Meal with Nutriant Facts) to give more context to the model (wtihin prompt)
-- Provided some rules to the model for deterministic results
-- prompt: "Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts
-- Make table with the rules: RULES:
+- Prompts anhaengen
+
+
 
 \section{Team roles, responsibilities, and how collaboration was managed}
 \begin{itemize}
