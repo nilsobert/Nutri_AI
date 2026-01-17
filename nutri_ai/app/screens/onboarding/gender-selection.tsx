@@ -69,7 +69,7 @@ export default function GenderSelection() {
       {/* Content */}
       <View style={styles.content}>
         <Text style={[styles.title, { color: textColor }]}>
-          Slect your gender
+          Select your gender
         </Text>
 
           <View style={styles.genderOptions}>
