@@ -14,8 +14,7 @@
 \usepackage[english]{babel} % Deutsche Bezeichnungen bei Inhaltsangabe etc
 \usepackage[T1]{fontenc}    % andere Schriftsatzkodierung für richtige Silbentrennung bei Umlauten
 \usepackage[locale = US, space-before-unit=true, per-mode=symbol]{siunitx} % Bessere Einheiten
-\usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)
-% \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
+\usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)\usepackage{float} % Provides [H] placement specifier for strict figure positioning% \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
 \usepackage[backend=biber]{biblatex}
 \usepackage{svg}
 \usepackage{amsmath} % usually needed if your SVG has text
@@ -174,7 +173,7 @@ To keep the project focused and manageable, we decided on the following project 
 \end{itemize}
 
 \section{Project Timeline \& Milestones}
-\begin{figure}[h]
+\begin{figure}[htbp]
     \centering
     \includesvg[width=0.9\textwidth]{gantt.svg}
     \caption{Project Timeline and Milestones}
@@ -197,8 +196,7 @@ Secondly, server two (2) runs a reimplementation of OpenAI's Whisper model \cite
 
 \noindent
 By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive information, allowing us to maintain a better control over the data. Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. A more detailed explanation on data privacy and possible improvements in this regard for our service is given in the Project Safety and Reflection Report.
-
-\subsection{Core Technical Components}
+\FloatBarrier\subsection{Core Technical Components}
 \label{chap:3.2}
 In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
 
@@ -223,7 +221,7 @@ The core NutriAI server handles the main application logic, utilizing the aforem
 
 \subsection{Project Management}
 To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members.
-\begin{figure}[h]
+\begin{figure}[htbp]
     \begin{center}
     \includegraphics[width=0.8\textwidth]{trello.png}
     \caption{Project Management Board used for Development of NutriAI}
@@ -235,11 +233,13 @@ To organize our team and the development process of the mobile application prope
 To keep track of the tickets and overall tasks concerning our project, we used Trello a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done" \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates, keep us updated and discuss immediate questions or provide advice quicklier.
 
+\FloatBarrier
 \subsection{System Design}
 
 
 \subsection{Database Design}
 
+\FloatBarrier
 \subsection{Prompt Engineering}
 During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets - one simpler and one more complex. The prompt set includes the system and user prompt. 
 For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
@@ -259,9 +259,9 @@ Although both prompt sets, across all tested models, were overestimating calorie
 - Prompts anhaengen
 
 
-
+\FloatBarrier
 \section{Team roles, responsibilities, and how collaboration was managed}
-\begin{figure}[h]
+\begin{figure}[htbp]
     \centering 
     \includesvg[width=0.9\textwidth]{org_chart.svg}
     \caption{Team Chart}
