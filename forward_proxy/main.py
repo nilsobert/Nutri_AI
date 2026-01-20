@@ -1052,6 +1052,20 @@ async def analyze_meal(
         db.commit()
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/meals/{meal_id}")
+def delete_meal(meal_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[DELETE /meals/{meal_id}] Deleting meal for user {current_user.id}")
+    
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == current_user.id).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Meal not found")
+        
+    db.delete(meal)
+    db.commit()
+    
+    logger.info(f"[DELETE /meals/{meal_id}] Meal deleted successfully")
+    return {"message": "Meal deleted successfully"}
+
 if __name__ == "__main__":
     import uvicorn
     
