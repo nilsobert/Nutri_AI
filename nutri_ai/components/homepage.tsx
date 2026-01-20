@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import {
   LayoutAnimation,
@@ -15,6 +16,7 @@ import {
   Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -34,7 +36,7 @@ import { BlurView } from "expo-blur";
 import { useUser } from "../context/UserContext";
 import { useMeals } from "../context/MealContext";
 import { useNetwork } from "../context/NetworkContext";
-import { DAILY_CALORIE_GOAL } from "../constants/values";
+import { API_BASE_URL, DAILY_CALORIE_GOAL } from "../constants/values";
 import {
   BorderRadius,
   Colors,
@@ -246,6 +248,35 @@ const DayItem: React.FC<DayItemProps> = ({
   );
 };
 
+const checkRateLimit = async (isServerReachable: boolean) => {
+    if (!isServerReachable) return true;
+    try {
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) return true;
+
+      const response = await fetch(`${API_BASE_URL}/user/limits`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.allowed) {
+           const msg = data.daily_remaining === 0 
+             ? "You have reached your daily limit of 5 requests." 
+             : "You are sending requests too fast. Please wait a minute.";
+           Alert.alert("Rate Limit Exceeded", msg);
+           return false;
+        }
+      } else if (response.status === 429) {
+          Alert.alert("Limit Exceeded", "You have reached your request limit.");
+          return false;
+      }
+    } catch (e) {
+      console.warn("Rate limit check failed", e);
+    }
+    return true;
+};
+
 interface MealCardProps {
   category: MealCategory;
   meals: MealEntry[];
@@ -260,6 +291,7 @@ const MealCard: React.FC<MealCardProps> = ({
   currentDate,
 }) => {
   const { isServerReachable } = useNetwork();
+  const { deleteMeal } = useMeals();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
@@ -281,6 +313,38 @@ const MealCard: React.FC<MealCardProps> = ({
   const toggleExpand = () => {
     setExpanded(!expanded);
     rotation.value = withTiming(expanded ? 0 : 180);
+  };
+
+  const showMealOptions = (meal: MealEntry) => {
+    Alert.alert(
+        "Meal Options",
+        `Options for ${meal.name || 'this meal'}`,
+        [
+            {
+                text: "Edit",
+                onPress: () => {
+                    router.push({
+                        pathname: "/add-meal",
+                        params: { 
+                            date: currentDate.toISOString(),
+                            meal: JSON.stringify(meal) 
+                        }
+                    });
+                }
+            },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                    Alert.alert("Delete Meal", "Are you sure you want to delete this meal?", [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Delete", style: "destructive", onPress: () => deleteMeal(meal.id) }
+                    ]);
+                }
+            },
+            { text: "Cancel", style: "cancel" }
+        ]
+    );
   };
 
   const chevronStyle = useAnimatedStyle(() => {
@@ -336,6 +400,7 @@ const MealCard: React.FC<MealCardProps> = ({
             params: { id: meal.id },
           });
         }}
+        onLongPress={() => showMealOptions(meal)}
       >
         {meals.length > 1 && (
           <View style={styles.slideHeader}>
@@ -429,6 +494,11 @@ const MealCard: React.FC<MealCardProps> = ({
         onPress={toggleExpand}
         activeOpacity={0.7}
         style={styles.mealCardHeader}
+        onLongPress={() => {
+            if (meals.length === 1) {
+                showMealOptions(meals[0]);
+            }
+        }}
       >
         <View
           style={[
@@ -522,8 +592,8 @@ const MealCard: React.FC<MealCardProps> = ({
                 opacity: isServerReachable ? 1 : 0.5,
               },
             ]}
-            onPress={() => {
-              if (isServerReachable) {
+            onPress={async () => {
+              if (await checkRateLimit(isServerReachable)) {
                 router.push({
                   pathname: "/add-meal",
                   params: { date: currentDate.toISOString() },
@@ -1010,8 +1080,8 @@ const IOSStyleHomeScreen: React.FC = () => {
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
         style={[styles.fab, !isServerReachable && { opacity: 0.5 }]}
-        onPress={() => {
-          if (isServerReachable) {
+        onPress={async () => {
+          if (await checkRateLimit(isServerReachable)) {
             router.push({
               pathname: "/add-meal",
               params: { date: currentDate.toISOString() },

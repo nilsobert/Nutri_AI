@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from datetime import timedelta, date
 from typing import Optional, List
+from collections import defaultdict
 from contextlib import asynccontextmanager
 import httpx
 import os
@@ -31,6 +32,14 @@ from auth import (
 from pydantic import BaseModel
 
 load_dotenv()
+
+# Rate limiting globals
+MAX_REQUESTS_PER_MINUTE = 5
+MAX_REQUESTS_PER_DAY = 5
+
+# In-memory store for minute rate limiting
+# Map user_id -> list of timestamps
+user_request_timestamps = defaultdict(list)
 
 # Configure logging
 # Allow overriding via env var, e.g. LOG_LEVEL=WARNING or LOG_LEVEL=INFO
@@ -247,6 +256,69 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+async def enforce_rate_limit(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    now = time.time()
+    
+    # 1. Daily Check and Reset
+    today = date.today()
+    # If last_reset_date is None (legacy users), treat as today or reset
+    if user.last_reset_date is None or user.last_reset_date != today:
+        user.quota_count = 0
+        user.last_reset_date = today
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+    if user.quota_count >= MAX_REQUESTS_PER_DAY:
+        raise HTTPException(
+            status_code=429,
+            detail="Daily limit reached"
+        )
+        
+    # 2. Minute Check
+    timestamps = user_request_timestamps[user.id]
+    valid_timestamps = [t for t in timestamps if now - t < 60]
+    user_request_timestamps[user.id] = valid_timestamps
+    
+    if len(valid_timestamps) >= MAX_REQUESTS_PER_MINUTE:
+        raise HTTPException(
+            status_code=429,
+            detail="Minute limit reached"
+        )
+        
+    # Increment
+    user.quota_count += 1
+    db.add(user)
+    db.commit()
+    
+    user_request_timestamps[user.id].append(now)
+    return True
+
+@app.get("/user/limits")
+async def check_limits(user: User = Depends(get_current_user)):
+    now = time.time()
+    
+    # Check Daily
+    daily_remaining = MAX_REQUESTS_PER_DAY - user.quota_count
+    if user.last_reset_date != date.today():
+         daily_remaining = MAX_REQUESTS_PER_DAY
+         
+    # Check Minute
+    timestamps = user_request_timestamps[user.id]
+    valid_timestamps = [t for t in timestamps if now - t < 60]
+    minute_remaining = MAX_REQUESTS_PER_MINUTE - len(valid_timestamps)
+    
+    is_allowed = daily_remaining > 0 and minute_remaining > 0
+    
+    return {
+        "allowed": is_allowed,
+        "daily_remaining": max(0, daily_remaining),
+        "minute_remaining": max(0, minute_remaining)
+    }
+
 @app.post("/signup", response_model=Token)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -394,6 +466,15 @@ def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user)
     Why: the mobile app may retry / or run concurrent queue workers during reconnect.
     We therefore must never return 500 for duplicate IDs.
     """
+    
+    # Quota Check
+    if not check_quota_and_update(current_user, db):
+        logger.warning(f"User {current_user.id} exceeded daily quota (create_meal)")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Daily limit reached."
+        )
+
     logger.info(f"[POST /meals] Creating/Updating meal {meal.id} for user {current_user.id} (email: {current_user.email})")
     logger.debug(f"[POST /meals] Meal data: category={meal.category}, timestamp={meal.timestamp}, name={meal.name}, has_image={bool(meal.image)}, has_audio={bool(meal.audio)}, has_transcription={bool(meal.transcription)}")
 
@@ -600,22 +681,33 @@ def get_static_file(file_path: str, current_user: User = Depends(get_current_use
     return FileResponse(full_path)
 
 def check_quota_and_update(user: User, db: Session) -> bool:
+    now = time.time()
     today = date.today()
     
     # 1. Check if we need to reset for a new day
     if user.last_reset_date != today:
-        user.quota_count = 1
+        user.quota_count = 0
         user.last_reset_date = today
-        db.commit()
-        return True # Allowed
+        # We don't return here, we proceed to check limits (it will be 0)
         
-    # 2. Check if limit is reached
-    if user.quota_count >= 10:
+    # 2. Check Daily Limit
+    if user.quota_count >= MAX_REQUESTS_PER_DAY:
         return False # Denied
         
-    # 3. Increment request
+    # 3. Check Minute Limit
+    timestamps = user_request_timestamps[user.id]
+    valid_timestamps = [t for t in timestamps if now - t < 60]
+    user_request_timestamps[user.id] = valid_timestamps # Cleanup
+    
+    if len(valid_timestamps) >= MAX_REQUESTS_PER_MINUTE:
+        return False # Denied
+
+    # 4. Increment request
     user.quota_count += 1
     db.commit()
+    
+    user_request_timestamps[user.id].append(now)
+    return True
     return True # Allowed
 
 @app.post("/api/track-meal")
@@ -717,6 +809,10 @@ RULES:
 - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
 
 Return *only* the JSON object and nothing else."""
+
+        user_goal_info = get_user_goal_context(current_user)
+        if user_goal_info:
+            prompt_text += f"\n\nUser Profile & Goals:\n{user_goal_info}"
 
         if transcript:
             prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
@@ -827,7 +923,23 @@ async def transcribe_audio(audio_path: str, content_type: str = "audio/wav"):
         logger.error(f"[ExternalAPI] Whisper failed after {duration:.2f}s: {e}")
         return "", {"error": str(e)}
 
-async def analyze_image_vlm(image_path: str, context: str = ""):
+def get_user_goal_context(user: User) -> str:
+    context_parts = []
+    if user.motivation:
+        context_parts.append(f"User Motivation: {user.motivation}")
+    
+    if user.medical_condition:
+        context_parts.append(f"Medical Condition: {user.medical_condition}")
+        
+    if user.weight_goal_type:
+        context_parts.append(f"Weight Goal: {user.weight_goal_type}")
+        
+    if user.protein_preference:
+         context_parts.append(f"Protein Preference: {user.protein_preference}")
+         
+    return "\n".join(context_parts)
+
+async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: str = ""):
     openai_api_key = os.getenv("OPENAI_API_KEY")
     openai_base_url = os.getenv("OPENAI_BASE_URL")
     
@@ -896,6 +1008,9 @@ RULES:
 - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
 
 Return *only* the JSON object and nothing else."""
+
+    if user_goal_info:
+        prompt_text += f"\n\nUser Profile & Goals:\n{user_goal_info}"
 
     if context:
         prompt_text += f"\n\n{context}"
@@ -1025,7 +1140,8 @@ async def analyze_meal(
         if context_text:
             full_context += f"Additional Context from User Description: {context_text}\n"
             
-        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context)
+        user_goal_info = get_user_goal_context(current_user)
+        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context, user_goal_info)
         
         log_entry.vlm_request_prompt = prompt_used
         log_entry.vlm_raw_response = json.dumps(raw_vlm) if raw_vlm else None
@@ -1051,6 +1167,20 @@ async def analyze_meal(
         log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
         db.commit()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/meals/{meal_id}")
+def delete_meal(meal_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    logger.info(f"[DELETE /meals/{meal_id}] Deleting meal for user {current_user.id}")
+    
+    meal = db.query(Meal).filter(Meal.id == meal_id, Meal.user_id == current_user.id).first()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Meal not found")
+        
+    db.delete(meal)
+    db.commit()
+    
+    logger.info(f"[DELETE /meals/{meal_id}] Meal deleted successfully")
+    return {"message": "Meal deleted successfully"}
 
 if __name__ == "__main__":
     import uvicorn

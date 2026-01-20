@@ -52,13 +52,14 @@ type Mode = 'CAMERA' | 'IMAGE_PREVIEW' | 'CONTEXT_INPUT' | 'ANALYZING' | 'REVIEW
 
 interface CaptureWaitReviewContainerProps {
   initialDate?: string;
+  initialMealJson?: string;
 }
 
-const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({ initialDate }) => {
+const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({ initialDate, initialMealJson }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const { addMeal } = useMeals();
+  const { addMeal, updateMeal } = useMeals();
   const { isConnected } = useNetwork();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -69,6 +70,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+
+  // Edit State
+  const [editingMealId, setEditingMealId] = useState<string | null>(null);
   
   // Data State
   const [mealName, setMealName] = useState("");
@@ -86,6 +90,40 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
+
+  // Initialize from existing meal if provided
+  useEffect(() => {
+    if (initialMealJson) {
+      try {
+        const meal = JSON.parse(initialMealJson);
+        setEditingMealId(meal.id);
+        setMealName(meal.name || "");
+        setCalories(meal.nutritionInfo?.calories.toString() || "0");
+        setProtein(meal.nutritionInfo?.protein.toString() || "0");
+        setCarbs(meal.nutritionInfo?.carbs.toString() || "0");
+        setFat(meal.nutritionInfo?.fat.toString() || "0");
+        setMealQualityScore(meal.mealQuality?.mealQualityScore || 0);
+        setGoalFitPercentage(meal.mealQuality?.goalFitPercentage || 0);
+        setCalorieDensity(meal.mealQuality?.calorieDensity || 0);
+        setTranscription(meal.transcription || "");
+        setMealType(meal.category || MealCategory.Lunch);
+        setSelectedDate(meal.timestamp ? new Date(meal.timestamp * 1000) : new Date());
+        
+        if (meal.image) {
+            setImageUri(meal.image);
+        }
+        if (meal.audio) {
+            setAudioUri(meal.audio);
+        }
+
+        setMode('REVIEW');
+        setReviewModalVisible(true);
+      } catch (e) {
+        console.error("Failed to parse initial meal", e);
+      }
+    }
+  }, [initialMealJson]);
+
 
   const cameraRef = useRef<CameraView>(null);
   
@@ -363,8 +401,15 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
 
   const handleSave = async (data: any) => {
     try {
-      const permImage = imageUri ? await StorageService.moveFileToPermanentStorage(imageUri) : undefined;
-      const permAudio = audioUri ? await StorageService.moveFileToPermanentStorage(audioUri) : undefined;
+      let permImage = imageUri;
+      if (imageUri && (imageUri.startsWith('file://') || imageUri.startsWith('/'))) {
+         permImage = await StorageService.moveFileToPermanentStorage(imageUri);
+      }
+      
+      let permAudio = audioUri;
+      if (audioUri && (audioUri.startsWith('file://') || audioUri.startsWith('/'))) {
+          permAudio = await StorageService.moveFileToPermanentStorage(audioUri);
+      }
 
       const meal = createMealEntry({
         category: data.mealType,
@@ -387,7 +432,13 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         timestamp: Math.floor(data.date.getTime() / 1000),
       });
 
-      await addMeal(meal);
+      if (editingMealId) {
+          meal.id = editingMealId; // Preserve original ID
+          await updateMeal(meal);
+      } else {
+          await addMeal(meal);
+      }
+      
       setReviewModalVisible(false);
       router.back();
     } catch (e) {
