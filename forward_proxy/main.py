@@ -810,6 +810,10 @@ RULES:
 
 Return *only* the JSON object and nothing else."""
 
+        user_goal_info = get_user_goal_context(current_user)
+        if user_goal_info:
+            prompt_text += f"\n\nUser Profile & Goals:\n{user_goal_info}"
+
         if transcript:
             prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
 
@@ -919,7 +923,23 @@ async def transcribe_audio(audio_path: str, content_type: str = "audio/wav"):
         logger.error(f"[ExternalAPI] Whisper failed after {duration:.2f}s: {e}")
         return "", {"error": str(e)}
 
-async def analyze_image_vlm(image_path: str, context: str = ""):
+def get_user_goal_context(user: User) -> str:
+    context_parts = []
+    if user.motivation:
+        context_parts.append(f"User Motivation: {user.motivation}")
+    
+    if user.medical_condition:
+        context_parts.append(f"Medical Condition: {user.medical_condition}")
+        
+    if user.weight_goal_type:
+        context_parts.append(f"Weight Goal: {user.weight_goal_type}")
+        
+    if user.protein_preference:
+         context_parts.append(f"Protein Preference: {user.protein_preference}")
+         
+    return "\n".join(context_parts)
+
+async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: str = ""):
     openai_api_key = os.getenv("OPENAI_API_KEY")
     openai_base_url = os.getenv("OPENAI_BASE_URL")
     
@@ -988,6 +1008,9 @@ RULES:
 - `errorMessage`: Set to a reason if `success` is `false`, otherwise `null`.
 
 Return *only* the JSON object and nothing else."""
+
+    if user_goal_info:
+        prompt_text += f"\n\nUser Profile & Goals:\n{user_goal_info}"
 
     if context:
         prompt_text += f"\n\n{context}"
@@ -1117,7 +1140,8 @@ async def analyze_meal(
         if context_text:
             full_context += f"Additional Context from User Description: {context_text}\n"
             
-        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context)
+        user_goal_info = get_user_goal_context(current_user)
+        vlm_response, raw_vlm, prompt_used = await analyze_image_vlm(image_path, full_context, user_goal_info)
         
         log_entry.vlm_request_prompt = prompt_used
         log_entry.vlm_raw_response = json.dumps(raw_vlm) if raw_vlm else None
