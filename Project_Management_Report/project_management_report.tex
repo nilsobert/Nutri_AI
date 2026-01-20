@@ -82,7 +82,7 @@
 \begin{document}
 %
 \title{\includegraphics[width=3.5cm]{logo.png} \\ \vspace{1cm} \textbf{Project Management Report}}
-\author{Laura Kotalczyk \\ Manuel Mühlberger \\ Joana Silva \\ Eduardo Pinto \\ Nils Harrer \\ \\ \textbf{Group 4}}
+\author{Laura Kotalczyk \\ Manuel Mühlberger \\ \textbf{Group 4}}
 \date{\today}
 \maketitle
 \vfill
@@ -236,11 +236,13 @@ Apart from using a project management tool, we also created a WhatsApp group wit
 With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges. A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively. After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvement. Based on the feedback from user acceptance testing, we then focused on addressing the identified areas to enhance usability, and overall quality.
 
 \subsection{System Design}
+\label{chap:sys}
 The system design was informed by a set of functional and non-functional requirements collected early in the project. Since our target audience includes both iOS and Android users, a cross-platform solution was required, which led us to choose React Native together with Expo. On the backend, a key requirement was centralized user account management and a single, controlled access point for all AI API calls. Routing these requests exclusively through the server allows us to handle the requirements of authentication, rate limiting, and API key management centrally, without exposing sensitive logic or credentials to the client.
 \\
 Another important consideration was the intended deployment model. From the beginning, the system was designed to run on an on-premise server, complemented by a manually managed VPS that serves as an external access point. This setup motivated the use of Docker, as containerization ensures that all services remain isolated, reproducible, and easy to operate across both environments. In addition, this approach allows future extensions such as scaling or failover to be implemented with relatively little effort. Together, these requirements naturally led to a clear server--client separation and the use of a reverse proxy pattern, which provides a well-defined boundary between mobile clients and the internal infrastructure.
-
+ 
 \subsection{Database Design}
+\label{chap:db}
 Based on the collected requirements, we identified four core data classes for the application: \textit{User}, \textit{MealEntry}, \textit{NutritionInfo}, and \textit{Day}. The \textit{User} entity stores basic profile information (e.g., name, age, and weight), health-related data such as medical conditions and personal goals, as well as authentication data in the form of an email address and a hashed password. Each \textit{MealEntry} represents a logged meal and contains a timestamp, a meal category, optional references to an image and a transcription, and an associated \textit{NutritionInfo} object holding estimated macronutrients. A meal quality score is derived from factors such as calorie density and goal alignment. The \textit{Day} entity groups all meals of a specific date and stores target nutrition values to enable daily comparisons.
 \\
 During early development, we used simple JSON-based storage to iterate quickly on the data model. As the system evolved and requirements such as multi-user support, structured queries for calendar views, and data consistency became more important, we migrated to SQLite. A practical advantage of SQLite in this context was its flexibility, as schema changes (e.g., adding new columns) could be applied with minimal overhead, while still providing reliable relational storage. At the same time, SQLite remains lightweight and well suited for deployment within our Docker-based backend, without the complexity of operating a separate database server.
@@ -260,9 +262,10 @@ Against all expectations, the simpler prompt set performed much better in meal c
 Although both prompt sets, across all tested models, were overestimating calorie and nutriant values, prompt set one was still the more precise one of the two. Consequently, we kept prompt set one as our production-level prompt set.
 On a smaller set of ground truth meals, we also assessed whether varying temperatures changed the estimation quality. This, however, was not the case; results were neither less precise nor more accurate, so we decided to leave the selected temperature at 0.0.
 
+
 - ggf. write that we adapted prompt s.t. fats are not as heavily overstimated anymore
 
-% \vspace{2cm}
+\vspace{6cm}
 
 \FloatBarrier
 \section{Team roles}
