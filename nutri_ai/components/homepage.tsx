@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import {
   LayoutAnimation,
@@ -35,7 +36,7 @@ import { BlurView } from "expo-blur";
 import { useUser } from "../context/UserContext";
 import { useMeals } from "../context/MealContext";
 import { useNetwork } from "../context/NetworkContext";
-import { DAILY_CALORIE_GOAL } from "../constants/values";
+import { API_BASE_URL, DAILY_CALORIE_GOAL } from "../constants/values";
 import {
   BorderRadius,
   Colors,
@@ -245,6 +246,35 @@ const DayItem: React.FC<DayItemProps> = ({
       </View>
     </AnimatedTouchableOpacity>
   );
+};
+
+const checkRateLimit = async (isServerReachable: boolean) => {
+    if (!isServerReachable) return true;
+    try {
+      const token = await AsyncStorage.getItem("auth_token");
+      if (!token) return true;
+
+      const response = await fetch(`${API_BASE_URL}/user/limits`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.allowed) {
+           const msg = data.daily_remaining === 0 
+             ? "You have reached your daily limit of 5 requests." 
+             : "You are sending requests too fast. Please wait a minute.";
+           Alert.alert("Rate Limit Exceeded", msg);
+           return false;
+        }
+      } else if (response.status === 429) {
+          Alert.alert("Limit Exceeded", "You have reached your request limit.");
+          return false;
+      }
+    } catch (e) {
+      console.warn("Rate limit check failed", e);
+    }
+    return true;
 };
 
 interface MealCardProps {
@@ -562,8 +592,8 @@ const MealCard: React.FC<MealCardProps> = ({
                 opacity: isServerReachable ? 1 : 0.5,
               },
             ]}
-            onPress={() => {
-              if (isServerReachable) {
+            onPress={async () => {
+              if (await checkRateLimit(isServerReachable)) {
                 router.push({
                   pathname: "/add-meal",
                   params: { date: currentDate.toISOString() },
@@ -1050,8 +1080,8 @@ const IOSStyleHomeScreen: React.FC = () => {
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
         style={[styles.fab, !isServerReachable && { opacity: 0.5 }]}
-        onPress={() => {
-          if (isServerReachable) {
+        onPress={async () => {
+          if (await checkRateLimit(isServerReachable)) {
             router.push({
               pathname: "/add-meal",
               params: { date: currentDate.toISOString() },
