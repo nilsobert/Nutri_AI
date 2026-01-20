@@ -220,7 +220,7 @@ The core NutriAI server handles the main application logic, utilizing the aforem
 \section{Methodology}
 
 \subsection{Project Management}
-To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members.
+To organize our team and the development process of the mobile application properly, we decided on a ''SCRUM-alike'' agile work mode. We proceeded in increments of one-week long sprints, agreeing on tasks each of the team members should finish until the next week. During our weekly meeting slot in person, we then met to discuss our progress on the respective tasks, next steps and potential impediments. Apart from that, we added new items and bug fix tickets to the product backlog, prioritized the product backlog and assigned tasks with respective deadlines to team members.
 \begin{figure}[htbp]
     \begin{center}
     \includegraphics[width=0.8\textwidth]{trello.png}
@@ -230,20 +230,20 @@ To organize our team and the development process of the mobile application prope
 \end{figure}
 
 \noindent
-To keep track of the tickets and overall tasks concerning our project, we used Trello a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done" \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
+To keep track of the tickets and overall tasks concerning our project, we used Trello, a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done" \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates, keep us updated and discuss immediate questions or provide advice quicklier.
-
-- requirements collection
-- target user analysis
-
+\\
+With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges. A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively. After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvement. Based on the feedback from user acceptance testing, we then focused on addressing the identified areas to enhance usability, and overall quality.
 
 \FloatBarrier
 \subsection{System Design}
+\label{chap:sys}
 The system design was informed by several key requirements collected early in the project. Since our target audience includes both iOS and Android users, we needed a framework that supports both platforms, which led us to choose React Native. On the server side, the main non-functional requirements were centralized user account management and a single controlled channel for all GenAI API calls. This allows us to handle authentication, rate limiting, and API credential management in one place on the server rather than exposing these to clients. Another important requirement was the ability to deploy our infrastructure consistently across different environments—from development machines to an on-premise server and a cloud VPS. This need for reproducible deployments and service isolation made Docker the natural choice for containerizing all backend components.
 
 These requirements led us to adopt a clear server-client architecture with a reverse proxy setup. The mobile client communicates with a single domain that routes through Pangolin, our proxy server, which then forwards traffic securely to the on-premise NutriAI server. All backend services run as Docker containers, making them portable and easy to manage across different hosting environments.
 
 \subsection{Database Design}
+\label{chap:db}
 From the collected requirements, we identified four main data classes needed for the application: \textit{User}, \textit{MealEntry}, \textit{NutritionInfo}, and \textit{Day}. The \textit{User} class stores profile information (name, age, weight), health details (medical conditions, goals), and authentication data (email, hashed password). Each \textit{MealEntry} contains a timestamp, category (breakfast, lunch, etc.), optional image and transcription, and an associated \textit{NutritionInfo} object with macronutrient data (calories, carbs, sugar, protein, fat). We also calculate a meal quality score based on calorie density and goal fit. The \textit{Day} class groups all meal entries for a given date and includes target nutrition values for comparison.
 
 We started with simple JSON file storage to iterate quickly on the data model. As the app grew and we needed multi-user support, better querying for the calendar view and insights, and data integrity, we switched to SQLite. SQLite gave us relational database features while remaining lightweight and easy to run in a Docker container without needing a separate database server.
@@ -261,12 +261,11 @@ With these two versions, we now proceeded evaluating and comparing the performan
 \noindent
 Against all expectations, the simpler prompt set performed much better in meal calorie and nutriant estimation than the second, more detailed prompt set.
 Although both prompt sets, across all tested models, were overestimating calorie and nutriant values, prompt set one was still the more precise one of the two. Consequently, we kept prompt set one as our production-level prompt set.
+On a smaller set of ground truth meals, we also assessed whether varying temperatures changed the estimation quality. This, however, was not the case; results were neither less precise nor more accurate, so we decided to leave the selected temperature at 0.0.
 
 - ggf. write that we adapted prompt s.t. fats are not as heavily overstimated anymore
 
-- System Prompt: You are an expert nutrition assistant. Respond only with the requested JSON object
-- Prompts anhaengen
-\vspace{6cm}
+% \vspace{2cm}
 
 \FloatBarrier
 \section{Team roles}
@@ -278,8 +277,11 @@ Although both prompt sets, across all tested models, were overestimating calorie
  
 
 \section{Current Progress and Future Plans}
-Progress Status and Roadmap to Completion
-Current status (completed/in-progress/pending), key achievements, risks, and final steps
+Provide a detailed status update on the
+current progress of the project, and discuss the future plans for the project
+completion.
+
+-> to be done
 
 \section{Project Pitch Video (Attached)}
 
