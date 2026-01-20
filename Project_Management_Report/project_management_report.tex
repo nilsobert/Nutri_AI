@@ -239,12 +239,14 @@ Apart from using a project management tool, we also created a WhatsApp group wit
 
 \FloatBarrier
 \subsection{System Design}
-- Design Pattern: from the coarse to the more granular design (participants in the system, data flows, etc.)
-- collected requirements
+The system design was informed by several key requirements collected early in the project. Since our target audience includes both iOS and Android users, we needed a framework that supports both platforms, which led us to choose React Native. On the server side, the main non-functional requirements were centralized user account management and a single controlled channel for all GenAI API calls. This allows us to handle authentication, rate limiting, and API credential management in one place on the server rather than exposing these to clients. Another important requirement was the ability to deploy our infrastructure consistently across different environments—from development machines to an on-premise server and a cloud VPS. This need for reproducible deployments and service isolation made Docker the natural choice for containerizing all backend components.
+
+These requirements led us to adopt a clear server-client architecture with a reverse proxy setup. The mobile client communicates with a single domain that routes through Pangolin, our proxy server, which then forwards traffic securely to the on-premise NutriAI server. All backend services run as Docker containers, making them portable and easy to manage across different hosting environments.
 
 \subsection{Database Design}
-- collected requirements (Design Pattern s.o.) -> coarse description of potential data classes
-- prototype: JSON, evolution to -> SQLite, because of...
+From the collected requirements, we identified four main data classes needed for the application: \textit{User}, \textit{MealEntry}, \textit{NutritionInfo}, and \textit{Day}. The \textit{User} class stores profile information (name, age, weight), health details (medical conditions, goals), and authentication data (email, hashed password). Each \textit{MealEntry} contains a timestamp, category (breakfast, lunch, etc.), optional image and transcription, and an associated \textit{NutritionInfo} object with macronutrient data (calories, carbs, sugar, protein, fat). We also calculate a meal quality score based on calorie density and goal fit. The \textit{Day} class groups all meal entries for a given date and includes target nutrition values for comparison.
+
+We started with simple JSON file storage to iterate quickly on the data model. As the app grew and we needed multi-user support, better querying for the calendar view and insights, and data integrity, we switched to SQLite. SQLite gave us relational database features while remaining lightweight and easy to run in a Docker container without needing a separate database server.
 
 \FloatBarrier
 \subsection{Prompt Engineering}
