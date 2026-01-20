@@ -15,6 +15,7 @@ import {
   Image,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Alert,
 } from "react-native";
 import Animated, {
   FadeIn,
@@ -260,6 +261,7 @@ const MealCard: React.FC<MealCardProps> = ({
   currentDate,
 }) => {
   const { isServerReachable } = useNetwork();
+  const { deleteMeal } = useMeals();
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const rotation = useSharedValue(0);
@@ -281,6 +283,38 @@ const MealCard: React.FC<MealCardProps> = ({
   const toggleExpand = () => {
     setExpanded(!expanded);
     rotation.value = withTiming(expanded ? 0 : 180);
+  };
+
+  const showMealOptions = (meal: MealEntry) => {
+    Alert.alert(
+        "Meal Options",
+        `Options for ${meal.name || 'this meal'}`,
+        [
+            {
+                text: "Edit",
+                onPress: () => {
+                    router.push({
+                        pathname: "/add-meal",
+                        params: { 
+                            date: currentDate.toISOString(),
+                            meal: JSON.stringify(meal) 
+                        }
+                    });
+                }
+            },
+            {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                    Alert.alert("Delete Meal", "Are you sure you want to delete this meal?", [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Delete", style: "destructive", onPress: () => deleteMeal(meal.id) }
+                    ]);
+                }
+            },
+            { text: "Cancel", style: "cancel" }
+        ]
+    );
   };
 
   const chevronStyle = useAnimatedStyle(() => {
@@ -336,6 +370,7 @@ const MealCard: React.FC<MealCardProps> = ({
             params: { id: meal.id },
           });
         }}
+        onLongPress={() => showMealOptions(meal)}
       >
         {meals.length > 1 && (
           <View style={styles.slideHeader}>
@@ -429,6 +464,11 @@ const MealCard: React.FC<MealCardProps> = ({
         onPress={toggleExpand}
         activeOpacity={0.7}
         style={styles.mealCardHeader}
+        onLongPress={() => {
+            if (meals.length === 1) {
+                showMealOptions(meals[0]);
+            }
+        }}
       >
         <View
           style={[
