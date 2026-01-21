@@ -1,42 +1,97 @@
 #import "@preview/elsearticle:1.1.1": *
 
+// https://typst.app/docs/guides/for-latex-users/
+
 #show: elsearticle.with(
-  title: "Title of the paper",
+  title: "Project Safety and Reflection Report",
   authors: (
     (
-      name: "A. Author",
-      affiliation: "University A, City A, Country A",
-      corr: "a.author@univa.edu",
-      id: "a",
+      name: "Laura Kotalczyk"
+      
     ),
     (
-      name: "B. Author",
-      affiliation: "University B, City B, Country B",
-      id: "b"
+      name: "Manuel Mühlberger",
     ),
-    (name: lorem(2)),
-    (name: lorem(3)),
-    (name: "A. Author"),
-    (name: "A. Author"),
   ),
-  journal: "Name of the Journal",
-  keywords: ("keyword 1", "keyword 2"),
   format: "3p",
   numcol: 2,
   // line-numbering: true,
 )
 
-= Introduction
+= Safety of GenAI
+#set par(
+  first-line-indent: 1em,
+  spacing: 0.65em,
+  justify: true,
+)
+== Identified Risks
+With the current setup of our service, we see two distinct areas bearing potential risks, namely, data privacy and security. The following paragraphs discuss these aspects in more detail.
 
-#lorem(100)
+=== Data Privacy Concerns
+#set par(
+  first-line-indent: 1em,
+  spacing: 0.65em,
+  justify: true,
+)
+Since user data is a key asset of our service, data privacy, in particular, GDPR regulations are corner stones of our risk management.
 
-= Section 1
+=== Security Concerns
+Since our service builds on a server-client architecture and uses an API to call the Vision Language Model (VLM) for meal nutrient estimation, our application
+is inherently vulnerable against malicious attacks, such as DDoS attacks or rate limit exceeding. 
+As our service uses credit-based API calls to the VLM for meal logging, rate limit exceeding would not only result in availability problems, but also cause financial damage, if not properly handled. 
 
-#lorem(50)
+== Risk Mitigations
 
-== Subsection 1
+- output guardrails
+- data privacy: "self-hosted" stuff, proxy, authentication, rate-limiting -> ddos, money abuse
 
-#lorem(10) (see Eq. @eq1) @Aut10.
+=== Data Privacy Concerns
+#set par(
+  first-line-indent: 1em,
+  spacing: 0.65em,
+  justify: true,
+)
+
+=== Security Concerns
+To mitigate potential attack vectors concerning service availability, several mechanisms were implemented.
+
+#set par(
+  first-line-indent: 1em,
+  spacing: 0.65em,
+  justify: true,
+)
+First of all, we established a user authentication mechanism based on JSON Web Tokens (JWT) and certificates, making sure only authenticated users could interact with our service, i.e. send requests to the VLM for meal nutrient estimation. This approach prevents direct public access to the VLM request endpoint, leveraging the server as a secure gateway for authenticated requests. A per-user rate limit - currently five requests daily - has been integrated into the development phase. This limit can easily be modified when the service is deployed to production.
+
+
+= Lessons Learned and Reflections
+
+== Team and Project Management
+- aligning expectations
+- team management
+- architecture was hard 
+- AIs as black boxes, simpler prompts sometimes work better but there are multiple stellschrauben you can use to improve model results
+- Prompting and data is very important, if your data is biased, incomplete, ambigiuous you cannot evaluate a model's performance properly
+- integrating GenAi into a consumer app involves lots of data privacy and security concerns
+
+== Architectural Design
+
+== Insights on GenAI and its Applications
+
+...
+Our findings challenged the assumption that complexity yields superior results, demonstrating that simpler methods often outperform more complex ones in practical scenarios. We observed that high benchmark scores are not always indicative of real-world performance, as the effectiveness of GenAI is heavily context-dependent. Consequently, achieving the optimal configuration requires a systematic, experimental approach, adjusting prompts and parameters to identify the most impactful variables. While established techniques provide a foundation for improvement, the 'black-box' nature of AI as well as the large number of models, and corresponding set screws, makes this a tedious and time-consuming process, requiring significant iteration to reach high-quality results.
+
+-Detail what worked well and what could be improved in future projects.
+Reflect on insights gained and how this project has influenced your understanding of
+GenAI and its applications
+
+= Acknowledgments of GenAI Usage
+#set par(
+  first-line-indent: 1em,
+  spacing: 0.65em,
+  justify: true,
+)
+
+Generative AI was used in the process of writing this document in terms of improving the vocabulary used.
 
 $
 y = alpha x + beta tau integral_0^x d x
