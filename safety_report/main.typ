@@ -64,8 +64,11 @@ First of all, we established a user authentication mechanism based on JSON Web T
 
 
 = Lessons Learned and Reflections
+Throughout the project, we gained significant insights into project and team management as well as architectural design, and the usage of GenAI, that are further detailed in the following sections. 
 
 == Team and Project Management
+
+
 - aligning expectations
 - team management
 - architecture was hard 
@@ -76,11 +79,13 @@ First of all, we established a user authentication mechanism based on JSON Web T
 == Architectural Design
 
 == Insights on GenAI and its Applications
+When we began the project, we expected that the top-ranked models on public benchmarks and the most precise prompts would deliver the best results. However, our findings challenged the assumption that complexity yields superior performance, demonstrating that simpler methods often outperform more complex configurations in practical, real-world scenarios.
+We observed that high benchmark scores are not always indicative of real-world performance, as the effectiveness of GenAI is heavily context-dependent. Consequently, achieving the optimal configuration requires a systematic, experimental approach, adjusting prompts and parameters to identify the most impactful variables. While established techniques provide a foundation for improvement, the 'black-box' nature of AI as well as the wide landscape of models, and corresponding large number of tunable parameters, make this a tedious and time-consuming process, requiring significant iteration to reach high-quality results.
+Furthermore, the project provided practical evidence that data is the most critical asset in AI systems. Beyond the vast datasets required to train the off-the-shelf models we utilized, the availability of high-quality 'ground truth' data was essential for validating performance and conducting comparisons between different configurations and models.
+In our specific use case, curating representative, non-skewed and realistic meal data was challenging and time-intensive. The process involved preprocessing data into our input format, (image, transcription) pairs, and mapping them to a JSON-based ground truth file containing nutritional metrics such as calories, carbohydrates, proteins, and fats. hese ground truth meals allowed us to benchmark our system’s accuracy against competitor apps and evaluate how our performance compares to the current market.
 
-...
-Our findings challenged the assumption that complexity yields superior results, demonstrating that simpler methods often outperform more complex ones in practical scenarios. We observed that high benchmark scores are not always indicative of real-world performance, as the effectiveness of GenAI is heavily context-dependent. Consequently, achieving the optimal configuration requires a systematic, experimental approach, adjusting prompts and parameters to identify the most impactful variables. While established techniques provide a foundation for improvement, the 'black-box' nature of AI as well as the large number of models, and corresponding set screws, makes this a tedious and time-consuming process, requiring significant iteration to reach high-quality results.
 
--Detail what worked well and what could be improved in future projects.
+- Detail what worked well and what could be improved in future projects.
 Reflect on insights gained and how this project has influenced your understanding of
 GenAI and its applications
 
