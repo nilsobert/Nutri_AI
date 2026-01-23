@@ -1120,7 +1120,7 @@ const bgColor = isDark ? Colors.background.dark : Colors.background.light;
         onPress={() => {
           if (isServerReachable) {
             router.push({
-              pathname: "/suggestions",
+              pathname: "/suggestions_3",
               params: {
                 remainingCalories,
                 remainingCarbs,

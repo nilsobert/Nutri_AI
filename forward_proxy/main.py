@@ -17,6 +17,11 @@ import sys
 import time
 import uuid
 from dotenv import load_dotenv
+import os
+import uuid
+from typing import Optional
+from pydantic import BaseModel
+
 
 from database import get_db, init_db, User, Meal, AnalysisLog, AnalysisStatus
 from PIL import Image
@@ -456,6 +461,7 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
         data={"sub": str(db_user.id)}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @app.post("/meals", response_model=MealResponse)
 def create_meal(meal: MealCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1176,6 +1182,150 @@ async def analyze_meal(
         log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
         db.commit()
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+
+
+from fastapi import FastAPI, Depends, HTTPException, status, Body
+from pydantic import BaseModel
+from typing import Optional
+import os, httpx, uuid, json
+import logging
+
+
+# --- Pydantic models for request/response ---
+
+class NutritionRequest(BaseModel):
+    remaining_calories: int
+    remaining_protein: int
+    remaining_carbs: int
+    remaining_fat: int
+    last_meal: int  # 0 = breakfast not served, etc.
+
+class NutritionInfo(BaseModel):
+    calories: int
+    protein: int
+    carbs: int
+    fat: int
+
+class MealSuggestion(BaseModel):
+    name: str
+    description: str
+    nutrition: NutritionInfo
+
+class MealSuggestionsResponse(BaseModel):
+    breakfast: MealSuggestion
+    lunch: MealSuggestion
+    dinner: MealSuggestion
+
+# --- Dummy dependency for authentication ---
+def get_current_user():
+    # Replace with your auth logic
+    return {"id": "user_123", "email": "user@example.com"}
+
+# --- The meal suggestion endpoint ---
+@app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
+async def suggest_meals(
+    request: NutritionRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Suggest meals for the remaining nutrients today.
+    Calls an external LLM API to generate JSON suggestions.
+    """
+    logger.info(f"[Meal Suggestion] Generating suggestions for user {current_user['id']}")
+    
+    # Read API credentials from environment
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
+    
+    if not OPENAI_API_KEY or not OPENAI_BASE_URL:
+        logger.critical("Missing LLM API credentials")
+        raise HTTPException(status_code=500, detail="Server misconfiguration")
+    
+    # Build prompt for LLM
+    prompt = f"""
+You are a helpful nutrition assistant.
+
+Based on the remaining nutrients for today:
+- Calories: {request.remaining_calories} kcal
+- Protein: {request.remaining_protein} g
+- Carbs: {request.remaining_carbs} g
+- Fat: {request.remaining_fat} g
+
+Suggest meals to fulfill these remaining nutrients.
+
+The value of lastMeal is: {request.last_meal}
+
+You MUST follow these rules exactly:
+
+- lastMeal = 0: breakfast, lunch, dinner → all required
+- lastMeal = 1: lunch, dinner → required, breakfast → name must be "none"
+- lastMeal = 2: dinner → required, breakfast/lunch → name must be "none"
+
+Output a JSON object exactly like this:
+
+{{
+  "breakfast": {{
+    "name": "breakfast name",
+    "description": "Short description",
+    "nutrition": {{ "calories": 520, "protein": 35, "carbs": 45, "fat": 18 }}
+  }},
+  "lunch": {{
+    "name": "Lunch name",
+    "description": "Short description",
+    "nutrition": {{ "calories": 180, "protein": 12, "carbs": 20, "fat": 4 }}
+  }},
+  "dinner": {{
+    "name": "Dinner name",
+    "description": "Short description",
+    "nutrition": {{ "calories": 520, "protein": 35, "carbs": 45, "fat": 18 }}
+  }}
+}}
+
+If a meal is not suggested, fill "name" with "none". No text outside the JSON.
+"""
+
+    # Call the LLM
+    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    payload = {
+        "model": "gpt-4.1",
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant named Llama-3."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 512
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(f"{OPENAI_BASE_URL}/chat/completions", headers=headers, json=payload)
+        
+        if response.status_code != 200:
+            logger.error(f"LLM API Error: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=500, detail="LLM API error")
+
+        content = response.json()["choices"][0]["message"]["content"]
+        
+        # Extract JSON from LLM response (strip code blocks)
+        if "```" in content:
+            content = content.split("```")[-2].strip()
+        
+        suggestions = json.loads(content)
+        return suggestions
+    
+    except Exception as e:
+        logger.error(f"Failed to generate meal suggestions: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate meal suggestions")
+
+
+
+
+
+
+
 
 @app.delete("/meals/{meal_id}")
 def delete_meal(meal_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1205,3 +1355,9 @@ if __name__ == "__main__":
 
     logger.info("Starting server with SSL enabled")
     uvicorn.run(app, host="0.0.0.0", port=7770, ssl_keyfile="key.pem", ssl_certfile="cert.pem")
+
+
+
+
+
+
