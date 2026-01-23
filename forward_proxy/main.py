@@ -772,18 +772,12 @@ async def track_meal(
         except Exception as e:
             logger.error(f"Whisper Exception: {e}", exc_info=True)
 
-    # 2. Handle Image (VLM)
-    model = os.getenv("MODEL", "qwen/qwen3-vl-235b-a22b-instruct")
-    
-    if model.startswith("qwen/"):
-        api_key = os.getenv("OPENROUTER_API_KEY")
-        base_url = os.getenv("OPENROUTER_BASE_URL")
-        provider = "OpenRouter"
-    else:
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_BASE_URL")
-        provider = "OpenAI"
-    
+    # 2. Handle Image (VLM) - FORCE OpenRouter + Qwen model
+    model = "qwen/qwen3-vl-235b-a22b-instruct"
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    base_url = os.getenv("OPENROUTER_BASE_URL")
+    provider = "OpenRouter"
+
     if not api_key or not base_url:
          logger.critical(f"Missing {provider} credentials")
          raise HTTPException(status_code=500, detail=f"Server misconfiguration: Missing {provider} credentials")
@@ -843,11 +837,6 @@ Return *only* the JSON object and nothing else."""
         if transcript:
             prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-
         payload = {
             "model": model,
             "messages": [
@@ -871,14 +860,12 @@ Return *only* the JSON object and nothing else."""
                     ]
                 }
             ],
-            "stream": True,
             "temperature": 0.0,
             "max_tokens": 2048
         }
-        
+
         logger.info(f"Calling {provider} VLM API at {base_url}")
-        async with httpx.AsyncClient() as client:
-            response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload, timeout=60.0)
+        response = await post_chat_completion(base_url, api_key, payload, timeout=60.0)
             
         if response.status_code != 200:
              logger.error(f"{provider} Error: {response.status_code} - {response.text}")
@@ -967,10 +954,12 @@ def get_user_goal_context(user: User) -> str:
     return "\n".join(context_parts)
 
 async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: str = ""):
-    openai_api_key = os.getenv("OPENROUTER_API_KEY")
-    openai_base_url = os.getenv("OPENROUTER_BASE_URL")
-    
-    if not openai_api_key or not openai_base_url:
+    # Force OpenRouter + Qwen model
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    openrouter_base_url = os.getenv("OPENROUTER_BASE_URL")
+    model = "qwen/qwen3-vl-235b-a22b-instruct"
+
+    if not openrouter_api_key or not openrouter_base_url:
          raise Exception("Missing OpenRouter credentials")
 
     # Resize image if needed
@@ -1042,13 +1031,8 @@ Return *only* the JSON object and nothing else."""
     if context:
         prompt_text += f"\n\n{context}"
 
-    headers = {
-        "Authorization": f"Bearer {openai_api_key}",
-        "Content-Type": "application/json"
-    }
-    
     payload = {
-        "model": "qwen/qwen3-vl-235b-a22b-instruct",
+        "model": model,
         "messages": [
             {
                 "role": "system", 
@@ -1070,19 +1054,17 @@ Return *only* the JSON object and nothing else."""
                 ]
             }
         ],
-        "stream": True,
         "temperature": 0.0,
         "max_tokens": 2048
     }
-    
-    logger.info(f"[ExternalAPI] Calling VLM API at {openai_base_url}")
+
+    logger.info(f"[ExternalAPI] Calling VLM API at {openrouter_base_url}")
     logger.info(f"Prompt (truncated): {prompt_text[:500]}...")
     logger.debug(f"Full Prompt: {prompt_text}")
-    
+
     start_time = time.time()
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(f"{openai_base_url}/chat/completions", headers=headers, json=payload)
-    
+    response = await post_chat_completion(openrouter_base_url, openrouter_api_key, payload, timeout=60.0)
+
     duration = time.time() - start_time
     logger.info(f"[ExternalAPI] VLM took {duration:.2f}s")
         
