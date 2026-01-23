@@ -1231,7 +1231,17 @@ def get_current_user():
 
 # --- The meal suggestion endpoint ---
 
-
+def normalize_meal(meal: dict) -> MealSuggestion:
+    return MealSuggestion(
+        name=meal.get("name", "none"),
+        description=meal.get("description", ""),
+        nutrition=NutritionInfo(
+            calories=meal.get("calories", meal.get("nutrition", {}).get("calories", 0)),
+            protein=meal.get("protein", meal.get("nutrition", {}).get("protein", 0)),
+            carbs=meal.get("carbs", meal.get("nutrition", {}).get("carbs", 0)),
+            fat=meal.get("fat", meal.get("nutrition", {}).get("fat", 0)),
+        )
+    )
 
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
 async def suggest_meals(
