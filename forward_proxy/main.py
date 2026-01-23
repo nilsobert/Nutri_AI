@@ -126,23 +126,22 @@ async def health_check_external_services():
     except Exception as e:
         logger.error(f"External services: Whisper Check Error ({e})")
 
-    # OpenAI Check
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if openai_base_url and openai_api_key:
+    openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+    if openrouter_base_url and openrouter_api_key:
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
-                headers = {"Authorization": f"Bearer {openai_api_key}"}
+                headers = {"Authorization": f"Bearer {openrouter_api_key}"}
                 # Try listing models as a lightweight check
-                resp = await client.get(f"{openai_base_url}/models", headers=headers)
+                resp = await client.get(f"{openrouter_base_url}/models", headers=headers)
                 if resp.status_code == 200:
-                    logger.info("External services: OpenAI ONLINE")
+                    logger.info("External services: OpenRouter ONLINE")
                 else:
-                    logger.error(f"External services: OpenAI Check Failed with status {resp.status_code}")
+                    logger.error(f"External services: OpenRouter Check Failed with status {resp.status_code}")
         except Exception as e:
-            logger.error(f"External services: OpenAI Check Error ({e})")
+            logger.error(f"External services: OpenRouter Check Error ({e})")
     else:
-        logger.warning("External services: OpenAI Check Skipped (Missing Env Vars)")
+        logger.warning("External services: OpenRouter Check Skipped (Missing Env Vars)")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -755,11 +754,12 @@ async def track_meal(
             logger.error(f"Whisper Exception: {e}", exc_info=True)
 
     # 2. Handle Image (VLM)
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    model = "qwen/qwen3-vl-235b-a22b-instruct"
     
-    if not openai_api_key or not openai_base_url:
-         logger.critical("Missing OpenAI credentials")
+    if not api_key or not base_url:
+         logger.critical("Missing OpenRouter credentials")
          raise HTTPException(status_code=500, detail="Server misconfiguration: Missing AI credentials")
 
     try:
@@ -791,9 +791,11 @@ async def track_meal(
         }
         """
         
-        prompt_text = f"""Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts.
+        prompt_text = f"""Analyze the attached meal image and provide ONE aggregate meal object for the whole meal. Estimate the meal’s weight in grams, and list its core nutritional facts.
 
-Return a JSON object matching this exact schema:
+        Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.
+        Return a JSON object matching this exact schema:
+
 {json_schema_template}
 
 RULES:
@@ -818,12 +820,14 @@ Return *only* the JSON object and nothing else."""
             prompt_text += f"\n\nAdditional Context from Audio Note: {transcript}"
 
         headers = {
-            "Authorization": f"Bearer {openai_api_key}",
-            "Content-Type": "application/json"
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "MealTracker"
         }
         
         payload = {
-            "model": "Qwen2.5-VL-72B-Instruct",
+            "model": model,
             "messages": [
                 {
                     "role": "system", 
@@ -849,9 +853,9 @@ Return *only* the JSON object and nothing else."""
             "max_tokens": 2048
         }
         
-        logger.info(f"Calling VLM API at {openai_base_url}")
+        logger.info(f"Calling VLM API at {base_url}")
         async with httpx.AsyncClient() as client:
-            response = await client.post(f"{openai_base_url}/chat/completions", headers=headers, json=payload, timeout=60.0)
+            response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload, timeout=60.0)
             
         if response.status_code != 200:
              logger.error(f"AI Provider Error: {response.status_code} - {response.text}")
@@ -940,11 +944,12 @@ def get_user_goal_context(user: User) -> str:
     return "\n".join(context_parts)
 
 async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: str = ""):
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
-    
-    if not openai_api_key or not openai_base_url:
-         raise Exception("Missing OpenAI credentials")
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    model = "qwen/qwen3-vl-235b-a22b-instruct"
+
+    if not api_key or not base_url:
+         raise Exception("Missing OpenRouter credentials")
 
     # Resize image if needed
     try:
@@ -990,7 +995,9 @@ async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: 
     }
     """
     
-    prompt_text = f"""Analyze the attached meal image and provide a detailed nutritional breakdown. Identify each distinct food item, estimate its weight in grams, and list its core nutritional facts.
+    prompt_text = f"""Analyze the attached meal image and provide ONE aggregate meal object for the whole meal. Estimate the meal’s weight in grams, and list its core nutritional facts.
+    
+    Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.    
 
 Return a JSON object matching this exact schema:
 {json_schema_template}
@@ -1016,12 +1023,14 @@ Return *only* the JSON object and nothing else."""
         prompt_text += f"\n\n{context}"
 
     headers = {
-        "Authorization": f"Bearer {openai_api_key}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "MealTracker"
     }
     
     payload = {
-        "model": "Qwen2.5-VL-72B-Instruct",
+        "model": model,
         "messages": [
             {
                 "role": "system", 
@@ -1047,13 +1056,13 @@ Return *only* the JSON object and nothing else."""
         "max_tokens": 2048
     }
     
-    logger.info(f"[ExternalAPI] Calling VLM API at {openai_base_url}")
+    logger.info(f"[ExternalAPI] Calling VLM API at {base_url}")
     logger.info(f"Prompt (truncated): {prompt_text[:500]}...")
     logger.debug(f"Full Prompt: {prompt_text}")
     
     start_time = time.time()
     async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(f"{openai_base_url}/chat/completions", headers=headers, json=payload)
+        response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
     
     duration = time.time() - start_time
     logger.info(f"[ExternalAPI] VLM took {duration:.2f}s")
