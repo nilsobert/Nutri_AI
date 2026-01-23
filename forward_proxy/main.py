@@ -999,6 +999,10 @@ async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: 
     
     Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.    
 
+    Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.    
+
+    Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.    
+
 Return a JSON object matching this exact schema:
 {json_schema_template}
 
@@ -1057,11 +1061,13 @@ Return *only* the JSON object and nothing else."""
     }
     
     logger.info(f"[ExternalAPI] Calling VLM API at {base_url}")
+    logger.info(f"[ExternalAPI] Calling VLM API at {base_url}")
     logger.info(f"Prompt (truncated): {prompt_text[:500]}...")
     logger.debug(f"Full Prompt: {prompt_text}")
     
     start_time = time.time()
     async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
         response = await client.post(f"{base_url}/chat/completions", headers=headers, json=payload)
     
     duration = time.time() - start_time
