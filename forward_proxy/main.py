@@ -21,6 +21,10 @@ import os
 import uuid
 from typing import Optional
 from pydantic import BaseModel
+from datetime import date
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from database import get_db, DailyMealSuggestion
 
 
 from database import get_db, init_db, User, Meal, AnalysisLog, AnalysisStatus
@@ -1224,27 +1228,62 @@ def get_current_user():
     # Replace with your auth logic
     return {"id": "user_123", "email": "user@example.com"}
 
+
 # --- The meal suggestion endpoint ---
+
+
+
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
 async def suggest_meals(
     request: NutritionRequest,
-    current_user: dict = Depends(get_current_user)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
-    """
-    Suggest meals for the remaining nutrients today.
-    Calls an external LLM API to generate JSON suggestions.
-    """
-    logger.info(f"[Meal Suggestion] Generating suggestions for user {current_user['id']}")
-    
-    # Read API credentials from environment
+    user_id = current_user["id"]
+    today = date.today()
+
+    logger.info(f"[Meal Suggestion] User={user_id} Date={today}")
+
+    # 1️⃣ Check if today's suggestions already exist
+    existing = (
+        db.query(DailyMealSuggestion)
+        .filter(
+            DailyMealSuggestion.user_id == user_id,
+            DailyMealSuggestion.date == today,
+        )
+        .all()
+    )
+
+    if existing:
+        logger.info("Returning cached meal suggestions")
+
+        def build(meal_type):
+            m = next(x for x in existing if x.meal_type == meal_type)
+            return {
+                "name": m.name,
+                "description": m.description,
+                "nutrition": {
+                    "calories": m.calories,
+                    "protein": m.protein,
+                    "carbs": m.carbs,
+                    "fat": m.fat,
+                },
+            }
+
+        return {
+            "breakfast": build("breakfast"),
+            "lunch": build("lunch"),
+            "dinner": build("dinner"),
+        }
+
+    # 2️⃣ Otherwise → generate via LLM (your existing logic)
+
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
-    
+
     if not OPENAI_API_KEY or not OPENAI_BASE_URL:
-        logger.critical("Missing LLM API credentials")
         raise HTTPException(status_code=500, detail="Server misconfiguration")
-    
-    # Build prompt for LLM
+
     prompt = f"""
 You are a helpful nutrition assistant.
 
@@ -1254,71 +1293,78 @@ Based on the remaining nutrients for today:
 - Carbs: {request.remaining_carbs} g
 - Fat: {request.remaining_fat} g
 
-Suggest meals to fulfill these remaining nutrients.
-
 The value of lastMeal is: {request.last_meal}
 
-You MUST follow these rules exactly:
+Rules:
+- lastMeal = 0 → breakfast, lunch, dinner
+- lastMeal = 1 → lunch, dinner only
+- lastMeal = 2 → dinner only
+- Missing meals must have name "none"
 
-- lastMeal = 0: breakfast, lunch, dinner → all required
-- lastMeal = 1: lunch, dinner → required, breakfast → name must be "none"
-- lastMeal = 2: dinner → required, breakfast/lunch → name must be "none"
-
-Output a JSON object exactly like this:
-
-{{
-  "breakfast": {{
-    "name": "breakfast name",
-    "description": "Short description",
-    "nutrition": {{ "calories": 520, "protein": 35, "carbs": 45, "fat": 18 }}
-  }},
-  "lunch": {{
-    "name": "Lunch name",
-    "description": "Short description",
-    "nutrition": {{ "calories": 180, "protein": 12, "carbs": 20, "fat": 4 }}
-  }},
-  "dinner": {{
-    "name": "Dinner name",
-    "description": "Short description",
-    "nutrition": {{ "calories": 520, "protein": 35, "carbs": 45, "fat": 18 }}
-  }}
-}}
-
-If a meal is not suggested, fill "name" with "none". No text outside the JSON.
+Return JSON only.
 """
 
-    # Call the LLM
-    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
     payload = {
         "model": "gpt-4.1",
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant named Llama-3."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt},
         ],
         "temperature": 0.7,
-        "max_tokens": 512
+        "max_tokens": 512,
     }
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{OPENAI_BASE_URL}/chat/completions", headers=headers, json=payload)
-        
+            response = await client.post(
+                f"{OPENAI_BASE_URL}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+
         if response.status_code != 200:
-            logger.error(f"LLM API Error: {response.status_code} - {response.text}")
             raise HTTPException(status_code=500, detail="LLM API error")
 
         content = response.json()["choices"][0]["message"]["content"]
-        
-        # Extract JSON from LLM response (strip code blocks)
+
         if "```" in content:
             content = content.split("```")[-2].strip()
-        
+
         suggestions = json.loads(content)
-        return suggestions
-    
+
     except Exception as e:
-        logger.error(f"Failed to generate meal suggestions: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Failed to generate meal suggestions")
+        logger.error(f"LLM generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate suggestions")
+
+    # 3️⃣ Save suggestions to DB
+    for meal_type in ["breakfast", "lunch", "dinner"]:
+        meal = suggestions[meal_type]
+
+        db.add(
+            DailyMealSuggestion(
+                user_id=user_id,
+                date=today,
+                meal_type=meal_type,
+                name=meal["name"],
+                description=meal["description"],
+                calories=meal["nutrition"]["calories"],
+                protein=meal["nutrition"]["protein"],
+                carbs=meal["nutrition"]["carbs"],
+                fat=meal["nutrition"]["fat"],
+            )
+        )
+
+    db.commit()
+
+    logger.info("Meal suggestions generated and saved")
+    return suggestions
+
+    
 
 
 

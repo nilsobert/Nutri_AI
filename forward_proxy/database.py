@@ -106,6 +106,26 @@ class AnalysisLog(Base):
     status = Column(String, default=AnalysisStatus.PENDING.value)
     processing_duration_ms = Column(Integer, nullable=True)
 
+class DailyMealSuggestion(Base):
+    __tablename__ = "daily_meal_suggestions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    date = Column(Date, index=True)
+    meal_type = Column(String)  # breakfast | lunch | dinner
+
+    name = Column(String)
+    description = Column(Text)
+
+    calories = Column(Integer)
+    protein = Column(Integer)
+    carbs = Column(Integer)
+    fat = Column(Integer)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
