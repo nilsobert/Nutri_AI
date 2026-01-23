@@ -111,18 +111,18 @@ class DailyMealSuggestion(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
-    date = Column(Date, index=True)
-    meal_type = Column(String)  # breakfast | lunch | dinner
+    date = Column(Date, index=True, default=date.today)
+    meal_type = Column(String, index=True)  # breakfast | lunch | dinner
 
-    name = Column(String)
-    description = Column(Text)
+    name = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
 
-    calories = Column(Integer)
-    protein = Column(Integer)
-    carbs = Column(Integer)
-    fat = Column(Integer)
+    calories = Column(Integer, nullable=True)
+    protein = Column(Integer, nullable=True)
+    carbs = Column(Integer, nullable=True)
+    fat = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 

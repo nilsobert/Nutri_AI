@@ -1343,22 +1343,31 @@ Return JSON only.
 
     # 3️⃣ Save suggestions to DB
     for meal_type in ["breakfast", "lunch", "dinner"]:
-        meal = suggestions[meal_type]
+        meal = suggestions.get(meal_type, {})  # Default to empty dict if missing
+        name = meal.get("name", "none")       # Default "none" if key missing
+        description = meal.get("description", "")
+        nutrition = meal.get("nutrition", {})
 
+        calories = nutrition.get("calories", 0)
+        protein = nutrition.get("protein", 0)
+        carbs = nutrition.get("carbs", 0)
+        fat = nutrition.get("fat", 0)
+
+        # Save to DB
         db.add(
             DailyMealSuggestion(
                 user_id=user_id,
                 date=today,
                 meal_type=meal_type,
-                name=meal["name"],
-                description=meal["description"],
-                calories=meal["nutrition"]["calories"],
-                protein=meal["nutrition"]["protein"],
-                carbs=meal["nutrition"]["carbs"],
-                fat=meal["nutrition"]["fat"],
+                name=name,
+                description=description,
+                calories=calories,
+                protein=protein,
+                carbs=carbs,
+                fat=fat,
             )
-        )
-
+        )   
+  
     db.commit()
 
     logger.info("Meal suggestions generated and saved")
