@@ -999,8 +999,7 @@ async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: 
     prompt_text = f"""Analyze the attached meal image and provide ONE aggregate meal object for the whole meal. Estimate the meal’s weight in grams, and list its core nutritional facts.
     
     Be highly conservative with portion sizes and fat content: assume standard restaurant portions (approx. 100-150g for proteins) and only estimate high fat/carb values if visible oil, frying, or large starch portions are clearly evident.    
-
-Return a JSON object matching this exact schema:
+    Return a JSON object matching this exact schema:
 {json_schema_template}
 
 RULES:
