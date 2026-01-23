@@ -967,11 +967,11 @@ def get_user_goal_context(user: User) -> str:
     return "\n".join(context_parts)
 
 async def analyze_image_vlm(image_path: str, context: str = "", user_goal_info: str = ""):
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai_base_url = os.getenv("OPENAI_BASE_URL")
+    openai_api_key = os.getenv("OPENROUTER_API_KEY")
+    openai_base_url = os.getenv("OPENROUTER_BASE_URL")
     
     if not openai_api_key or not openai_base_url:
-         raise Exception("Missing OpenAI credentials")
+         raise Exception("Missing OpenRouter credentials")
 
     # Resize image if needed
     try:
