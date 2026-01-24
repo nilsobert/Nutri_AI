@@ -178,6 +178,14 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* AI Estimation Notice */}
+          <View style={[styles.noticeContainer, { backgroundColor: isDark ? 'rgba(52, 152, 219, 0.15)' : '#E3F2FD' }]}>
+            <Ionicons name="information-circle" size={24} color={Colors.primary} style={styles.noticeIcon} />
+            <Text style={[styles.noticeText, { color: isDark ? Colors.text.dark : Colors.text.light }]}>
+              These values are AI-generated estimates based on your image and audio. Please review and adjust as needed.
+            </Text>
+          </View>
+
           {/* Meal Name */}
           <View style={styles.section}>
             <Text style={[styles.label, { color: isDark ? '#999' : '#666' }]}>MEAL NAME</Text>
@@ -574,5 +582,20 @@ const styles = StyleSheet.create({
   errorButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  noticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  noticeIcon: {
+    marginRight: 12,
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
