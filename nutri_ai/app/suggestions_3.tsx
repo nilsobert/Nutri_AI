@@ -37,35 +37,48 @@ export default function SuggestionsScreen() {
         setLoading(true);
         setError(null);
 
-        // Replace with your actual server URL
+        const requestBody = {
+          remaining_calories: remainingCalories,
+          remaining_protein: remainingProtein,
+          remaining_carbs: remainingCarbs,
+          remaining_fat: remainingFat,
+          last_meal: lastMeal,
+        };
+
+        console.log('[Meal Suggestions] Fetching suggestions from:', `${API_BASE_URL}/api/suggest-meals`);
+        console.log('[Meal Suggestions] Request body:', JSON.stringify(requestBody, null, 2));
+
         const response = await fetch(`${API_BASE_URL}/api/suggest-meals`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            remaining_calories: remainingCalories,
-            remaining_protein: remainingProtein,
-            remaining_carbs: remainingCarbs,
-            remaining_fat: remainingFat,
-            last_meal: lastMeal,
-          }),
+          body: JSON.stringify(requestBody),
         });
 
+        console.log('[Meal Suggestions] Response status:', response.status);
+        console.log('[Meal Suggestions] Response ok:', response.ok);
+
         if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('[Meal Suggestions] Error response body:', errorText);
+          throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
         const data: MealSuggestions = await response.json();
+        console.log('[Meal Suggestions] Received data:', JSON.stringify(data, null, 2));
 
         // Check that JSON has the correct structure
         if (data.breakfast && data.lunch && data.dinner) {
+          console.log('[Meal Suggestions] Data structure valid, setting meal suggestions');
           setMealSuggestions(data);
         } else {
+          console.error('[Meal Suggestions] Invalid data structure:', data);
           throw new Error("Invalid JSON structure from server");
         }
       } catch (err: any) {
-        console.error(err);
+        console.error('[Meal Suggestions] Error:', err);
+        console.error('[Meal Suggestions] Error stack:', err.stack);
         setError(err.message || "Failed to fetch meal suggestions");
       } finally {
         setLoading(false);
