@@ -1,3 +1,4 @@
+import { router, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -12,6 +13,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import { Colors } from "../constants/theme";
 import { API_BASE_URL } from '../constants/values';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import CustomHeader from "../components/custom_header";
+
 
 type Nutrition = { calories: number; protein: number; carbs: number; fat: number };
 type Meal = { name: string; description: string; nutrition: Nutrition };
@@ -119,70 +123,74 @@ export default function SuggestionsScreen() {
   );
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { backgroundColor: isDark ? "#121212" : "#f0f3f5" },
-      ]}
-    >
-      <Text style={[styles.title, { color: isDark ? "#fff" : "#222" }]}>
-        Today's Meal Suggestions
-      </Text>
-
-      {filteredMeals.length === 0 && (
-        <Text
-          style={[
-            styles.errorText,
-            { color: isDark ? "#fff" : "#111", textAlign: "center" },
+    <>
+      <CustomHeader title="Meal Suggestions" isDark={isDark} />
+    
+      
+     <ScrollView
+          contentContainerStyle={[
+              styles.container,
+              { backgroundColor: isDark ? "#121212" : "#f0f3f5" },
           ]}
-        >
-          No meals suggested for today.
-        </Text>
-      )}
+      >
+          <Text style={[styles.title, { color: isDark ? "#fff" : "#222" }]}>
+              Today's Meal Suggestions
+          </Text>
 
-      {filteredMeals.map((key) => {
-        const item = mealSuggestions[key as keyof MealSuggestions];
-        return (
-          <View
-            key={key}
-            style={[styles.card, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
-          >
-            <Text style={[styles.mealType, { color: Colors.primary }]}>
-              {key.charAt(0).toUpperCase() + key.slice(1)}
-            </Text>
-            <Text style={[styles.mealName, { color: isDark ? "#fff" : "#111" }]}>
-              {item.name}
-            </Text>
-            <Text style={[styles.mealDescription, { color: isDark ? "#ccc" : "#555" }]}>
-              {item.description}
-            </Text>
+          {filteredMeals.length === 0 && (
+              <Text
+                  style={[
+                      styles.errorText,
+                      { color: isDark ? "#fff" : "#111", textAlign: "center" },
+                  ]}
+              >
+                  No meals suggested for today.
+              </Text>
+          )}
 
-            <View style={styles.nutritionContainer}>
-              {["calories", "protein", "carbs", "fat"].map((nutr) => (
-                <View style={styles.nutritionItem} key={nutr}>
-                  <Text
-                    style={[
-                      styles.nutritionLabel,
-                      { color: Colors.secondary[nutr as keyof typeof Colors.secondary] },
-                    ]}
+          {filteredMeals.map((key) => {
+              const item = mealSuggestions[key as keyof MealSuggestions];
+              return (
+                  <View
+                      key={key}
+                      style={[styles.card, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
                   >
-                    {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
-                  </Text>
-                  <Text style={[styles.nutritionValue, { color: isDark ? "#fff" : "#111" }]}>
-                    {item.nutrition[nutr as keyof Nutrition]}{" "}
-                    {nutr === "calories" ? "kcal" : "g"}
-                  </Text>
-                </View>
-              ))}
-            </View>
+                      <Text style={[styles.mealType, { color: Colors.primary }]}>
+                          {key.charAt(0).toUpperCase() + key.slice(1)}
+                      </Text>
+                      <Text style={[styles.mealName, { color: isDark ? "#fff" : "#111" }]}>
+                          {item.name}
+                      </Text>
+                      <Text style={[styles.mealDescription, { color: isDark ? "#ccc" : "#555" }]}>
+                          {item.description}
+                      </Text>
 
-            <TouchableOpacity style={[styles.recipeButton, { backgroundColor: Colors.primary }]}>
-              <Text style={styles.recipeButtonText}>Show Recipe</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
-    </ScrollView>
+                      <View style={styles.nutritionContainer}>
+                          {["calories", "protein", "carbs", "fat"].map((nutr) => (
+                              <View style={styles.nutritionItem} key={nutr}>
+                                  <Text
+                                      style={[
+                                          styles.nutritionLabel,
+                                          { color: Colors.secondary[nutr as keyof typeof Colors.secondary] },
+                                      ]}
+                                  >
+                                      {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
+                                  </Text>
+                                  <Text style={[styles.nutritionValue, { color: isDark ? "#fff" : "#111" }]}>
+                                      {item.nutrition[nutr as keyof Nutrition]}{" "}
+                                      {nutr === "calories" ? "kcal" : "g"}
+                                  </Text>
+                              </View>
+                          ))}
+                      </View>
+
+                      <TouchableOpacity style={[styles.recipeButton, { backgroundColor: Colors.primary }]}>
+                          <Text style={styles.recipeButtonText}>Show Recipe</Text>
+                      </TouchableOpacity>
+                  </View>
+              );
+          })}
+      </ScrollView></>
   );
 }
 
