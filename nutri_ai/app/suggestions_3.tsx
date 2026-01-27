@@ -1,4 +1,4 @@
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
-import { Colors } from "../constants/theme";
+import { BlurView } from "expo-blur";
+import { Colors, Spacing } from "../constants/theme";
 import { API_BASE_URL } from '../constants/values';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import CustomHeader from "../components/custom_header";
 
 
 type Nutrition = { calories: number; protein: number; carbs: number; fat: number };
@@ -24,6 +24,7 @@ type MealSuggestions = { breakfast: Meal; lunch: Meal; dinner: Meal };
 export default function SuggestionsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
 
   const remainingCalories = Number(params.remainingCalories || 0);
@@ -122,80 +123,183 @@ export default function SuggestionsScreen() {
     (key) => mealSuggestions[key as keyof MealSuggestions].name.toLowerCase() !== "none"
   );
 
+  const bgColor = isDark ? "#121212" : "#f0f3f5";
+  const textColor = isDark ? "#fff" : "#111";
+  const secondaryText = isDark ? "#999" : "#666";
+  const borderColor = isDark ? "#333" : "rgba(0,0,0,0.08)";
+
   return (
-    <>
-      <CustomHeader title="Meal Suggestions" isDark={isDark} />
-    
-      
-     <ScrollView
-          contentContainerStyle={[
-              styles.container,
-              { backgroundColor: isDark ? "#121212" : "#f0f3f5" },
-          ]}
+    <View style={[styles.screen, { backgroundColor: bgColor }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingTop: 140 + insets.top,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
       >
-          <Text style={[styles.title, { color: isDark ? "#fff" : "#222" }]}>
-              Today's Meal Suggestions
+        <Text style={[styles.title, { color: textColor }]}>
+          Today's Meal Suggestions
+        </Text>
+
+        {filteredMeals.length === 0 && (
+          <Text
+            style={[
+              styles.errorText,
+              { color: textColor, textAlign: "center" },
+            ]}
+          >
+            No meals suggested for today.
           </Text>
+        )}
 
-          {filteredMeals.length === 0 && (
-              <Text
-                  style={[
-                      styles.errorText,
-                      { color: isDark ? "#fff" : "#111", textAlign: "center" },
-                  ]}
-              >
-                  No meals suggested for today.
+        {filteredMeals.map((key) => {
+          const item = mealSuggestions[key as keyof MealSuggestions];
+          return (
+            <View
+              key={key}
+              style={[
+                styles.card,
+                { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
+              ]}
+            >
+              <Text style={[styles.mealType, { color: Colors.primary }]}>
+                {key.charAt(0).toUpperCase() + key.slice(1)}
               </Text>
-          )}
+              <Text style={[styles.mealName, { color: textColor }]}>
+                {item.name}
+              </Text>
+              <Text
+                style={[
+                  styles.mealDescription,
+                  { color: isDark ? "#ccc" : "#555" },
+                ]}
+              >
+                {item.description}
+              </Text>
 
-          {filteredMeals.map((key) => {
-              const item = mealSuggestions[key as keyof MealSuggestions];
-              return (
-                  <View
-                      key={key}
-                      style={[styles.card, { backgroundColor: isDark ? "#1e1e1e" : "#fff" }]}
-                  >
-                      <Text style={[styles.mealType, { color: Colors.primary }]}>
-                          {key.charAt(0).toUpperCase() + key.slice(1)}
-                      </Text>
-                      <Text style={[styles.mealName, { color: isDark ? "#fff" : "#111" }]}>
-                          {item.name}
-                      </Text>
-                      <Text style={[styles.mealDescription, { color: isDark ? "#ccc" : "#555" }]}>
-                          {item.description}
-                      </Text>
-
-                      <View style={styles.nutritionContainer}>
-                          {["calories", "protein", "carbs", "fat"].map((nutr) => (
-                              <View style={styles.nutritionItem} key={nutr}>
-                                  <Text
-                                      style={[
-                                          styles.nutritionLabel,
-                                          { color: Colors.secondary[nutr as keyof typeof Colors.secondary] },
-                                      ]}
-                                  >
-                                      {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
-                                  </Text>
-                                  <Text style={[styles.nutritionValue, { color: isDark ? "#fff" : "#111" }]}>
-                                      {item.nutrition[nutr as keyof Nutrition]}{" "}
-                                      {nutr === "calories" ? "kcal" : "g"}
-                                  </Text>
-                              </View>
-                          ))}
-                      </View>
-
-                      <TouchableOpacity style={[styles.recipeButton, { backgroundColor: Colors.primary }]}>
-                          <Text style={styles.recipeButtonText}>Show Recipe</Text>
-                      </TouchableOpacity>
+              <View style={styles.nutritionContainer}>
+                {["calories", "protein", "carbs", "fat"].map((nutr) => (
+                  <View style={styles.nutritionItem} key={nutr}>
+                    <Text
+                      style={[
+                        styles.nutritionLabel,
+                        {
+                          color:
+                            Colors.secondary[
+                              nutr as keyof typeof Colors.secondary
+                            ],
+                        },
+                      ]}
+                    >
+                      {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.nutritionValue,
+                        { color: textColor },
+                      ]}
+                    >
+                      {item.nutrition[nutr as keyof Nutrition]}{" "}
+                      {nutr === "calories" ? "kcal" : "g"}
+                    </Text>
                   </View>
-              );
-          })}
-      </ScrollView></>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.recipeButton,
+                  { backgroundColor: Colors.primary },
+                ]}
+              >
+                <Text style={styles.recipeButtonText}>Show Recipe</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      <BlurView
+        intensity={80}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top + Spacing.md,
+            borderBottomColor: borderColor,
+          },
+        ]}
+      >
+        <View style={styles.headerTopRow}>
+          <View>
+            <Text style={[styles.headerDate, { color: secondaryText }]}>
+              TODAY
+            </Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Suggestions
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.doneButton}
+            onPress={() => router.back()}
+          >
+            <Text
+              style={[styles.doneButtonText, { color: Colors.primary }]}
+            >
+              Done
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 40 },
+  screen: {
+    flex: 1,
+  },
+  container: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+  },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+  },
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: "bold",
+    letterSpacing: 0.3,
+  },
+  headerDate: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
+    letterSpacing: 0.5,
+  },
+  doneButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  doneButtonText: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
   card: {
