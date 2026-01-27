@@ -1,0 +1,1236 @@
+{
+  "timestamp": "2026-01-13T15:30:07.864116",
+  "subset_size": 30,
+  "models": {
+    "claude-3-7-sonnet": {
+      "model_name": "claude-3-7-sonnet",
+      "total_tests": 30,
+      "successful_analyses": 30,
+      "failed_analyses": 0,
+      "meal_results": [
+        {
+          "index": 0,
+          "predicted": {
+            "calories": 27.0,
+            "carbs": 2.8,
+            "protein": 0.3,
+            "fat": 1.7,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 107.202995,
+            "carbs": 11.454,
+            "protein": 1.426,
+            "fat": 6.624,
+            "total_mass": 23.0,
+            "dataset_index": 3088
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 80.202995,
+              "percentage_error": 74.814136489377,
+              "squared_error": 6432.520406970025
+            },
+            "carbs": {
+              "absolute_error": 8.654,
+              "percentage_error": 75.55439147895932,
+              "squared_error": 74.891716
+            },
+            "protein": {
+              "absolute_error": 1.126,
+              "percentage_error": 78.96213183730715,
+              "squared_error": 1.2678759999999998
+            },
+            "fat": {
+              "absolute_error": 4.9239999999999995,
+              "percentage_error": 74.33574879227052,
+              "squared_error": 24.245775999999996
+            }
+          }
+        },
+        {
+          "index": 1,
+          "predicted": {
+            "calories": 166.0,
+            "carbs": 39.1,
+            "protein": 3.3,
+            "fat": 0.6,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 227.313004,
+            "carbs": 54.501999,
+            "protein": 2.885,
+            "fat": 0.639,
+            "total_mass": 254.0,
+            "dataset_index": 710
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 61.31300400000001,
+              "percentage_error": 26.972941680010532,
+              "squared_error": 3759.284459504017
+            },
+            "carbs": {
+              "absolute_error": 15.401998999999996,
+              "percentage_error": 28.259512096060913,
+              "squared_error": 237.2215731960009
+            },
+            "protein": {
+              "absolute_error": 0.41500000000000004,
+              "percentage_error": 14.384748700173313,
+              "squared_error": 0.17222500000000002
+            },
+            "fat": {
+              "absolute_error": 0.039000000000000035,
+              "percentage_error": 6.103286384976531,
+              "squared_error": 0.0015210000000000026
+            }
+          }
+        },
+        {
+          "index": 2,
+          "predicted": {
+            "calories": 45.0,
+            "carbs": 10.2,
+            "protein": 1.0,
+            "fat": 0.1,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 46.896584,
+            "carbs": 8.604878,
+            "protein": 0.478049,
+            "fat": 1.195122,
+            "total_mass": 49.0,
+            "dataset_index": 2256
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 1.8965839999999972,
+              "percentage_error": 4.04418368723828,
+              "squared_error": 3.597030869055989
+            },
+            "carbs": {
+              "absolute_error": 1.595122,
+              "percentage_error": 18.537415637967207,
+              "squared_error": 2.544414194884
+            },
+            "protein": {
+              "absolute_error": 0.521951,
+              "percentage_error": 109.18357741570426,
+              "squared_error": 0.2724328464010001
+            },
+            "fat": {
+              "absolute_error": 1.095122,
+              "percentage_error": 91.63265340274883,
+              "squared_error": 1.1992921948839999
+            }
+          }
+        },
+        {
+          "index": 3,
+          "predicted": {
+            "calories": 78.0,
+            "carbs": 21.0,
+            "protein": 0.4,
+            "fat": 0.3,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 73.839996,
+            "carbs": 19.879999,
+            "protein": 0.426,
+            "fat": 0.284,
+            "total_mass": 142.0,
+            "dataset_index": 310
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 4.160004000000001,
+              "percentage_error": 5.633808539209564,
+              "squared_error": 17.305633280016007
+            },
+            "carbs": {
+              "absolute_error": 1.1200009999999985,
+              "percentage_error": 5.633808130473238,
+              "squared_error": 1.2544022400009966
+            },
+            "protein": {
+              "absolute_error": 0.025999999999999968,
+              "percentage_error": 6.103286384976518,
+              "squared_error": 0.0006759999999999983
+            },
+            "fat": {
+              "absolute_error": 0.016000000000000014,
+              "percentage_error": 5.633802816901414,
+              "squared_error": 0.0002560000000000005
+            }
+          }
+        },
+        {
+          "index": 4,
+          "predicted": {
+            "calories": 192.0,
+            "carbs": 34.7,
+            "protein": 4.1,
+            "fat": 4.8999999999999995,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 335.363983,
+            "carbs": 17.166,
+            "protein": 14.844001,
+            "fat": 22.945,
+            "total_mass": 176.0,
+            "dataset_index": 1695
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 143.36398300000002,
+              "percentage_error": 42.74877156382056,
+              "squared_error": 20553.231621624294
+            },
+            "carbs": {
+              "absolute_error": 17.534000000000002,
+              "percentage_error": 102.1437725736922,
+              "squared_error": 307.4411560000001
+            },
+            "protein": {
+              "absolute_error": 10.744001,
+              "percentage_error": 72.3794144179861,
+              "squared_error": 115.43355748800101
+            },
+            "fat": {
+              "absolute_error": 18.045,
+              "percentage_error": 78.64458487687949,
+              "squared_error": 325.62202500000006
+            }
+          }
+        },
+        {
+          "index": 5,
+          "predicted": {
+            "calories": 394.0,
+            "carbs": 51.2,
+            "protein": 26.400000000000002,
+            "fat": 11.2,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 361.413239,
+            "carbs": 32.758915,
+            "protein": 19.963291,
+            "fat": 17.160767,
+            "total_mass": 315.0,
+            "dataset_index": 2407
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 32.586761000000024,
+              "percentage_error": 9.016482376286174,
+              "squared_error": 1061.8969924711225
+            },
+            "carbs": {
+              "absolute_error": 18.441085,
+              "percentage_error": 56.2933326699007,
+              "squared_error": 340.073615977225
+            },
+            "protein": {
+              "absolute_error": 6.4367090000000005,
+              "percentage_error": 32.24272490943502,
+              "squared_error": 41.43122275068101
+            },
+            "fat": {
+              "absolute_error": 5.960767000000001,
+              "percentage_error": 34.73485188628224,
+              "squared_error": 35.530743228289005
+            }
+          }
+        },
+        {
+          "index": 6,
+          "predicted": {
+            "calories": 434.0,
+            "carbs": 25.3,
+            "protein": 37.10000000000001,
+            "fat": 20.9,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 293.899658,
+            "carbs": 17.91408,
+            "protein": 28.208755,
+            "fat": 11.317793,
+            "total_mass": 140.0,
+            "dataset_index": 2720
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 140.100342,
+              "percentage_error": 47.66944710088775,
+              "squared_error": 19628.105828516967
+            },
+            "carbs": {
+              "absolute_error": 7.385920000000002,
+              "percentage_error": 41.22969195180553,
+              "squared_error": 54.551814246400035
+            },
+            "protein": {
+              "absolute_error": 8.891245000000009,
+              "percentage_error": 31.519452028279904,
+              "squared_error": 79.05423765002516
+            },
+            "fat": {
+              "absolute_error": 9.582206999999999,
+              "percentage_error": 84.66497841054345,
+              "squared_error": 91.81869099084898
+            }
+          }
+        },
+        {
+          "index": 7,
+          "predicted": {
+            "calories": 63.0,
+            "carbs": 13.7,
+            "protein": 2.1,
+            "fat": 0.9,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 78.514,
+            "carbs": 16.280001,
+            "protein": 2.294,
+            "fat": 1.776,
+            "total_mass": 74.0,
+            "dataset_index": 333
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 15.513999999999996,
+              "percentage_error": 19.75953333163512,
+              "squared_error": 240.68419599999987
+            },
+            "carbs": {
+              "absolute_error": 2.5800009999999993,
+              "percentage_error": 15.847671016727821,
+              "squared_error": 6.656405160000997
+            },
+            "protein": {
+              "absolute_error": 0.19399999999999995,
+              "percentage_error": 8.456843940714906,
+              "squared_error": 0.03763599999999998
+            },
+            "fat": {
+              "absolute_error": 0.876,
+              "percentage_error": 49.32432432432432,
+              "squared_error": 0.767376
+            }
+          }
+        },
+        {
+          "index": 8,
+          "predicted": {
+            "calories": 9.0,
+            "carbs": 2.1,
+            "protein": 0.3,
+            "fat": 0.1,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 5.59,
+            "carbs": 1.196,
+            "protein": 0.182,
+            "fat": 0.065,
+            "total_mass": 13.0,
+            "dataset_index": 36
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 3.41,
+              "percentage_error": 61.001788908765654,
+              "squared_error": 11.628100000000002
+            },
+            "carbs": {
+              "absolute_error": 0.9040000000000001,
+              "percentage_error": 75.58528428093648,
+              "squared_error": 0.8172160000000003
+            },
+            "protein": {
+              "absolute_error": 0.118,
+              "percentage_error": 64.83516483516483,
+              "squared_error": 0.013923999999999999
+            },
+            "fat": {
+              "absolute_error": 0.035,
+              "percentage_error": 53.846153846153854,
+              "squared_error": 0.0012250000000000002
+            }
+          }
+        },
+        {
+          "index": 9,
+          "predicted": {
+            "calories": 39.0,
+            "carbs": 9.2,
+            "protein": 1.1,
+            "fat": 0.2,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 111.910004,
+            "carbs": 18.481001,
+            "protein": 2.959,
+            "fat": 4.126,
+            "total_mass": 254.0,
+            "dataset_index": 3062
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 72.910004,
+              "percentage_error": 65.15056866587192,
+              "squared_error": 5315.868683280016
+            },
+            "carbs": {
+              "absolute_error": 9.281001,
+              "percentage_error": 50.21914667933842,
+              "squared_error": 86.136979562001
+            },
+            "protein": {
+              "absolute_error": 1.859,
+              "percentage_error": 62.825278810408925,
+              "squared_error": 3.4558809999999998
+            },
+            "fat": {
+              "absolute_error": 3.926,
+              "percentage_error": 95.15269025690742,
+              "squared_error": 15.413476000000001
+            }
+          }
+        },
+        {
+          "index": 10,
+          "predicted": {
+            "calories": 415.0,
+            "carbs": 43.5,
+            "protein": 20.6,
+            "fat": 19.3,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 362.154694,
+            "carbs": 43.354206,
+            "protein": 14.903948,
+            "fat": 14.811577,
+            "total_mass": 214.0,
+            "dataset_index": 1253
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 52.845305999999994,
+              "percentage_error": 14.591915243821193,
+              "squared_error": 2792.6263662336355
+            },
+            "carbs": {
+              "absolute_error": 0.1457940000000022,
+              "percentage_error": 0.3362857112410321,
+              "squared_error": 0.02125589043600064
+            },
+            "protein": {
+              "absolute_error": 5.696052000000002,
+              "percentage_error": 38.218410316514806,
+              "squared_error": 32.44500838670402
+            },
+            "fat": {
+              "absolute_error": 4.488423000000001,
+              "percentage_error": 30.303478150908585,
+              "squared_error": 20.14594102692901
+            }
+          }
+        },
+        {
+          "index": 11,
+          "predicted": {
+            "calories": 388.0,
+            "carbs": 35.8,
+            "protein": 13.400000000000002,
+            "fat": 22.4,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 209.934982,
+            "carbs": 25.612118,
+            "protein": 10.612808,
+            "fat": 7.829318,
+            "total_mass": 197.0,
+            "dataset_index": 3250
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 178.065018,
+              "percentage_error": 84.81912652365865,
+              "squared_error": 31707.150635340327
+            },
+            "carbs": {
+              "absolute_error": 10.187881999999998,
+              "percentage_error": 39.777584969739706,
+              "squared_error": 103.79293964592397
+            },
+            "protein": {
+              "absolute_error": 2.787192000000003,
+              "percentage_error": 26.262531085081374,
+              "squared_error": 7.768439244864015
+            },
+            "fat": {
+              "absolute_error": 14.570681999999998,
+              "percentage_error": 186.10410255401555,
+              "squared_error": 212.30477394512394
+            }
+          }
+        },
+        {
+          "index": 12,
+          "predicted": {
+            "calories": 170.0,
+            "carbs": 6.8,
+            "protein": 28.5,
+            "fat": 3.4,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 207.429993,
+            "carbs": 6.886,
+            "protein": 35.307003,
+            "fat": 4.22,
+            "total_mass": 231.0,
+            "dataset_index": 2878
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 37.429992999999996,
+              "percentage_error": 18.044638800137257,
+              "squared_error": 1401.0043759800487
+            },
+            "carbs": {
+              "absolute_error": 0.0860000000000003,
+              "percentage_error": 1.2489108335753747,
+              "squared_error": 0.007396000000000051
+            },
+            "protein": {
+              "absolute_error": 6.807003000000002,
+              "percentage_error": 19.279469854748083,
+              "squared_error": 46.335289842009026
+            },
+            "fat": {
+              "absolute_error": 0.8199999999999998,
+              "percentage_error": 19.43127962085308,
+              "squared_error": 0.6723999999999998
+            }
+          }
+        },
+        {
+          "index": 13,
+          "predicted": {
+            "calories": 95.0,
+            "carbs": 25.1,
+            "protein": 0.5,
+            "fat": 0.3,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 60.32,
+            "carbs": 16.24,
+            "protein": 0.348,
+            "fat": 0.232,
+            "total_mass": 116.0,
+            "dataset_index": 380
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 34.68,
+              "percentage_error": 57.49336870026524,
+              "squared_error": 1202.7024
+            },
+            "carbs": {
+              "absolute_error": 8.860000000000003,
+              "percentage_error": 54.55665024630544,
+              "squared_error": 78.49960000000006
+            },
+            "protein": {
+              "absolute_error": 0.15200000000000002,
+              "percentage_error": 43.67816091954024,
+              "squared_error": 0.023104000000000006
+            },
+            "fat": {
+              "absolute_error": 0.06799999999999998,
+              "percentage_error": 29.310344827586192,
+              "squared_error": 0.004623999999999997
+            }
+          }
+        },
+        {
+          "index": 14,
+          "predicted": {
+            "calories": 488.0,
+            "carbs": 30.6,
+            "protein": 27.400000000000002,
+            "fat": 29.0,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 451.635986,
+            "carbs": 32.778,
+            "protein": 29.228001,
+            "fat": 22.040001,
+            "total_mass": 343.0,
+            "dataset_index": 714
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 36.364014,
+              "percentage_error": 8.0516201381703,
+              "squared_error": 1322.3415141921957
+            },
+            "carbs": {
+              "absolute_error": 2.1779999999999973,
+              "percentage_error": 6.6447007138934575,
+              "squared_error": 4.7436839999999885
+            },
+            "protein": {
+              "absolute_error": 1.8280009999999969,
+              "percentage_error": 6.254279928346783,
+              "squared_error": 3.3415876560009887
+            },
+            "fat": {
+              "absolute_error": 6.959999,
+              "percentage_error": 31.578941398414635,
+              "squared_error": 48.441586080000995
+            }
+          }
+        },
+        {
+          "index": 15,
+          "predicted": {
+            "calories": 336.0,
+            "carbs": 80.1,
+            "protein": 5.8,
+            "fat": 1.2000000000000002,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 190.309982,
+            "carbs": 46.080002,
+            "protein": 3.179,
+            "fat": 0.755,
+            "total_mass": 356.0,
+            "dataset_index": 366
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 145.690018,
+              "percentage_error": 76.5540601017975,
+              "squared_error": 21225.581344840328
+            },
+            "carbs": {
+              "absolute_error": 34.019997999999994,
+              "percentage_error": 73.82811745537683,
+              "squared_error": 1157.3602639200035
+            },
+            "protein": {
+              "absolute_error": 2.621,
+              "percentage_error": 82.44731047499214,
+              "squared_error": 6.869641
+            },
+            "fat": {
+              "absolute_error": 0.4450000000000002,
+              "percentage_error": 58.9403973509934,
+              "squared_error": 0.19802500000000015
+            }
+          }
+        },
+        {
+          "index": 16,
+          "predicted": {
+            "calories": 264.0,
+            "carbs": 28.8,
+            "protein": 19.0,
+            "fat": 10.6,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 113.880005,
+            "carbs": 2.964,
+            "protein": 12.48,
+            "fat": 7.488,
+            "total_mass": 156.0,
+            "dataset_index": 2762
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 150.11999500000002,
+              "percentage_error": 131.82296137061113,
+              "squared_error": 22536.01289880003
+            },
+            "carbs": {
+              "absolute_error": 25.836000000000002,
+              "percentage_error": 871.6599190283401,
+              "squared_error": 667.4988960000001
+            },
+            "protein": {
+              "absolute_error": 6.52,
+              "percentage_error": 52.24358974358974,
+              "squared_error": 42.5104
+            },
+            "fat": {
+              "absolute_error": 3.111999999999999,
+              "percentage_error": 41.55982905982904,
+              "squared_error": 9.684543999999995
+            }
+          }
+        },
+        {
+          "index": 17,
+          "predicted": {
+            "calories": 232.0,
+            "carbs": 23.2,
+            "protein": 10.9,
+            "fat": 11.7,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 313.079987,
+            "carbs": 38.66,
+            "protein": 13.360001,
+            "fat": 13.188,
+            "total_mass": 448.0,
+            "dataset_index": 904
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 81.07998700000002,
+              "percentage_error": 25.897531099616412,
+              "squared_error": 6573.9642919201715
+            },
+            "carbs": {
+              "absolute_error": 15.459999999999997,
+              "percentage_error": 39.98965338851526,
+              "squared_error": 239.01159999999993
+            },
+            "protein": {
+              "absolute_error": 2.460001,
+              "percentage_error": 18.413179759492536,
+              "squared_error": 6.051604920001001
+            },
+            "fat": {
+              "absolute_error": 1.4880000000000013,
+              "percentage_error": 11.282984531392184,
+              "squared_error": 2.214144000000004
+            }
+          }
+        },
+        {
+          "index": 18,
+          "predicted": {
+            "calories": 239.0,
+            "carbs": 41.7,
+            "protein": 7.4,
+            "fat": 6.0,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 62.68,
+            "carbs": 7.74,
+            "protein": 1.235,
+            "fat": 3.591,
+            "total_mass": 133.0,
+            "dataset_index": 2353
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 176.32,
+              "percentage_error": 281.30185067007017,
+              "squared_error": 31088.7424
+            },
+            "carbs": {
+              "absolute_error": 33.96,
+              "percentage_error": 438.7596899224806,
+              "squared_error": 1153.2816
+            },
+            "protein": {
+              "absolute_error": 6.165,
+              "percentage_error": 499.1902834008097,
+              "squared_error": 38.007225
+            },
+            "fat": {
+              "absolute_error": 2.409,
+              "percentage_error": 67.0843776106934,
+              "squared_error": 5.803280999999999
+            }
+          }
+        },
+        {
+          "index": 19,
+          "predicted": {
+            "calories": 213.0,
+            "carbs": 10.1,
+            "protein": 20.1,
+            "fat": 11.1,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 156.428101,
+            "carbs": 6.420062,
+            "protein": 14.763338,
+            "fat": 8.249931,
+            "total_mass": 134.0,
+            "dataset_index": 1128
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 56.571899,
+              "percentage_error": 36.16479305083426,
+              "squared_error": 3200.3797564662013
+            },
+            "carbs": {
+              "absolute_error": 3.679938,
+              "percentage_error": 57.31935299067206,
+              "squared_error": 13.541943683844
+            },
+            "protein": {
+              "absolute_error": 5.336662000000002,
+              "percentage_error": 36.148071662384226,
+              "squared_error": 28.479961302244025
+            },
+            "fat": {
+              "absolute_error": 2.8500689999999995,
+              "percentage_error": 34.54657984412233,
+              "squared_error": 8.122893304760998
+            }
+          }
+        },
+        {
+          "index": 20,
+          "predicted": {
+            "calories": 35.0,
+            "carbs": 8.2,
+            "protein": 0.8,
+            "fat": 0.2,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 40.59,
+            "carbs": 9.900001,
+            "protein": 0.891,
+            "fat": 0.198,
+            "total_mass": 99.0,
+            "dataset_index": 364
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 5.590000000000003,
+              "percentage_error": 13.771864991377194,
+              "squared_error": 31.248100000000036
+            },
+            "carbs": {
+              "absolute_error": 1.7000010000000003,
+              "percentage_error": 17.171725538209547,
+              "squared_error": 2.890003400001001
+            },
+            "protein": {
+              "absolute_error": 0.09099999999999997,
+              "percentage_error": 10.213243546576876,
+              "squared_error": 0.008280999999999995
+            },
+            "fat": {
+              "absolute_error": 0.0020000000000000018,
+              "percentage_error": 1.0101010101010108,
+              "squared_error": 4.0000000000000074e-06
+            }
+          }
+        },
+        {
+          "index": 21,
+          "predicted": {
+            "calories": 229.0,
+            "carbs": 20.1,
+            "protein": 7.699999999999999,
+            "fat": 14.3,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 220.901733,
+            "carbs": 10.166318,
+            "protein": 12.222573,
+            "fat": 14.96129,
+            "total_mass": 122.0,
+            "dataset_index": 1006
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 8.098266999999993,
+              "percentage_error": 3.6660042861682722,
+              "squared_error": 65.58192840328888
+            },
+            "carbs": {
+              "absolute_error": 9.933682000000001,
+              "percentage_error": 97.71169857169528,
+              "squared_error": 98.67803807712401
+            },
+            "protein": {
+              "absolute_error": 4.522573000000001,
+              "percentage_error": 37.001808048109034,
+              "squared_error": 20.45366654032901
+            },
+            "fat": {
+              "absolute_error": 0.6612899999999993,
+              "percentage_error": 4.420006563605138,
+              "squared_error": 0.437304464099999
+            }
+          }
+        },
+        {
+          "index": 22,
+          "predicted": {
+            "calories": 88.0,
+            "carbs": 11.2,
+            "protein": 4.2,
+            "fat": 3.5,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 30.6,
+            "carbs": 7.2,
+            "protein": 0.72,
+            "fat": 0.18,
+            "total_mass": 90.0,
+            "dataset_index": 95
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 57.4,
+              "percentage_error": 187.5816993464052,
+              "squared_error": 3294.7599999999998
+            },
+            "carbs": {
+              "absolute_error": 3.999999999999999,
+              "percentage_error": 55.55555555555555,
+              "squared_error": 15.999999999999993
+            },
+            "protein": {
+              "absolute_error": 3.4800000000000004,
+              "percentage_error": 483.33333333333337,
+              "squared_error": 12.110400000000004
+            },
+            "fat": {
+              "absolute_error": 3.32,
+              "percentage_error": 1844.4444444444443,
+              "squared_error": 11.0224
+            }
+          }
+        },
+        {
+          "index": 23,
+          "predicted": {
+            "calories": 396.0,
+            "carbs": 2.2,
+            "protein": 29.1,
+            "fat": 30.7,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 354.089996,
+            "carbs": 2.182,
+            "protein": 24.09,
+            "fat": 26.98,
+            "total_mass": 141.0,
+            "dataset_index": 1151
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 41.910004000000015,
+              "percentage_error": 11.835975168301568,
+              "squared_error": 1756.4484352800173
+            },
+            "carbs": {
+              "absolute_error": 0.018000000000000238,
+              "percentage_error": 0.8249312557287001,
+              "squared_error": 0.0003240000000000086
+            },
+            "protein": {
+              "absolute_error": 5.010000000000002,
+              "percentage_error": 20.79701120797012,
+              "squared_error": 25.100100000000015
+            },
+            "fat": {
+              "absolute_error": 3.719999999999999,
+              "percentage_error": 13.787991104521863,
+              "squared_error": 13.838399999999991
+            }
+          }
+        },
+        {
+          "index": 24,
+          "predicted": {
+            "calories": 152.0,
+            "carbs": 8.8,
+            "protein": 7.3,
+            "fat": 10.0,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 50.623695,
+            "carbs": 5.197519,
+            "protein": 3.843747,
+            "fat": 1.979075,
+            "total_mass": 62.0,
+            "dataset_index": 2143
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 101.376305,
+              "percentage_error": 200.25465347798104,
+              "squared_error": 10277.155215453025
+            },
+            "carbs": {
+              "absolute_error": 3.602481000000001,
+              "percentage_error": 69.31155037624684,
+              "squared_error": 12.977869355361006
+            },
+            "protein": {
+              "absolute_error": 3.456253,
+              "percentage_error": 89.91884741633619,
+              "squared_error": 11.945684800009
+            },
+            "fat": {
+              "absolute_error": 8.020925,
+              "percentage_error": 405.2865606407034,
+              "squared_error": 64.335237855625
+            }
+          }
+        },
+        {
+          "index": 25,
+          "predicted": {
+            "calories": 120.0,
+            "carbs": 3.2,
+            "protein": 0.8,
+            "fat": 11.2,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 41.399998,
+            "carbs": 2.268,
+            "protein": 0.288,
+            "fat": 3.852,
+            "total_mass": 36.0,
+            "dataset_index": 0
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 78.600002,
+              "percentage_error": 189.85508646642933,
+              "squared_error": 6177.960314400005
+            },
+            "carbs": {
+              "absolute_error": 0.9320000000000004,
+              "percentage_error": 41.09347442680778,
+              "squared_error": 0.8686240000000007
+            },
+            "protein": {
+              "absolute_error": 0.512,
+              "percentage_error": 177.7777777777778,
+              "squared_error": 0.262144
+            },
+            "fat": {
+              "absolute_error": 7.347999999999999,
+              "percentage_error": 190.75804776739352,
+              "squared_error": 53.99310399999999
+            }
+          }
+        },
+        {
+          "index": 26,
+          "predicted": {
+            "calories": 174.0,
+            "carbs": 6.1,
+            "protein": 6.3,
+            "fat": 15.0,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 520.290039,
+            "carbs": 20.43,
+            "protein": 20.16,
+            "fat": 44.549999,
+            "total_mass": 90.0,
+            "dataset_index": 399
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 346.290039,
+              "percentage_error": 66.55711488645278,
+              "squared_error": 119916.7911106215
+            },
+            "carbs": {
+              "absolute_error": 14.33,
+              "percentage_error": 70.1419481155164,
+              "squared_error": 205.34890000000001
+            },
+            "protein": {
+              "absolute_error": 13.86,
+              "percentage_error": 68.75,
+              "squared_error": 192.09959999999998
+            },
+            "fat": {
+              "absolute_error": 29.549999,
+              "percentage_error": 66.32996557418554,
+              "squared_error": 873.202440900001
+            }
+          }
+        },
+        {
+          "index": 27,
+          "predicted": {
+            "calories": 61.0,
+            "carbs": 13.0,
+            "protein": 3.6,
+            "fat": 0.6,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 109.319298,
+            "carbs": 12.18853,
+            "protein": 3.267302,
+            "fat": 6.288338,
+            "total_mass": 203.0,
+            "dataset_index": 3112
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 48.319298,
+              "percentage_error": 44.200153938054015,
+              "squared_error": 2334.7545592128045
+            },
+            "carbs": {
+              "absolute_error": 0.8114699999999999,
+              "percentage_error": 6.657652727605379,
+              "squared_error": 0.6584835608999998
+            },
+            "protein": {
+              "absolute_error": 0.33269800000000016,
+              "percentage_error": 10.182652231106895,
+              "squared_error": 0.11068795920400011
+            },
+            "fat": {
+              "absolute_error": 5.688338000000001,
+              "percentage_error": 90.45852815163562,
+              "squared_error": 32.35718920224401
+            }
+          }
+        },
+        {
+          "index": 28,
+          "predicted": {
+            "calories": 25.0,
+            "carbs": 5.2,
+            "protein": 2.1,
+            "fat": 0.2,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 116.842033,
+            "carbs": 4.392354,
+            "protein": 2.101721,
+            "fat": 10.860431,
+            "total_mass": 104.0,
+            "dataset_index": 2757
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 91.842033,
+              "percentage_error": 78.60359037059891,
+              "squared_error": 8434.95902557309
+            },
+            "carbs": {
+              "absolute_error": 0.8076460000000001,
+              "percentage_error": 18.38754344481342,
+              "squared_error": 0.6522920613160001
+            },
+            "protein": {
+              "absolute_error": 0.0017209999999998615,
+              "percentage_error": 0.08188527402066505,
+              "squared_error": 2.9618409999995234e-06
+            },
+            "fat": {
+              "absolute_error": 10.660431,
+              "percentage_error": 98.1584524592072,
+              "squared_error": 113.64478910576102
+            }
+          }
+        },
+        {
+          "index": 29,
+          "predicted": {
+            "calories": 168.0,
+            "carbs": 30.9,
+            "protein": 5.5,
+            "fat": 3.4,
+            "total_mass": null
+          },
+          "ground_truth": {
+            "calories": 173.432449,
+            "carbs": 31.491592,
+            "protein": 3.634132,
+            "fat": 4.405418,
+            "total_mass": 212.0,
+            "dataset_index": 1711
+          },
+          "errors": {
+            "calories": {
+              "absolute_error": 5.432448999999991,
+              "percentage_error": 3.132314068862622,
+              "squared_error": 29.511502137600903
+            },
+            "carbs": {
+              "absolute_error": 0.5915920000000021,
+              "percentage_error": 1.8785712707061686,
+              "squared_error": 0.3499810944640025
+            },
+            "protein": {
+              "absolute_error": 1.8658679999999999,
+              "percentage_error": 51.34287912491896,
+              "squared_error": 3.4814633934239994
+            },
+            "fat": {
+              "absolute_error": 1.0054180000000001,
+              "percentage_error": 22.82230653254697,
+              "squared_error": 1.0108653547240003
+            }
+          }
+        }
+      ],
+      "nutrient_metrics": {
+        "calories": {
+          "mae": 76.3160768,
+          "mape": 63.03373283475719,
+          "rmse": 105.26059711138664
+        },
+        "carbs": {
+          "mae": 8.467920433333333,
+          "mape": 81.07198476862956,
+          "rmse": 12.738096387432838
+        },
+        "protein": {
+          "mae": 3.4612310000000006,
+          "mape": 75.08091161286002,
+          "rmse": 4.894023432520316
+        },
+        "fat": {
+          "mae": 5.056222333333333,
+          "mape": 127.38972647317136,
+          "rmse": 8.095336782480171
+        }
+      }
+    }
+  }
+}

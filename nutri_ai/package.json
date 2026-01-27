@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "npm run format && expo start",
+    "start": "./node_modules/.bin/expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "expo lint .",
-    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md}'"
+    "android": "./node_modules/.bin/expo start --android",
+    "ios": "./node_modules/.bin/expo start --ios",
+    "web": "./node_modules/.bin/expo start --web",
+    "lint": "./node_modules/.bin/expo lint .",
+    "format": "./node_modules/.bin/prettier --write '**/*.{js,jsx,ts,tsx,json,md}'"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -67,6 +67,38 @@ def get_json_schema_template() -> str:
 }
 """
 
+def extract_and_parse_json(text: str) -> dict:
+    """
+    Extract and parse JSON from text that might contain markdown or extra content.
+    Handles cases where JSON is wrapped in ```json ... ``` or has surrounding text.
+    """
+    import re
+    
+    # Try to parse as-is first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    # Try to extract JSON from markdown code block
+    json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+    
+    # Try to find JSON object in text (look for { ... })
+    json_match = re.search(r'\{.*\}', text, re.DOTALL)
+    if json_match:
+        try:
+            return json.loads(json_match.group(0))
+        except json.JSONDecodeError:
+            pass
+    
+    # If all else fails, raise the original error
+    raise json.JSONDecodeError(f"Could not extract valid JSON from response", text, 0)
+
 def analyze_meal_image(
     image_path: str,
     model_name: str = "gpt-5",
@@ -103,9 +135,16 @@ def analyze_meal_image(
     
     json_schema_template = get_json_schema_template()
     
-    chat_response = client.chat.completions.create(
-        model=model_name,
-        messages=[
+    # Determine which token parameter to use based on model
+    # GPT-5 and o1/o3/o4 models use max_completion_tokens instead of max_tokens
+    token_param_name = "max_completion_tokens" if any(m in model_name.lower() for m in ["gpt-5", "o1", "o3", "o4"]) else "max_tokens"
+    
+    # GPT-5 and o1/o3/o4 models don't support temperature parameter (or only support default value)
+    use_temperature = not any(m in model_name.lower() for m in ["gpt-5", "o1", "o3", "o4"])
+    
+    completion_params = {
+        "model": model_name,
+        "messages": [
             {
                 "role": "system", 
                 "content": "You are an expert nutrition assistant. Your task is to accurately identify all food items in the provided image, estimate their serving size in grams, and calculate their complete nutritional information. You must respond only with the requested JSON object."
@@ -140,42 +179,47 @@ Return *only* the JSON object and nothing else."""
                 ]
             }
         ],
-        temperature=0.0, # Set to 0.0 for deterministic, fact-based JSON output
-        max_tokens=2048 # Increase to handle complex meals with multiple items
-    )
+        token_param_name: 2048
+    }
     
-    # Extract raw response content (original behavior)
-    raw_response_content = chat_response.choices[0].message.content
+    # Only add temperature if the model supports it
+    if use_temperature:
+        completion_params["temperature"] = 0.0
     
-    # Try to extract JSON from response (handle markdown code blocks)
-    response_content = raw_response_content.strip()
-    if response_content.startswith("```"):
-        # Remove markdown code blocks
-        lines = response_content.split("\n")
-        response_content = "\n".join(lines[1:-1]) if lines[-1].startswith("```") else "\n".join(lines[1:])
+    chat_response = client.chat.completions.create(**completion_params)
     
-    # Parse JSON response
-    try:
-        parsed_response = json.loads(response_content)
-        if return_raw_response:
+    # Extract the response content
+    response_content = chat_response.choices[0].message.content
+    
+    if return_raw_response:
+        # Return both raw and parsed response
+        try:
+            parsed_data = extract_and_parse_json(response_content)
             return {
-                "raw": raw_response_content,
-                "parsed": parsed_response
+                "raw": response_content,
+                "parsed": parsed_data
             }
-        return parsed_response
-    except json.JSONDecodeError as e:
-        error_response = {
-            "success": False,
-            "requestId": None,
-            "items": [],
-            "errorMessage": f"Failed to parse JSON response: {str(e)}"
-        }
-        if return_raw_response:
+        except json.JSONDecodeError as e:
             return {
-                "raw": raw_response_content,
-                "parsed": error_response
+                "raw": response_content,
+                "parsed": {
+                    "success": False,
+                    "requestId": None,
+                    "items": [],
+                    "errorMessage": f"Failed to parse JSON response: {str(e)}"
+                }
             }
-        return error_response
+    else:
+        # Parse and return the JSON response
+        try:
+            return extract_and_parse_json(response_content)
+        except json.JSONDecodeError as e:
+            return {
+                "success": False,
+                "requestId": None,
+                "items": [],
+                "errorMessage": f"Failed to parse JSON response: {str(e)}"
+            }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze meal images for nutrition information")
