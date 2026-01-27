@@ -1191,12 +1191,11 @@ async def analyze_meal(
 
 
 
-from fastapi import FastAPI, Depends, HTTPException, status, Body
+from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-import os, httpx, uuid, json
-import logging
-
+from typing import Dict
+import os, httpx, json, logging
+from datetime import date
 
 # --- Pydantic models for request/response ---
 
@@ -1225,24 +1224,9 @@ class MealSuggestionsResponse(BaseModel):
 
 # --- Dummy dependency for authentication ---
 def get_current_user():
-    # Replace with your auth logic
     return {"id": "user_123", "email": "user@example.com"}
 
-
-# --- The meal suggestion endpoint ---
-
-def normalize_meal(meal: dict) -> MealSuggestion:
-    return MealSuggestion(
-        name=meal.get("name", "none"),
-        description=meal.get("description", ""),
-        nutrition=NutritionInfo(
-            calories=meal.get("calories", meal.get("nutrition", {}).get("calories", 0)),
-            protein=meal.get("protein", meal.get("nutrition", {}).get("protein", 0)),
-            carbs=meal.get("carbs", meal.get("nutrition", {}).get("carbs", 0)),
-            fat=meal.get("fat", meal.get("nutrition", {}).get("fat", 0)),
-        )
-    )
-
+# --- Suggest meals endpoint ---
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
 async def suggest_meals(
     request: NutritionRequest,
@@ -1257,10 +1241,8 @@ async def suggest_meals(
     # 1️⃣ Check if today's suggestions already exist
     existing = (
         db.query(DailyMealSuggestion)
-        .filter(
-            DailyMealSuggestion.user_id == user_id,
-            DailyMealSuggestion.date == today,
-        )
+        .filter(DailyMealSuggestion.user_id == user_id,
+                DailyMealSuggestion.date == today)
         .all()
     )
 
@@ -1286,16 +1268,14 @@ async def suggest_meals(
             "dinner": build("dinner"),
         }
 
-    # 2️⃣ Otherwise → generate via LLM (your existing logic)
-
+    # 2️⃣ Generate suggestions via LLM
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
     if not OPENAI_API_KEY or not OPENAI_BASE_URL:
         raise HTTPException(status_code=500, detail="Server misconfiguration")
 
-    prompt = f"""
-You are a helpful nutrition assistant.
+    prompt = f"""You are a helpful nutrition assistant.
 
 Based on the remaining nutrients for today:
 - Calories: {request.remaining_calories} kcal
@@ -1306,12 +1286,24 @@ Based on the remaining nutrients for today:
 The value of lastMeal is: {request.last_meal}
 
 Rules:
-- lastMeal = 0 → breakfast, lunch, dinner
-- lastMeal = 1 → lunch, dinner only
-- lastMeal = 2 → dinner only
-- Missing meals must have name "none"
+- lastMeal = 0 → generate breakfast, lunch, and dinner
+- lastMeal = 1 → generate lunch and dinner only, breakfast should have name "none"
+- lastMeal = 2 → generate dinner only, breakfast and lunch should have name "none"
+- For any meal that should not be served, set:
+  {{
+    "name": "none",
+    "description": "",
+    "nutrition": {{"calories": 0, "protein": 0, "carbs": 0, "fat": 0}}
+  }}
 
-Return JSON only.
+Output format:
+- Return a JSON object with exactly three keys: "breakfast", "lunch", "dinner"
+- Each key maps to an object with:
+  - "name": string
+  - "description": string
+  - "nutrition": object with keys "calories", "protein", "carbs", "fat" (all numbers)
+- Do not include any text outside of the JSON.
+- Always use lowercase keys for meals and nutrition.
 """
 
     headers = {
@@ -1331,21 +1323,19 @@ Return JSON only.
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{OPENAI_BASE_URL}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
+            response = await client.post(f"{OPENAI_BASE_URL}/chat/completions",
+                                         headers=headers, json=payload)
 
         if response.status_code != 200:
             raise HTTPException(status_code=500, detail="LLM API error")
 
         content = response.json()["choices"][0]["message"]["content"]
 
+        # Remove code fences if present
         if "```" in content:
             content = content.split("```")[-2].strip()
 
-        suggestions = json.loads(content)
+        suggestions: Dict[str, Dict] = json.loads(content)
 
     except Exception as e:
         logger.error(f"LLM generation failed: {e}", exc_info=True)
@@ -1353,35 +1343,36 @@ Return JSON only.
 
     # 3️⃣ Save suggestions to DB
     for meal_type in ["breakfast", "lunch", "dinner"]:
-        meal = suggestions.get(meal_type, {})  # Default to empty dict if missing
-        name = meal.get("name", "none")       # Default "none" if key missing
+        meal = suggestions.get(meal_type)
+        if not meal:
+            # Skip missing meals (should not happen with improved prompt)
+            continue
+
+        # Safe defaults in case keys are missing
+        name = meal.get("name", "none")
         description = meal.get("description", "")
         nutrition = meal.get("nutrition", {})
-
         calories = nutrition.get("calories", 0)
         protein = nutrition.get("protein", 0)
         carbs = nutrition.get("carbs", 0)
         fat = nutrition.get("fat", 0)
 
-        # Save to DB
-        db.add(
-            DailyMealSuggestion(
-                user_id=user_id,
-                date=today,
-                meal_type=meal_type,
-                name=name,
-                description=description,
-                calories=calories,
-                protein=protein,
-                carbs=carbs,
-                fat=fat,
-            )
-        )   
-  
-    db.commit()
+        db.add(DailyMealSuggestion(
+            user_id=user_id,
+            date=today,
+            meal_type=meal_type,
+            name=name,
+            description=description,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+        ))
 
+    db.commit()
     logger.info("Meal suggestions generated and saved")
     return suggestions
+
 
     
 
