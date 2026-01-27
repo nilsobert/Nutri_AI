@@ -1222,20 +1222,15 @@ class MealSuggestionsResponse(BaseModel):
     lunch: MealSuggestion
     dinner: MealSuggestion
 
-# --- Dummy dependency for authentication ---
-def get_current_user_dummy():
-    # Return integer ID to match database schema
-    return {"id": 123, "email": "user@example.com"}
-
 # --- Suggest meals endpoint ---
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
 async def suggest_meals(
     request: NutritionRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user_dummy),
+    current_user: User = Depends(get_current_user),
 ):
     try:
-        user_id = current_user["id"]
+        user_id = current_user.id
         today = date.today()
 
         logger.info(f"[Meal Suggestion] User={user_id} (type={type(user_id).__name__}) Date={today}")
@@ -1276,13 +1271,17 @@ async def suggest_meals(
             logger.info(f"[Meal Suggestion] Returning cached suggestions: {[m['name'] for m in result.values()]}")
             return result
 
-        # 2️⃣ Generate suggestions via LLM
+        # 2️⃣ Generate suggestions via LLM (OpenRouter Gateway)
         logger.info(f"[Meal Suggestion] No cached suggestions found, generating new ones...")
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
-        if not OPENAI_API_KEY or not OPENAI_BASE_URL:
-            logger.error(f"[Meal Suggestion] Missing environment variables: OPENAI_API_KEY={bool(OPENAI_API_KEY)}, OPENAI_BASE_URL={bool(OPENAI_BASE_URL)}")
+        if not openrouter_api_key or not openrouter_base_url:
+            logger.error(
+                "[Meal Suggestion] Missing environment variables: "
+                f"OPENROUTER_API_KEY={bool(openrouter_api_key)}, "
+                f"OPENROUTER_BASE_URL={bool(openrouter_base_url)}"
+            )
             raise HTTPException(status_code=500, detail="Server misconfiguration")
 
         prompt = f"""You are a helpful nutrition assistant.
@@ -1317,12 +1316,14 @@ Output format:
 """
 
         headers = {
-            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Authorization": f"Bearer {openrouter_api_key}",
             "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "MealTracker",
         }
 
         payload = {
-            "model": "gpt-4.1",
+            "model": "openai/gpt-4.1",
             "messages": [
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
@@ -1334,7 +1335,7 @@ Output format:
         try:
             logger.info(f"[Meal Suggestion] Calling LLM API...")
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(f"{OPENAI_BASE_URL}/chat/completions",
+                response = await client.post(f"{openrouter_base_url}/chat/completions",
                                              headers=headers, json=payload)
 
             logger.info(f"[Meal Suggestion] LLM API response status: {response.status_code}")

@@ -8,6 +8,7 @@ import {
   useColorScheme,
   ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import { Colors } from "../constants/theme";
 import { API_BASE_URL } from '../constants/values';
@@ -45,6 +46,8 @@ export default function SuggestionsScreen() {
           last_meal: lastMeal,
         };
 
+        const token = await AsyncStorage.getItem("auth_token");
+
         console.log('[Meal Suggestions] Fetching suggestions from:', `${API_BASE_URL}/api/suggest-meals`);
         console.log('[Meal Suggestions] Request body:', JSON.stringify(requestBody, null, 2));
 
@@ -52,6 +55,7 @@ export default function SuggestionsScreen() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify(requestBody),
         });
