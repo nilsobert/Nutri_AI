@@ -26,11 +26,7 @@ import {
   BorderRadius,
   Shadows,
 } from "@/constants/theme";
-import {
-  ActivityLevel,
-  MotivationToTrackCalories,
-  User,
-} from "@/types/user";
+import { ActivityLevel, MotivationToTrackCalories, User } from "@/types/user";
 import { calculateGoals } from "@/lib/utils/goals";
 
 // Helper to format enum values for display
@@ -153,9 +149,9 @@ export default function EditGoalsScreen() {
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<
-    "motivation" | "activity" | null
-  >(null);
+  const [modalType, setModalType] = useState<"motivation" | "activity" | null>(
+    null,
+  );
 
   // Derived values for preview
   const [previewGoals, setPreviewGoals] = useState<any>(null);
@@ -503,11 +499,7 @@ export default function EditGoalsScreen() {
         visible={modalVisible}
         title={modalType ? formatEnum(modalType).toUpperCase() : ""}
         options={getModalOptions()}
-        selectedValue={
-          modalType === "motivation"
-            ? motivation
-            : activityLevel
-        }
+        selectedValue={modalType === "motivation" ? motivation : activityLevel}
         onSelect={handleModalSelect}
         onClose={() => setModalVisible(false)}
         isDark={isDark}

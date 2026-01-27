@@ -25,11 +25,7 @@ import {
   BorderRadius,
   Shadows,
 } from "@/constants/theme";
-import {
-  User,
-  MedicalCondition,
-  Gender,
-} from "@/types/user";
+import { User, MedicalCondition, Gender } from "@/types/user";
 import { useUser } from "@/context/UserContext";
 import { useMeals } from "@/context/MealContext";
 
@@ -113,7 +109,9 @@ const InfoRow: React.FC<InfoRowProps> = ({
               />
             )
           ) : (
-            <Text style={[styles.infoValue, { color: textColor }]}>{value}</Text>
+            <Text style={[styles.infoValue, { color: textColor }]}>
+              {value}
+            </Text>
           )}
         </View>
       </View>
@@ -183,7 +181,7 @@ export default function ProfileScreen() {
           const selected = Object.values(Gender)[buttonIndex];
           setFormData((prev) => (prev ? { ...prev, gender: selected } : null));
         }
-      }
+      },
     );
   };
 
@@ -231,7 +229,9 @@ export default function ProfileScreen() {
         ]}
       >
         <View style={styles.headerTopRow}>
-          <Text style={[styles.headerTitle, { color: textColor }]}>Profile</Text>
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            Profile
+          </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
             {isEditing ? (
               <>
@@ -317,7 +317,7 @@ export default function ProfileScreen() {
                   value={formData?.name}
                   onChangeText={(text) =>
                     setFormData((prev) =>
-                      prev ? { ...prev, name: text } : null
+                      prev ? { ...prev, name: text } : null,
                     )
                   }
                 />
@@ -347,7 +347,7 @@ export default function ProfileScreen() {
             keyboardType="numeric"
             onChangeText={(text) =>
               setFormData((prev) =>
-                prev ? { ...prev, age: parseInt(text) || 0 } : null
+                prev ? { ...prev, age: parseInt(text) || 0 } : null,
               )
             }
           />
@@ -368,7 +368,7 @@ export default function ProfileScreen() {
             keyboardType="numeric"
             onChangeText={(text) =>
               setFormData((prev) =>
-                prev ? { ...prev, heightCm: parseFloat(text) || 0 } : null
+                prev ? { ...prev, heightCm: parseFloat(text) || 0 } : null,
               )
             }
           />
@@ -381,7 +381,7 @@ export default function ProfileScreen() {
             keyboardType="numeric"
             onChangeText={(text) =>
               setFormData((prev) =>
-                prev ? { ...prev, weightKg: parseFloat(text) || 0 } : null
+                prev ? { ...prev, weightKg: parseFloat(text) || 0 } : null,
               )
             }
           />

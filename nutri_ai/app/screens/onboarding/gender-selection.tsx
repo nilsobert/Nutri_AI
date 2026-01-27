@@ -72,16 +72,16 @@ export default function GenderSelection() {
           Slect your gender
         </Text>
 
-          <View style={styles.genderOptions}>
-            <View style={styles.genderRow}>
-              <TouchableOpacity
-                style={[
-                  styles.genderCard,
-                  { backgroundColor: cardBg },
-                  gender === Gender.Male && styles.genderCardSelected,
-                ]}
-                onPress={() => setGender(Gender.Male)}
-              >
+        <View style={styles.genderOptions}>
+          <View style={styles.genderRow}>
+            <TouchableOpacity
+              style={[
+                styles.genderCard,
+                { backgroundColor: cardBg },
+                gender === Gender.Male && styles.genderCardSelected,
+              ]}
+              onPress={() => setGender(Gender.Male)}
+            >
               <View
                 style={[
                   styles.iconCircle,
@@ -130,7 +130,6 @@ export default function GenderSelection() {
               </Text>
             </TouchableOpacity>
           </View>
-
         </View>
       </View>
 

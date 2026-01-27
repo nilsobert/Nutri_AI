@@ -1,4 +1,8 @@
-import { createMealEntry, MealCategory, type MealEntry } from "../types/mealEntry";
+import {
+  createMealEntry,
+  MealCategory,
+  type MealEntry,
+} from "../types/mealEntry";
 import type { NutritionInfo } from "../types/nutritionInfo";
 import type { MealQuality } from "../types/mealQuality";
 import { MS_TO_S } from "../constants/values";

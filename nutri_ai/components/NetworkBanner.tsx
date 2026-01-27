@@ -1,4 +1,3 @@
-
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useNetwork } from "../context/NetworkContext";
@@ -11,9 +10,7 @@ const NetworkBanner = () => {
     return null;
   }
 
-  const message = !isInternetReachable
-    ? "Offline mode"
-    : "Server unreachable";
+  const message = !isInternetReachable ? "Offline mode" : "Server unreachable";
 
   return (
     <View style={styles.banner}>

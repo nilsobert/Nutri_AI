@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,10 +14,10 @@ import {
   useColorScheme,
   useWindowDimensions,
   View,
-} from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Audio } from 'expo-av';
-import { BlurView } from 'expo-blur';
+} from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { Audio } from "expo-av";
+import { BlurView } from "expo-blur";
 import Animated, {
   Extrapolate,
   FadeIn,
@@ -30,42 +30,56 @@ import Animated, {
   withSequence,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
+} from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, Spacing, BorderRadius, Shadows, Typography } from '../../constants/theme';
-import { useMeals } from '../../context/MealContext';
-import { useNetwork } from '../../context/NetworkContext';
-import { createMealEntry, MealCategory } from '../../types/mealEntry';
-import { StorageService } from '../../services/storage';
-import { API_BASE_URL } from '../../constants/values';
-import { IOSWaveform } from './IOSWaveform';
-import { MealReviewModal } from './MealReviewModal';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Shadows,
+  Typography,
+} from "../../constants/theme";
+import { useMeals } from "../../context/MealContext";
+import { useNetwork } from "../../context/NetworkContext";
+import { createMealEntry, MealCategory } from "../../types/mealEntry";
+import { StorageService } from "../../services/storage";
+import { API_BASE_URL } from "../../constants/values";
+import { IOSWaveform } from "./IOSWaveform";
+import { MealReviewModal } from "./MealReviewModal";
 
-type Mode = 'CAMERA' | 'IMAGE_PREVIEW' | 'CONTEXT_INPUT' | 'ANALYZING' | 'REVIEW';
+type Mode =
+  | "CAMERA"
+  | "IMAGE_PREVIEW"
+  | "CONTEXT_INPUT"
+  | "ANALYZING"
+  | "REVIEW";
 
 interface CaptureWaitReviewContainerProps {
   initialDate?: string;
   initialMealJson?: string;
 }
 
-const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({ initialDate, initialMealJson }) => {
+const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
+  initialDate,
+  initialMealJson,
+}) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const { addMeal, updateMeal } = useMeals();
   const { isConnected } = useNetwork();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  
+  const isDark = colorScheme === "dark";
+
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<Mode>('CAMERA');
+  const [mode, setMode] = useState<Mode>("CAMERA");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -73,7 +87,7 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
 
   // Edit State
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
-  
+
   // Data State
   const [mealName, setMealName] = useState("");
   const [calories, setCalories] = useState("0");
@@ -86,8 +100,10 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   const [transcription, setTranscription] = useState("");
   const [contextText, setContextText] = useState("");
   const [mealType, setMealType] = useState<MealCategory>(MealCategory.Lunch);
-  const [selectedDate, setSelectedDate] = useState(initialDate ? new Date(initialDate) : new Date());
-  
+  const [selectedDate, setSelectedDate] = useState(
+    initialDate ? new Date(initialDate) : new Date(),
+  );
+
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [errorModalVisible, setErrorModalVisible] = useState(false);
 
@@ -107,16 +123,18 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         setCalorieDensity(meal.mealQuality?.calorieDensity || 0);
         setTranscription(meal.transcription || "");
         setMealType(meal.category || MealCategory.Lunch);
-        setSelectedDate(meal.timestamp ? new Date(meal.timestamp * 1000) : new Date());
-        
+        setSelectedDate(
+          meal.timestamp ? new Date(meal.timestamp * 1000) : new Date(),
+        );
+
         if (meal.image) {
-            setImageUri(meal.image);
+          setImageUri(meal.image);
         }
         if (meal.audio) {
-            setAudioUri(meal.audio);
+          setAudioUri(meal.audio);
         }
 
-        setMode('REVIEW');
+        setMode("REVIEW");
         setReviewModalVisible(true);
       } catch (e) {
         console.error("Failed to parse initial meal", e);
@@ -124,11 +142,12 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
     }
   }, [initialMealJson]);
 
-
   const cameraRef = useRef<CameraView>(null);
-  
+
   // Focus State
-  const [focusPoint, setFocusPoint] = useState<{ x: number, y: number } | null>(null);
+  const [focusPoint, setFocusPoint] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const focusOpacity = useSharedValue(0);
   const focusScale = useSharedValue(1);
 
@@ -144,12 +163,12 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   }, [permission]);
 
   useEffect(() => {
-    if (mode === 'ANALYZING') {
+    if (mode === "ANALYZING") {
       // No specific animation setup needed for ActivityIndicator
-    } else if (mode === 'CONTEXT_INPUT') {
-        blurIntensity.value = withTiming(50, { duration: 500 });
-    } else if (mode === 'REVIEW') {
-        // Keep blur
+    } else if (mode === "CONTEXT_INPUT") {
+      blurIntensity.value = withTiming(50, { duration: 500 });
+    } else if (mode === "REVIEW") {
+      // Keep blur
     } else {
       blurIntensity.value = withTiming(0);
     }
@@ -160,14 +179,17 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
     focusOpacity.value = 1;
     focusScale.value = 1.5;
     focusScale.value = withSpring(1);
-    focusOpacity.value = withSequence(withTiming(1, { duration: 200 }), withTiming(0, { duration: 1000 }));
+    focusOpacity.value = withSequence(
+      withTiming(1, { duration: 200 }),
+      withTiming(0, { duration: 1000 }),
+    );
 
     // Note: expo-camera's CameraView focus APIs vary by version.
     // Here we keep a lightweight visual affordance without calling native focus APIs.
   };
 
   const retakePhoto = () => {
-    setMode('CAMERA');
+    setMode("CAMERA");
     setImageUri(null);
   };
 
@@ -179,10 +201,10 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           quality: 0.7,
           skipProcessing: true,
         });
-        
+
         if (photo) {
           setImageUri(photo.uri);
-          setMode('IMAGE_PREVIEW');
+          setMode("IMAGE_PREVIEW");
         }
       } catch (error) {
         console.error("Failed to take picture", error);
@@ -193,9 +215,9 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
 
   const toggleRecording = async () => {
     if (isRecording) {
-        await stopRecording();
+      await stopRecording();
     } else {
-        await startRecording();
+      await startRecording();
     }
   };
 
@@ -234,7 +256,8 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
 
       // Enable metering so we can render a waveform/level indicator.
       const recordingOptions: Audio.RecordingOptions = {
-        ...(Audio.RecordingOptionsPresets.HIGH_QUALITY as Audio.RecordingOptions),
+        ...(Audio.RecordingOptionsPresets
+          .HIGH_QUALITY as Audio.RecordingOptions),
         // expo-av supports metering mainly on iOS; newer versions also expose it on Android.
         // We set it defensively.
         ios: {
@@ -247,14 +270,15 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
         },
       } as any;
 
-      const { recording: newRecording } = await Audio.Recording.createAsync(recordingOptions);
+      const { recording: newRecording } =
+        await Audio.Recording.createAsync(recordingOptions);
 
       // More frequent updates = snappier UI.
       newRecording.setProgressUpdateInterval(60);
       newRecording.setOnRecordingStatusUpdate((status) => {
         // metering is typically in dBFS (-160..0)
         const metering = (status as any)?.metering;
-        if (typeof metering === 'number') {
+        if (typeof metering === "number") {
           // Map dBFS -> usable 0..1 amplitude.
           // -55dB is "quiet room", -10dB is "speaking close". Clamp outside.
           const clamped = Math.max(-55, Math.min(-10, metering));
@@ -268,7 +292,10 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           const prev = levelRef.current;
           const attack = 0.55;
           const release = 0.18;
-          const next = target > prev ? prev + (target - prev) * attack : prev + (target - prev) * release;
+          const next =
+            target > prev
+              ? prev + (target - prev) * attack
+              : prev + (target - prev) * release;
 
           levelRef.current = next;
           setAudioLevel(next);
@@ -289,8 +316,11 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
       setIsRecording(true);
       micScale.value = withRepeat(withTiming(1.2, { duration: 500 }), -1, true);
     } catch (err) {
-      console.error('Failed to start recording', err);
-      Alert.alert('Microphone error', 'Could not start recording. Please check microphone permissions.');
+      console.error("Failed to start recording", err);
+      Alert.alert(
+        "Microphone error",
+        "Could not start recording. Please check microphone permissions.",
+      );
     }
   };
 
@@ -307,25 +337,25 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
       setIsSpeaking(false);
       micScale.value = withTiming(1);
     } catch (error) {
-      console.error('Error stopping recording', error);
+      console.error("Error stopping recording", error);
     }
   };
 
   const startAnalysis = async () => {
-      if (isRecording) {
-          await stopRecording();
-      }
-      analyzeMeal(imageUri!, audioUri);
+    if (isRecording) {
+      await stopRecording();
+    }
+    analyzeMeal(imageUri!, audioUri);
   };
 
   const analyzeMeal = async (imgUri: string, audUri: string | null) => {
-    setMode('ANALYZING');
-    
+    setMode("ANALYZING");
+
     if (!isConnected) {
       // Offline mode - skip analysis
       setTimeout(() => {
         setMealName("Manual Entry");
-        setMode('REVIEW');
+        setMode("REVIEW");
       }, 500);
       return;
     }
@@ -350,15 +380,15 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
           type: "audio/m4a",
         });
       }
-      
+
       if (contextText) {
-          formData.append("context_text", contextText);
+        formData.append("context_text", contextText);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/analyze`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
         body: formData,
@@ -369,32 +399,40 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
       }
 
       const data = await response.json();
-      
+
       // Populate form
-      if (data.structured_meal && data.structured_meal.items && data.structured_meal.items.length > 0) {
-          const item = data.structured_meal.items[0]; // Just take first for now
-          setMealName(item.name);
-          setCalories(item.nutrition.calories.toString());
-          setProtein(item.nutrition.protein_g.toString());
-          setCarbs(item.nutrition.carbohydrates_g.toString());
-          setFat(item.nutrition.fat_g.toString());
-          setMealQualityScore(item.nutrition.meal_quality || 0);
-          setGoalFitPercentage(item.nutrition.goal_fit_percent ? Math.round(item.nutrition.goal_fit_percent * 100) : 0);
-          setCalorieDensity(item.nutrition.calorie_density_cal_per_gram || 0);
-          
-          if (data.transcription) {
-              setTranscription(data.transcription);
-          }
-          
-          setMode('REVIEW');
-          setReviewModalVisible(true);
+      if (
+        data.structured_meal &&
+        data.structured_meal.items &&
+        data.structured_meal.items.length > 0
+      ) {
+        const item = data.structured_meal.items[0]; // Just take first for now
+        setMealName(item.name);
+        setCalories(item.nutrition.calories.toString());
+        setProtein(item.nutrition.protein_g.toString());
+        setCarbs(item.nutrition.carbohydrates_g.toString());
+        setFat(item.nutrition.fat_g.toString());
+        setMealQualityScore(item.nutrition.meal_quality || 0);
+        setGoalFitPercentage(
+          item.nutrition.goal_fit_percent
+            ? Math.round(item.nutrition.goal_fit_percent * 100)
+            : 0,
+        );
+        setCalorieDensity(item.nutrition.calorie_density_cal_per_gram || 0);
+
+        if (data.transcription) {
+          setTranscription(data.transcription);
+        }
+
+        setMode("REVIEW");
+        setReviewModalVisible(true);
       } else {
-          setMode('REVIEW');
-          setErrorModalVisible(true);
+        setMode("REVIEW");
+        setErrorModalVisible(true);
       }
     } catch (e) {
       console.error(e);
-      setMode('REVIEW');
+      setMode("REVIEW");
       setErrorModalVisible(true);
     }
   };
@@ -402,13 +440,19 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   const handleSave = async (data: any) => {
     try {
       let permImage = imageUri;
-      if (imageUri && (imageUri.startsWith('file://') || imageUri.startsWith('/'))) {
-         permImage = await StorageService.moveFileToPermanentStorage(imageUri);
+      if (
+        imageUri &&
+        (imageUri.startsWith("file://") || imageUri.startsWith("/"))
+      ) {
+        permImage = await StorageService.moveFileToPermanentStorage(imageUri);
       }
-      
+
       let permAudio = audioUri;
-      if (audioUri && (audioUri.startsWith('file://') || audioUri.startsWith('/'))) {
-          permAudio = await StorageService.moveFileToPermanentStorage(audioUri);
+      if (
+        audioUri &&
+        (audioUri.startsWith("file://") || audioUri.startsWith("/"))
+      ) {
+        permAudio = await StorageService.moveFileToPermanentStorage(audioUri);
       }
 
       const meal = createMealEntry({
@@ -433,12 +477,12 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
       });
 
       if (editingMealId) {
-          meal.id = editingMealId; // Preserve original ID
-          await updateMeal(meal);
+        meal.id = editingMealId; // Preserve original ID
+        await updateMeal(meal);
       } else {
-          await addMeal(meal);
+        await addMeal(meal);
       }
-      
+
       setReviewModalVisible(false);
       router.back();
     } catch (e) {
@@ -454,18 +498,28 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   });
 
   const focusStyle = useAnimatedStyle(() => {
-      return {
-          opacity: focusOpacity.value,
-          transform: [{ scale: focusScale.value }],
-          left: (focusPoint?.x || 0) - 30,
-          top: (focusPoint?.y || 0) - 30,
-      };
+    return {
+      opacity: focusOpacity.value,
+      transform: [{ scale: focusScale.value }],
+      left: (focusPoint?.x || 0) - 30,
+      top: (focusPoint?.y || 0) - 30,
+    };
   });
 
   const waveformWrapperAnimatedStyle = useAnimatedStyle(() => {
     return {
-      height: interpolate(wavePresence.value, [0, 1], [0, 108], Extrapolate.CLAMP),
-      marginBottom: interpolate(wavePresence.value, [0, 1], [0, 10], Extrapolate.CLAMP),
+      height: interpolate(
+        wavePresence.value,
+        [0, 1],
+        [0, 108],
+        Extrapolate.CLAMP,
+      ),
+      marginBottom: interpolate(
+        wavePresence.value,
+        [0, 1],
+        [0, 10],
+        Extrapolate.CLAMP,
+      ),
       opacity: wavePresence.value,
     };
   });
@@ -485,8 +539,13 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
   if (!permission?.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>We need your permission to show the camera</Text>
-        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+        <Text style={styles.permissionText}>
+          We need your permission to show the camera
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={styles.permissionButton}
+        >
           <Text style={styles.permissionButtonText}>Grant Permission</Text>
         </TouchableOpacity>
       </View>
@@ -497,7 +556,10 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert('Permission required', 'Please allow photo library access to pick a meal photo.');
+        Alert.alert(
+          "Permission required",
+          "Please allow photo library access to pick a meal photo.",
+        );
         return;
       }
 
@@ -510,20 +572,20 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
       if (!result.canceled && result.assets?.[0]?.uri) {
         setImageUri(result.assets[0].uri);
         setAudioUri(null);
-        setContextText('');
-        setTranscription('');
-        setMode('IMAGE_PREVIEW');
+        setContextText("");
+        setTranscription("");
+        setMode("IMAGE_PREVIEW");
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not open photo library');
+      Alert.alert("Error", "Could not open photo library");
     }
   };
 
   return (
     <View style={styles.container}>
       {/* BACKGROUND LAYER */}
-      {!imageUri || mode === 'CAMERA' ? (
+      {!imageUri || mode === "CAMERA" ? (
         <Pressable
           style={StyleSheet.absoluteFill}
           onPressIn={(e) => {
@@ -531,96 +593,162 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
             handleFocus(e.nativeEvent.locationX, e.nativeEvent.locationY);
           }}
         >
-          <CameraView style={StyleSheet.absoluteFill} ref={cameraRef} facing="back" />
+          <CameraView
+            style={StyleSheet.absoluteFill}
+            ref={cameraRef}
+            facing="back"
+          />
           <Animated.View style={[styles.focusSquare, focusStyle]} />
         </Pressable>
       ) : (
         <Image source={{ uri: imageUri }} style={StyleSheet.absoluteFill} />
       )}
 
-        {/* GLASS EFFECTS LAYER */}
-        {mode !== 'CAMERA' && (
-            <Animated.View style={[StyleSheet.absoluteFill, animatedBlurStyle]}>
-                <BlurView intensity={50} style={StyleSheet.absoluteFill} tint="systemMaterialDark" />
-            </Animated.View>
-        )}
+      {/* GLASS EFFECTS LAYER */}
+      {mode !== "CAMERA" && (
+        <Animated.View style={[StyleSheet.absoluteFill, animatedBlurStyle]}>
+          <BlurView
+            intensity={50}
+            style={StyleSheet.absoluteFill}
+            tint="systemMaterialDark"
+          />
+        </Animated.View>
+      )}
 
-        {/* PHASE 1: CAMERA CONTROLS */}
-        {mode === 'CAMERA' && (
-          <>
+      {/* PHASE 1: CAMERA CONTROLS */}
+      {mode === "CAMERA" && (
+        <>
+          <TouchableOpacity
+            style={[styles.closeButton, { top: insets.top + 20 }]}
+            onPress={() => router.back()}
+          >
+            <BlurView intensity={40} style={styles.closeButtonBlur}>
+              <Ionicons name="close" size={24} color="white" />
+            </BlurView>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.galleryButton, { top: insets.top + 20 }]}
+            onPress={pickFromGallery}
+          >
+            <BlurView intensity={40} style={styles.closeButtonBlur}>
+              <Ionicons name="images" size={22} color="white" />
+            </BlurView>
+          </TouchableOpacity>
+
+          <View style={styles.bottomControls}>
             <TouchableOpacity
-              style={[styles.closeButton, { top: insets.top + 20 }]}
-              onPress={() => router.back()}
+              style={styles.shutterButton}
+              onPress={takePicture}
             >
-              <BlurView intensity={40} style={styles.closeButtonBlur}>
-                <Ionicons name="close" size={24} color="white" />
-              </BlurView>
+              <View style={styles.shutterInner} />
             </TouchableOpacity>
+          </View>
+        </>
+      )}
 
-            <TouchableOpacity
-              style={[styles.galleryButton, { top: insets.top + 20 }]}
-              onPress={pickFromGallery}
+      {/* PHASE 1.5: IMAGE PREVIEW */}
+      {mode === "IMAGE_PREVIEW" && (
+        <View
+          style={[
+            styles.bottomControls,
+            {
+              bottom: 50,
+              flexDirection: "row",
+              justifyContent: "space-around",
+              width: "100%",
+              paddingHorizontal: 30,
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={retakePhoto}
+            style={{ alignItems: "center" }}
+          >
+            <BlurView intensity={40} style={styles.previewActionButton}>
+              <Ionicons name="close" size={32} color="white" />
+            </BlurView>
+            <Text style={styles.previewActionText}>Retake</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setMode("CONTEXT_INPUT")}
+            style={{ alignItems: "center" }}
+          >
+            <BlurView
+              intensity={80}
+              tint="light"
+              style={[styles.previewActionButton, styles.previewPrimaryButton]}
             >
-              <BlurView intensity={40} style={styles.closeButtonBlur}>
-                <Ionicons name="images" size={22} color="white" />
-              </BlurView>
-            </TouchableOpacity>
+              <Ionicons name="checkmark" size={36} color={Colors.primary} />
+            </BlurView>
+            <Text style={styles.previewActionText}>Use Photo</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-            <View style={styles.bottomControls}>
-              <TouchableOpacity style={styles.shutterButton} onPress={takePicture}>
-                <View style={styles.shutterInner} />
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* PHASE 1.5: IMAGE PREVIEW */}
-        {mode === 'IMAGE_PREVIEW' && (
-            <View style={[styles.bottomControls, { bottom: 50, flexDirection: 'row', justifyContent: 'space-around', width: '100%', paddingHorizontal: 30 }]}>
-                <TouchableOpacity onPress={retakePhoto} style={{ alignItems: 'center' }}>
-                    <BlurView intensity={40} style={styles.previewActionButton}>
-                        <Ionicons name="close" size={32} color="white" />
-                    </BlurView>
-                    <Text style={styles.previewActionText}>Retake</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => setMode('CONTEXT_INPUT')} style={{ alignItems: 'center' }}>
-                    <BlurView intensity={80} tint="light" style={[styles.previewActionButton, styles.previewPrimaryButton]}>
-                        <Ionicons name="checkmark" size={36} color={Colors.primary} />
-                    </BlurView>
-                    <Text style={styles.previewActionText}>Use Photo</Text>
-                </TouchableOpacity>
-            </View>
-        )}
-
-        {/* PHASE 2: CONTEXT INPUT */}
-        {mode === 'CONTEXT_INPUT' && (
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.contextContainer}>
-              <BlurView intensity={80} tint="systemMaterial" style={styles.contextCard}>
+      {/* PHASE 2: CONTEXT INPUT */}
+      {mode === "CONTEXT_INPUT" && (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <Animated.View
+            entering={FadeIn}
+            exiting={FadeOut}
+            style={styles.contextContainer}
+          >
+            <BlurView
+              intensity={80}
+              tint="systemMaterial"
+              style={styles.contextCard}
+            >
               <Text style={styles.contextTitle}>Describe this meal...</Text>
 
-              <Animated.View style={[styles.waveformWrapper, waveformWrapperAnimatedStyle]}>
-                <IOSWaveform level={audioLevel} isRecording={isRecording} isSpeaking={isSpeaking} />
+              <Animated.View
+                style={[styles.waveformWrapper, waveformWrapperAnimatedStyle]}
+              >
+                <IOSWaveform
+                  level={audioLevel}
+                  isRecording={isRecording}
+                  isSpeaking={isSpeaking}
+                />
               </Animated.View>
 
               {audioUri && !isRecording ? (
-                <View style={{ alignItems: 'center', marginBottom: 24 }}>
-                  <View style={[styles.micButtonBig, { backgroundColor: '#34C759' }]}>
+                <View style={{ alignItems: "center", marginBottom: 24 }}>
+                  <View
+                    style={[
+                      styles.micButtonBig,
+                      { backgroundColor: "#34C759" },
+                    ]}
+                  >
                     <Ionicons name="checkmark" size={32} color="white" />
                   </View>
                   <TouchableOpacity onPress={() => setAudioUri(null)}>
-                    <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Re-record</Text>
+                    <Text
+                      style={{
+                        color: "#FF3B30",
+                        fontSize: 16,
+                        fontWeight: "600",
+                      }}
+                    >
+                      Re-record
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity
-                  style={[styles.micButtonBig, isRecording && styles.micButtonActive]}
+                  style={[
+                    styles.micButtonBig,
+                    isRecording && styles.micButtonActive,
+                  ]}
                   onPress={toggleRecording}
                   activeOpacity={0.9}
                 >
                   <Animated.View style={micHandoffStyle}>
-                    <Ionicons name={isRecording ? 'stop' : 'mic'} size={32} color="white" />
+                    <Ionicons
+                      name={isRecording ? "stop" : "mic"}
+                      size={32}
+                      color="white"
+                    />
                   </Animated.View>
                 </TouchableOpacity>
               )}
@@ -635,105 +763,114 @@ const CaptureWaitReviewContainer: React.FC<CaptureWaitReviewContainerProps> = ({
               />
 
               {(audioUri || contextText || isRecording) && (
-                <TouchableOpacity style={styles.analyzeButton} onPress={startAnalysis}>
+                <TouchableOpacity
+                  style={styles.analyzeButton}
+                  onPress={startAnalysis}
+                >
                   <Text style={styles.analyzeButtonText}>Analyze Meal</Text>
                 </TouchableOpacity>
               )}
 
               {!audioUri && !contextText && !isRecording && (
-                <TouchableOpacity style={styles.skipButton} onPress={startAnalysis}>
+                <TouchableOpacity
+                  style={styles.skipButton}
+                  onPress={startAnalysis}
+                >
                   <Text style={styles.skipButtonText}>Skip & Analyze</Text>
                 </TouchableOpacity>
               )}
             </BlurView>
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        )}
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      )}
 
-        {/* PHASE 3: LOADING STATE */}
-        {mode === 'ANALYZING' && (
-            <View style={styles.analyzingContainer}>
-                <View style={styles.overlayDark} />
-                <ActivityIndicator size="large" color={Colors.primary} style={{ marginBottom: 20 }} />
-                <Text style={styles.analyzingText}>Processing your input</Text>
-            </View>
-        )}
+      {/* PHASE 3: LOADING STATE */}
+      {mode === "ANALYZING" && (
+        <View style={styles.analyzingContainer}>
+          <View style={styles.overlayDark} />
+          <ActivityIndicator
+            size="large"
+            color={Colors.primary}
+            style={{ marginBottom: 20 }}
+          />
+          <Text style={styles.analyzingText}>Processing your input</Text>
+        </View>
+      )}
 
-        {/* PHASE 4: RESULTS PANEL (MODAL) */}
-        <MealReviewModal
-            visible={reviewModalVisible}
-            onClose={() => {
-                setReviewModalVisible(false);
-                router.back(); // Abort
-            }}
-            onRetake={() => {
-                setReviewModalVisible(false);
-                setMode('CAMERA');
-                setImageUri(null);
-                setAudioUri(null);
-                setContextText("");
-            }}
-            onSave={handleSave}
-            initialData={{
-                name: mealName,
-                calories,
-                protein,
-                carbs,
-                fat,
-                mealQualityScore,
-                goalFitPercentage,
-                calorieDensity,
-                transcription: transcription || contextText,
-                mealType,
-                date: selectedDate,
-            }}
-        />
+      {/* PHASE 4: RESULTS PANEL (MODAL) */}
+      <MealReviewModal
+        visible={reviewModalVisible}
+        onClose={() => {
+          setReviewModalVisible(false);
+          router.back(); // Abort
+        }}
+        onRetake={() => {
+          setReviewModalVisible(false);
+          setMode("CAMERA");
+          setImageUri(null);
+          setAudioUri(null);
+          setContextText("");
+        }}
+        onSave={handleSave}
+        initialData={{
+          name: mealName,
+          calories,
+          protein,
+          carbs,
+          fat,
+          mealQualityScore,
+          goalFitPercentage,
+          calorieDensity,
+          transcription: transcription || contextText,
+          mealType,
+          date: selectedDate,
+        }}
+      />
 
-        {/* ERROR MODAL */}
-        <MealReviewModal
-            visible={errorModalVisible}
-            onClose={() => {
-                setErrorModalVisible(false);
-                router.back(); // Abort
-            }}
-            onRetake={() => {
-                setErrorModalVisible(false);
-                setMode('CAMERA');
-                setImageUri(null);
-                setAudioUri(null);
-                setContextText("");
-            }}
-            onSave={() => {}} // Not used in error mode
-            initialData={{
-                name: "",
-                calories: "0",
-                protein: "0",
-                carbs: "0",
-                fat: "0",
-                transcription: "",
-            }}
-            isError={true}
-        />
+      {/* ERROR MODAL */}
+      <MealReviewModal
+        visible={errorModalVisible}
+        onClose={() => {
+          setErrorModalVisible(false);
+          router.back(); // Abort
+        }}
+        onRetake={() => {
+          setErrorModalVisible(false);
+          setMode("CAMERA");
+          setImageUri(null);
+          setAudioUri(null);
+          setContextText("");
+        }}
+        onSave={() => {}} // Not used in error mode
+        initialData={{
+          name: "",
+          calories: "0",
+          protein: "0",
+          carbs: "0",
+          fat: "0",
+          transcription: "",
+        }}
+        isError={true}
+      />
     </View>
   );
 };
-
 
 // (Removed old bar-based waveform; replaced by IOSWaveform)
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: "black",
   },
   permissionContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "black",
   },
   permissionText: {
-    color: 'white',
+    color: "white",
     marginBottom: 20,
   },
   permissionButton: {
@@ -742,17 +879,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   permissionButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
   // Phase 1: Camera
   closeButton: {
-    position: 'absolute',
+    position: "absolute",
     left: 20,
     zIndex: 100,
   },
   galleryButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 20,
     zIndex: 100,
   },
@@ -760,16 +897,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   bottomControls: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 50,
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
     zIndex: 100,
   },
   shutterButton: {
@@ -777,65 +914,65 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+    borderColor: "white",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
   shutterInner: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   focusSquare: {
-    position: 'absolute',
+    position: "absolute",
     width: 60,
     height: 60,
     borderWidth: 2,
-    borderColor: '#FFD700', // Gold
+    borderColor: "#FFD700", // Gold
     borderRadius: 8,
     zIndex: 50,
   },
   // Phase 2: Context Input
   contextContainer: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 200,
     padding: 20,
   },
   contextCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 360,
     borderRadius: 32,
     padding: 24,
-    alignItems: 'center',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: "center",
+    overflow: "hidden",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   waveformWrapper: {
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   contextTitle: {
     fontSize: 22,
-    fontWeight: '700',
-    color: 'white',
+    fontWeight: "700",
+    color: "white",
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   micButtonBig: {
     width: 72,
     height: 72,
     borderRadius: 36,
     backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 24,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 8 },
@@ -844,51 +981,51 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   micButtonActive: {
-    backgroundColor: '#FF3B30', // Red when recording
+    backgroundColor: "#FF3B30", // Red when recording
   },
   contextInput: {
-    width: '100%',
+    width: "100%",
     fontSize: 17,
-    color: 'white',
-    textAlign: 'center',
+    color: "white",
+    textAlign: "center",
     padding: 16,
     marginBottom: 24,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 16,
     minHeight: 50,
   },
   analyzeButton: {
-    width: '100%',
+    width: "100%",
     backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   analyzeButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   skipButton: {
     padding: 10,
   },
   skipButtonText: {
-    color: '#999',
+    color: "#999",
     fontSize: 14,
   },
   // Phase 3: Analyzing
   analyzingContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 300,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   overlayDark: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   scannerLine: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     height: 4,
@@ -899,15 +1036,15 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
   },
   analyzingTextContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 100,
   },
   analyzingText: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 1,
-    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -915,25 +1052,25 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.2)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: "rgba(255,255,255,0.3)",
   },
   previewPrimaryButton: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   previewActionText: {
-    color: 'white',
+    color: "white",
     marginTop: 12,
     fontSize: 16,
-    fontWeight: '600',
-    textShadowColor: 'rgba(0,0,0,0.5)',
+    fontWeight: "600",
+    textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },

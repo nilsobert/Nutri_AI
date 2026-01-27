@@ -59,7 +59,9 @@ export function NetworkProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <NetworkContext.Provider value={{ isConnected, isInternetReachable, isServerReachable }}>
+    <NetworkContext.Provider
+      value={{ isConnected, isInternetReachable, isServerReachable }}
+    >
       {children}
     </NetworkContext.Provider>
   );

@@ -13,12 +13,27 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Svg, Path, Line, Text as SvgText, Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import {
+  Svg,
+  Path,
+  Line,
+  Text as SvgText,
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from "react-native-svg";
 
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { MS_TO_S } from "@/constants/values";
-import { Colors, Spacing, BorderRadius, Shadows, Typography } from "@/constants/theme";
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Shadows,
+  Typography,
+} from "@/constants/theme";
 import { MealEntry } from "@/types/mealEntry";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -68,139 +83,165 @@ export default function QualityScreen() {
 
   // --- Data Processing ---
 
-  const { avgQuality, totalMeals, top3Meals, worst3Meals, chartData } = useMemo(() => {
-    if (meals.length === 0) {
-      return { avgQuality: 0, totalMeals: 0, top3Meals: [], worst3Meals: [], chartData: [] };
-    }
+  const { avgQuality, totalMeals, top3Meals, worst3Meals, chartData } =
+    useMemo(() => {
+      if (meals.length === 0) {
+        return {
+          avgQuality: 0,
+          totalMeals: 0,
+          top3Meals: [],
+          worst3Meals: [],
+          chartData: [],
+        };
+      }
 
-    const totalQ = meals.reduce((sum, m) => sum + m.mealQuality.mealQualityScore, 0);
-    const avg = totalQ / meals.length;
+      const totalQ = meals.reduce(
+        (sum, m) => sum + m.mealQuality.mealQualityScore,
+        0,
+      );
+      const avg = totalQ / meals.length;
 
-    // Top 10 meals by quality
-    const sortedMeals = [...meals].sort((a, b) => b.mealQuality.mealQualityScore - a.mealQuality.mealQualityScore);
-    const top3Meals = sortedMeals.slice(0, 3);
-    const worst3Meals = sortedMeals.slice(-3).reverse(); // Reverse to show worst first
+      // Top 10 meals by quality
+      const sortedMeals = [...meals].sort(
+        (a, b) =>
+          b.mealQuality.mealQualityScore - a.mealQuality.mealQualityScore,
+      );
+      const top3Meals = sortedMeals.slice(0, 3);
+      const worst3Meals = sortedMeals.slice(-3).reverse(); // Reverse to show worst first
 
-    // Chart Data (Last 30 days)
-    const now = new Date();
-    const last30Days = Array.from({ length: 30 }).map((_, i) => {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (29 - i));
-      return d;
-    });
-
-    const data = last30Days.map(date => {
-      const dayMeals = meals.filter(m => {
-        const mDate = new Date(m.timestamp * MS_TO_S);
-        return mDate.getDate() === date.getDate() &&
-               mDate.getMonth() === date.getMonth() &&
-               mDate.getFullYear() === date.getFullYear();
+      // Chart Data (Last 30 days)
+      const now = new Date();
+      const last30Days = Array.from({ length: 30 }).map((_, i) => {
+        const d = new Date(now);
+        d.setDate(d.getDate() - (29 - i));
+        return d;
       });
 
-      if (dayMeals.length === 0) return { date, score: 0, hasData: false };
-      
-      const dayTotal = dayMeals.reduce((sum, m) => sum + m.mealQuality.mealQualityScore, 0);
-      return { date, score: dayTotal / dayMeals.length, hasData: true };
-    });
+      const data = last30Days.map((date) => {
+        const dayMeals = meals.filter((m) => {
+          const mDate = new Date(m.timestamp * MS_TO_S);
+          return (
+            mDate.getDate() === date.getDate() &&
+            mDate.getMonth() === date.getMonth() &&
+            mDate.getFullYear() === date.getFullYear()
+          );
+        });
 
-    return {
-      avgQuality: avg,
-      totalMeals: meals.length,
-      top3Meals: top3Meals,
-      worst3Meals: worst3Meals,
-      chartData: data
-    };
-  }, [meals]);
+        if (dayMeals.length === 0) return { date, score: 0, hasData: false };
+
+        const dayTotal = dayMeals.reduce(
+          (sum, m) => sum + m.mealQuality.mealQualityScore,
+          0,
+        );
+        return { date, score: dayTotal / dayMeals.length, hasData: true };
+      });
+
+      return {
+        avgQuality: avg,
+        totalMeals: meals.length,
+        top3Meals: top3Meals,
+        worst3Meals: worst3Meals,
+        chartData: data,
+      };
+    }, [meals]);
 
   // --- Chart Rendering ---
-  
+
   const renderChart = () => {
     if (chartData.length < 2) return null;
 
     const maxScore = 10;
     const stepX = CHART_WIDTH / (chartData.length - 1);
-    const getY = (score: number) => CHART_HEIGHT - (score / maxScore) * CHART_HEIGHT;
+    const getY = (score: number) =>
+      CHART_HEIGHT - (score / maxScore) * CHART_HEIGHT;
 
     const points = chartData.map((d, i) => ({
       x: i * stepX,
-      y: getY(d.hasData ? d.score : 0)
+      y: getY(d.hasData ? d.score : 0),
     }));
 
-    // Filter points to only draw lines between existing data points if needed, 
+    // Filter points to only draw lines between existing data points if needed,
     // but for simplicity we'll treat 0 as 0 quality if no data, or maybe skip?
     // Better: Connect only points with data.
     // For this implementation, let's just show the points that have data.
-    
-    const validPoints = chartData.map((d, i) => ({
+
+    const validPoints = chartData
+      .map((d, i) => ({
         x: i * stepX,
         y: getY(d.score),
-        hasData: d.hasData
-    })).filter(p => p.hasData);
+        hasData: d.hasData,
+      }))
+      .filter((p) => p.hasData);
 
     return (
       <View style={{ height: CHART_HEIGHT + 30, marginTop: Spacing.lg }}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: Spacing.sm }}
-          contentOffset={{ x: CHART_WIDTH - SCREEN_WIDTH + Spacing.xl * 2, y: 0 }} // Start at end
+          contentOffset={{
+            x: CHART_WIDTH - SCREEN_WIDTH + Spacing.xl * 2,
+            y: 0,
+          }} // Start at end
         >
           <Svg width={CHART_WIDTH} height={CHART_HEIGHT + 30}>
             <Defs>
-                <SvgLinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.5" />
-                    <Stop offset="1" stopColor={Colors.primary} stopOpacity="0" />
-                </SvgLinearGradient>
+              <SvgLinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.5" />
+                <Stop offset="1" stopColor={Colors.primary} stopOpacity="0" />
+              </SvgLinearGradient>
             </Defs>
-            
+
             {/* Grid Lines */}
-            {[0, 2.5, 5, 7.5, 10].map(val => (
-                <Line 
-                    key={val}
-                    x1={0} y1={getY(val)}
-                    x2={CHART_WIDTH} y2={getY(val)}
-                    stroke={isDark ? "#444" : "#eee"}
-                    strokeWidth={1}
-                />
+            {[0, 2.5, 5, 7.5, 10].map((val) => (
+              <Line
+                key={val}
+                x1={0}
+                y1={getY(val)}
+                x2={CHART_WIDTH}
+                y2={getY(val)}
+                stroke={isDark ? "#444" : "#eee"}
+                strokeWidth={1}
+              />
             ))}
 
             {/* Line */}
             {validPoints.length > 1 && (
-                <Path
-                    d={generateSmoothPath(validPoints, false)}
-                    fill="none"
-                    stroke={Colors.primary}
-                    strokeWidth={3}
-                />
+              <Path
+                d={generateSmoothPath(validPoints, false)}
+                fill="none"
+                stroke={Colors.primary}
+                strokeWidth={3}
+              />
             )}
 
             {/* Area (optional, tricky with gaps) */}
 
             {/* Points */}
             {validPoints.map((p, i) => (
-                <Circle
-                    key={i}
-                    cx={p.x}
-                    cy={p.y}
-                    r={4}
-                    fill={Colors.primary}
-                    stroke={cardBg}
-                    strokeWidth={2}
-                />
+              <Circle
+                key={i}
+                cx={p.x}
+                cy={p.y}
+                r={4}
+                fill={Colors.primary}
+                stroke={cardBg}
+                strokeWidth={2}
+              />
             ))}
 
             {/* X-Axis Labels */}
             {chartData.map((d, i) => (
-                <SvgText
-                    key={i}
-                    x={i * stepX}
-                    y={CHART_HEIGHT + 20}
-                    fill={secondaryText}
-                    fontSize={10}
-                    textAnchor="middle"
-                >
-                    {d.date.getDate()}
-                </SvgText>
+              <SvgText
+                key={i}
+                x={i * stepX}
+                y={CHART_HEIGHT + 20}
+                fill={secondaryText}
+                fontSize={10}
+                textAnchor="middle"
+              >
+                {d.date.getDate()}
+              </SvgText>
             ))}
           </Svg>
         </ScrollView>
@@ -228,93 +269,114 @@ export default function QualityScreen() {
         <ThemedText style={styles.headerTitle}>Meal Quality</ThemedText>
       </BlurView>
 
-      <ScrollView 
-        contentContainerStyle={[styles.scrollContent, { paddingTop: 60 + insets.top }]}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: 60 + insets.top },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Section */}
         <View style={styles.heroSection}>
-            <LinearGradient
-              colors={[Colors.primary, '#4CAF50']} // Blue to Green gradient
-              style={styles.scoreRing}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <View style={[styles.scoreRingInner, { backgroundColor: cardBg }]}>
-                <ThemedText style={styles.scoreValue}>{avgQuality.toFixed(1)}</ThemedText>
-                <ThemedText style={styles.scoreLabel}>/ 10</ThemedText>
-              </View>
-            </LinearGradient>
-            <ThemedText style={[styles.heroTitle, { color: textColor }]}>Average Quality</ThemedText>
-            <ThemedText style={[styles.heroSubtitle, { color: secondaryText }]}>Based on {totalMeals} meals</ThemedText>
+          <LinearGradient
+            colors={[Colors.primary, "#4CAF50"]} // Blue to Green gradient
+            style={styles.scoreRing}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={[styles.scoreRingInner, { backgroundColor: cardBg }]}>
+              <ThemedText style={styles.scoreValue}>
+                {avgQuality.toFixed(1)}
+              </ThemedText>
+              <ThemedText style={styles.scoreLabel}>/ 10</ThemedText>
+            </View>
+          </LinearGradient>
+          <ThemedText style={[styles.heroTitle, { color: textColor }]}>
+            Average Quality
+          </ThemedText>
+          <ThemedText style={[styles.heroSubtitle, { color: secondaryText }]}>
+            Based on {totalMeals} meals
+          </ThemedText>
         </View>
 
         {/* Chart Section */}
         <View style={[styles.card, { backgroundColor: cardBg }]}>
-            <ThemedText style={[styles.cardTitle, { color: textColor }]}>Last 30 Days</ThemedText>
-            {renderChart()}
+          <ThemedText style={[styles.cardTitle, { color: textColor }]}>
+            Last 30 Days
+          </ThemedText>
+          {renderChart()}
         </View>
 
         {/* Top Meals Section */}
         <View style={[styles.card, styles.sectionHeader]}>
-            <ThemedText style={[styles.cardTitle, { color: textColor }]}>Top Rated Meals</ThemedText>
+          <ThemedText style={[styles.cardTitle, { color: textColor }]}>
+            Top Rated Meals
+          </ThemedText>
         </View>
 
         {top3Meals.map((meal: MealEntry, index: number) => (
-            <TouchableOpacity 
-                key={meal.id} 
-                style={[styles.mealCard, { backgroundColor: cardBg }]}
-                onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
-            >
-                <View style={styles.mealRank}>
-                    <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
-                </View>
-                <View style={styles.mealInfo}>
-                    <ThemedText style={[styles.mealName, { color: textColor }]}>
-                        {meal.name || "Unknown Meal"}
-                    </ThemedText>
-                    <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
-                        {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
-                    </ThemedText>
-                </View>
-                <View style={styles.mealScore}>
-                    <Ionicons name="star" size={16} color={Colors.primary} />
-                    <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
-                        {meal.mealQuality.mealQualityScore.toFixed(1)}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
+          <TouchableOpacity
+            key={meal.id}
+            style={[styles.mealCard, { backgroundColor: cardBg }]}
+            onPress={() =>
+              router.push({ pathname: "/meal-detail", params: { id: meal.id } })
+            }
+          >
+            <View style={styles.mealRank}>
+              <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
+            </View>
+            <View style={styles.mealInfo}>
+              <ThemedText style={[styles.mealName, { color: textColor }]}>
+                {meal.name || "Unknown Meal"}
+              </ThemedText>
+              <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
+                {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
+              </ThemedText>
+            </View>
+            <View style={styles.mealScore}>
+              <Ionicons name="star" size={16} color={Colors.primary} />
+              <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
+                {meal.mealQuality.mealQualityScore.toFixed(1)}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
         ))}
 
         {/* Worst Meals Section */}
-        <View style={[styles.card, styles.sectionHeader, { marginTop: Spacing.xl }]}>
-            <ThemedText style={[styles.cardTitle, { color: textColor }]}>Needs Improvement</ThemedText>
+        <View
+          style={[styles.card, styles.sectionHeader, { marginTop: Spacing.xl }]}
+        >
+          <ThemedText style={[styles.cardTitle, { color: textColor }]}>
+            Needs Improvement
+          </ThemedText>
         </View>
 
         {worst3Meals.map((meal: MealEntry, index: number) => (
-            <TouchableOpacity 
-                key={meal.id} 
-                style={[styles.mealCard, { backgroundColor: cardBg }]}
-                onPress={() => router.push({ pathname: "/meal-detail", params: { id: meal.id } })}
-            >
-                <View style={styles.mealRank}>
-                    <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
-                </View>
-                <View style={styles.mealInfo}>
-                    <ThemedText style={[styles.mealName, { color: textColor }]}>
-                        {meal.name || "Unknown Meal"}
-                    </ThemedText>
-                    <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
-                        {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
-                    </ThemedText>
-                </View>
-                <View style={styles.mealScore}>
-                    <Ionicons name="star" size={16} color={Colors.danger} />
-                    <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
-                        {meal.mealQuality.mealQualityScore.toFixed(1)}
-                    </ThemedText>
-                </View>
-            </TouchableOpacity>
+          <TouchableOpacity
+            key={meal.id}
+            style={[styles.mealCard, { backgroundColor: cardBg }]}
+            onPress={() =>
+              router.push({ pathname: "/meal-detail", params: { id: meal.id } })
+            }
+          >
+            <View style={styles.mealRank}>
+              <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
+            </View>
+            <View style={styles.mealInfo}>
+              <ThemedText style={[styles.mealName, { color: textColor }]}>
+                {meal.name || "Unknown Meal"}
+              </ThemedText>
+              <ThemedText style={[styles.mealDate, { color: secondaryText }]}>
+                {new Date(meal.timestamp * MS_TO_S).toLocaleDateString()}
+              </ThemedText>
+            </View>
+            <View style={styles.mealScore}>
+              <Ionicons name="star" size={16} color={Colors.danger} />
+              <ThemedText style={[styles.mealScoreValue, { color: textColor }]}>
+                {meal.mealQuality.mealQualityScore.toFixed(1)}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
         ))}
 
         <View style={{ height: Spacing.xl }} />
@@ -404,12 +466,12 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
     ...Shadows.small,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   sectionHeader: {
     marginBottom: Spacing.md,

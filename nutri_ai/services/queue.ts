@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface QueueItem {
   id: string;
-  type: 'CREATE_MEAL' | 'UPDATE_MEAL' | 'DELETE_MEAL';
+  type: "CREATE_MEAL" | "UPDATE_MEAL" | "DELETE_MEAL";
   payload: any; // The meal object or ID
   retryCount: number;
   createdAt: number;
@@ -30,12 +30,14 @@ export const QueueService = {
     }
   },
 
-  async addToQueue(item: Omit<QueueItem, "createdAt" | "retryCount">): Promise<void> {
+  async addToQueue(
+    item: Omit<QueueItem, "createdAt" | "retryCount">,
+  ): Promise<void> {
     const queue = await this.getQueue();
-    
+
     if (queue.length >= 50) {
-        console.warn("[QueueService] Queue full, dropping oldest item");
-        queue.shift();
+      console.warn("[QueueService] Queue full, dropping oldest item");
+      queue.shift();
     }
 
     const newItem: QueueItem = {
@@ -63,8 +65,8 @@ export const QueueService = {
       await this.saveQueue(queue);
     }
   },
-  
+
   async clearQueue(): Promise<void> {
-      await AsyncStorage.removeItem(QUEUE_KEY);
-  }
+    await AsyncStorage.removeItem(QUEUE_KEY);
+  },
 };

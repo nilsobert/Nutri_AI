@@ -34,7 +34,7 @@ export default function SettingsScreen() {
       await fillLastXDays(days);
       Alert.alert(
         "Success",
-        `Filled the last ${days} days with ${days * 4} generated meals!`
+        `Filled the last ${days} days with ${days * 4} generated meals!`,
       );
     } catch (error) {
       Alert.alert("Error", "Failed to fill meals. Check console for details.");
@@ -64,7 +64,9 @@ export default function SettingsScreen() {
         ]}
       >
         <View style={styles.headerTopRow}>
-          <Text style={[styles.headerTitle, { color: textColor }]}>Settings</Text>
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            Settings
+          </Text>
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.closeButton}
@@ -112,7 +114,11 @@ export default function SettingsScreen() {
             {isFillingMeals ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             )}
           </TouchableOpacity>
           <View
@@ -146,7 +152,11 @@ export default function SettingsScreen() {
             {isFillingMeals ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             )}
           </TouchableOpacity>
           <View
@@ -180,7 +190,11 @@ export default function SettingsScreen() {
             {isFillingMeals ? (
               <ActivityIndicator size="small" color={Colors.primary} />
             ) : (
-              <Ionicons name="chevron-forward" size={20} color={secondaryText} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={secondaryText}
+              />
             )}
           </TouchableOpacity>
         </View>

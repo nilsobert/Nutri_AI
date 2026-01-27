@@ -78,7 +78,10 @@ export const MealImage: React.FC<MealImageProps> = ({
   // before the token is loaded, the first request can 401 and the Image will
   // error out. So we wait until we've loaded the token.
   if (!isLocal && !tokenLoaded) {
-    if (__DEV__) console.log(`[MealImage] Waiting for token before rendering remote image: ${uri}`);
+    if (__DEV__)
+      console.log(
+        `[MealImage] Waiting for token before rendering remote image: ${uri}`,
+      );
     if (!showPlaceholder) return null;
     return (
       <View
@@ -106,7 +109,7 @@ export const MealImage: React.FC<MealImageProps> = ({
 
   if (__DEV__) {
     console.log(
-      `[MealImage] Rendering image: ${uri}, isLocal: ${isLocal}, tokenLoaded: ${tokenLoaded}, hasToken: ${!!token}`
+      `[MealImage] Rendering image: ${uri}, isLocal: ${isLocal}, tokenLoaded: ${tokenLoaded}, hasToken: ${!!token}`,
     );
   }
 

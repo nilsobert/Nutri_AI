@@ -21,7 +21,11 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { useUser } from "@/context/UserContext";
-import { MS_TO_S, DAILY_CALORIE_GOAL, MIN_LOGGING_THRESHOLD } from "@/constants/values";
+import {
+  MS_TO_S,
+  DAILY_CALORIE_GOAL,
+  MIN_LOGGING_THRESHOLD,
+} from "@/constants/values";
 import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -83,7 +87,10 @@ function calculateBestGoalStreak(meals: any[], calorieGoal: number): number {
     const d = new Date(meal.timestamp * MS_TO_S);
     const dateKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     mealDates.add(dateKey);
-    dateToCals.set(dateKey, (dateToCals.get(dateKey) || 0) + meal.nutritionInfo.calories);
+    dateToCals.set(
+      dateKey,
+      (dateToCals.get(dateKey) || 0) + meal.nutritionInfo.calories,
+    );
   });
 
   if (mealDates.size === 0) return 0;
@@ -100,7 +107,7 @@ function calculateBestGoalStreak(meals: any[], calorieGoal: number): number {
 
   const start = sortedDates[0];
   const end = new Date(); // Up to today
-  end.setHours(0,0,0,0);
+  end.setHours(0, 0, 0, 0);
 
   let longestStreak = 0;
   let currentStreak = 0;
@@ -116,14 +123,14 @@ function calculateBestGoalStreak(meals: any[], calorieGoal: number): number {
       currentStreak = 0;
     }
   }
-  
+
   longestStreak = Math.max(longestStreak, currentStreak);
   return longestStreak;
 }
 
 interface DayStatus {
   date: Date;
-  status: 'met' | 'exceeded' | 'insufficient' | 'none' | 'future';
+  status: "met" | "exceeded" | "insufficient" | "none" | "future";
   isToday: boolean;
 }
 
@@ -134,14 +141,18 @@ interface WeekData {
   days: DayStatus[];
   metCount: number;
   isCurrentWeek: boolean;
-  score: 'perfect' | 'good' | 'low';
+  score: "perfect" | "good" | "low";
   yearLabel?: string;
 }
 
-function getWeeks(meals: any[], count: number, calorieGoal: number): WeekData[] {
+function getWeeks(
+  meals: any[],
+  count: number,
+  calorieGoal: number,
+): WeekData[] {
   const weeks: WeekData[] = [];
   const now = new Date();
-  
+
   // Start from the beginning of the current week (Monday)
   const currentWeekStart = new Date(now);
   const day = currentWeekStart.getDay();
@@ -152,7 +163,7 @@ function getWeeks(meals: any[], count: number, calorieGoal: number): WeekData[] 
   for (let i = 0; i < count; i++) {
     const start = new Date(currentWeekStart);
     start.setDate(start.getDate() - i * 7);
-    
+
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
     end.setHours(23, 59, 59, 999);
@@ -163,7 +174,7 @@ function getWeeks(meals: any[], count: number, calorieGoal: number): WeekData[] 
     for (let j = 0; j < 7; j++) {
       const d = new Date(start);
       d.setDate(d.getDate() + j);
-      
+
       const dayCalories = meals
         .filter((m) => {
           const mealDate = new Date(m.timestamp * MS_TO_S);
@@ -179,30 +190,31 @@ function getWeeks(meals: any[], count: number, calorieGoal: number): WeekData[] 
         d.getDate() === now.getDate() &&
         d.getMonth() === now.getMonth() &&
         d.getFullYear() === now.getFullYear();
-      
+
       const isFuture = d > now;
 
-      let status: 'met' | 'exceeded' | 'insufficient' | 'none' | 'future' = 'none';
+      let status: "met" | "exceeded" | "insufficient" | "none" | "future" =
+        "none";
 
       if (isFuture) {
-        status = 'future';
+        status = "future";
       } else if (dayCalories === 0) {
-        status = 'none';
+        status = "none";
       } else if (dayCalories < MIN_LOGGING_THRESHOLD) {
-        status = 'insufficient';
+        status = "insufficient";
       } else if (dayCalories <= calorieGoal) {
-        status = 'met';
+        status = "met";
         metCount++;
       } else {
-        status = 'exceeded';
+        status = "exceeded";
       }
 
       days.push({ date: d, status, isToday });
     }
 
-    let score: 'perfect' | 'good' | 'low' = 'low';
-    if (metCount === 7) score = 'perfect';
-    else if (metCount >= 4) score = 'good';
+    let score: "perfect" | "good" | "low" = "low";
+    if (metCount === 7) score = "perfect";
+    else if (metCount >= 4) score = "good";
 
     weeks.push({
       id: start.toISOString(),
@@ -254,11 +266,11 @@ const WeekNode = ({
   let iconName: any = "star-outline";
   let iconColor = secondaryText;
 
-  if (week.score === 'perfect') {
+  if (week.score === "perfect") {
     nodeColor = Colors.primary; // Blue/Green
     iconName = "trophy";
     iconColor = "#fff";
-  } else if (week.score === 'good') {
+  } else if (week.score === "good") {
     nodeColor = Colors.secondary.protein; // Green
     iconName = "star";
     iconColor = "#fff";
@@ -280,9 +292,19 @@ const WeekNode = ({
     <View>
       {week.yearLabel && (
         <View style={styles.yearMarker}>
-          <View style={[styles.yearLine, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]} />
+          <View
+            style={[
+              styles.yearLine,
+              { backgroundColor: isDark ? "#444" : "#e0e0e0" },
+            ]}
+          />
           <ThemedText style={styles.yearText}>{week.yearLabel}</ThemedText>
-          <View style={[styles.yearLine, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]} />
+          <View
+            style={[
+              styles.yearLine,
+              { backgroundColor: isDark ? "#444" : "#e0e0e0" },
+            ]}
+          />
         </View>
       )}
       <View style={styles.nodeRow}>
@@ -293,11 +315,11 @@ const WeekNode = ({
         <TouchableOpacity
           style={[
             styles.nodeCard,
-            { 
+            {
               backgroundColor: bgColor,
-              alignSelf: 'center',
+              alignSelf: "center",
             },
-            week.score === 'perfect' && {
+            week.score === "perfect" && {
               shadowColor: Colors.primary,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -316,19 +338,21 @@ const WeekNode = ({
               <ThemedText style={[styles.nodeTitle, { color: textColor }]}>
                 {week.isCurrentWeek ? "Current Week" : dateRange}
               </ThemedText>
-              <ThemedText style={[styles.nodeSubtitle, { color: secondaryText }]}>
+              <ThemedText
+                style={[styles.nodeSubtitle, { color: secondaryText }]}
+              >
                 {week.metCount}/7 Days Met
               </ThemedText>
             </View>
-            <Ionicons 
-              name={isExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={secondaryText} 
+            <Ionicons
+              name={isExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={secondaryText}
             />
           </View>
 
           {isExpanded && (
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.duration(300)}
               style={styles.expandedContent}
             >
@@ -338,10 +362,10 @@ const WeekNode = ({
                   let dayIcon = null;
                   let dayIconColor = "#fff";
 
-                  if (day.status === 'met') {
+                  if (day.status === "met") {
                     dayColor = Colors.primary;
                     dayIcon = "checkmark";
-                  } else if (day.status === 'exceeded') {
+                  } else if (day.status === "exceeded") {
                     dayColor = Colors.secondary.fat;
                     dayIcon = "alert";
                   }
@@ -349,37 +373,66 @@ const WeekNode = ({
 
                   return (
                     <View key={i} style={styles.dayColumn}>
-                      <ThemedText style={[styles.dayName, { color: secondaryText }]}>
-                        {day.date.toLocaleDateString("en-US", { weekday: "narrow" }).charAt(0)}
+                      <ThemedText
+                        style={[styles.dayName, { color: secondaryText }]}
+                      >
+                        {day.date
+                          .toLocaleDateString("en-US", { weekday: "narrow" })
+                          .charAt(0)}
                       </ThemedText>
                       <View
                         style={[
                           styles.dayStatusCircle,
                           { backgroundColor: dayColor },
-                          day.isToday && (day.status === 'none' || day.status === 'insufficient') && { borderWidth: 2, borderColor: Colors.primary, backgroundColor: 'transparent' },
+                          day.isToday &&
+                            (day.status === "none" ||
+                              day.status === "insufficient") && {
+                              borderWidth: 2,
+                              borderColor: Colors.primary,
+                              backgroundColor: "transparent",
+                            },
                         ]}
                       >
                         {dayIcon && (
-                          <Ionicons name={dayIcon as any} size={12} color={dayIconColor} />
+                          <Ionicons
+                            name={dayIcon as any}
+                            size={12}
+                            color={dayIconColor}
+                          />
                         )}
                       </View>
                     </View>
                   );
                 })}
               </View>
-              
+
               {/* Legend for expanded view */}
               <View style={styles.legendContainer}>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: Colors.primary },
+                    ]}
+                  />
                   <ThemedText style={styles.legendText}>Met</ThemedText>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: Colors.secondary.fat }]} />
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: Colors.secondary.fat },
+                    ]}
+                  />
                   <ThemedText style={styles.legendText}>Over</ThemedText>
                 </View>
                 <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: isDark ? "#444" : "#f0f0f0" }]} />
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: isDark ? "#444" : "#f0f0f0" },
+                    ]}
+                  />
                   <ThemedText style={styles.legendText}>No Logs</ThemedText>
                 </View>
               </View>
@@ -400,31 +453,43 @@ export default function GoalsMetScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  const currentStreak = useMemo(() => calculateGoalStreak(meals, calorieGoal), [meals, calorieGoal]);
-  const bestStreak = useMemo(() => calculateBestGoalStreak(meals, calorieGoal), [meals, calorieGoal]);
-  
+  const currentStreak = useMemo(
+    () => calculateGoalStreak(meals, calorieGoal),
+    [meals, calorieGoal],
+  );
+  const bestStreak = useMemo(
+    () => calculateBestGoalStreak(meals, calorieGoal),
+    [meals, calorieGoal],
+  );
+
   const totalDaysMet = useMemo(() => {
     const uniqueDays = new Set<string>();
     const dateToCals = new Map<string, number>();
-    
-    meals.forEach(m => {
-        const d = new Date(m.timestamp * MS_TO_S);
-        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-        dateToCals.set(key, (dateToCals.get(key) || 0) + m.nutritionInfo.calories);
+
+    meals.forEach((m) => {
+      const d = new Date(m.timestamp * MS_TO_S);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      dateToCals.set(
+        key,
+        (dateToCals.get(key) || 0) + m.nutritionInfo.calories,
+      );
     });
 
     let count = 0;
     dateToCals.forEach((cals) => {
-        if (cals >= MIN_LOGGING_THRESHOLD && cals <= calorieGoal) {
-            count++;
-        }
+      if (cals >= MIN_LOGGING_THRESHOLD && cals <= calorieGoal) {
+        count++;
+      }
     });
     return count;
   }, [meals, calorieGoal]);
 
   const [weeksCount, setWeeksCount] = useState(12);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const weeks = useMemo(() => getWeeks(meals, weeksCount, calorieGoal), [meals, weeksCount, calorieGoal]);
+  const weeks = useMemo(
+    () => getWeeks(meals, weeksCount, calorieGoal),
+    [meals, weeksCount, calorieGoal],
+  );
   const [expandedWeekId, setExpandedWeekId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -442,7 +507,7 @@ export default function GoalsMetScreen() {
     if (isLoadingMore) return;
     setIsLoadingMore(true);
     setTimeout(() => {
-      setWeeksCount(prev => prev + 12);
+      setWeeksCount((prev) => prev + 12);
       setIsLoadingMore(false);
     }, 500);
   };
@@ -475,11 +540,21 @@ export default function GoalsMetScreen() {
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
+        <View
+          style={[
+            styles.statBox,
+            { backgroundColor: isDark ? "#333" : "#fff" },
+          ]}
+        >
           <ThemedText style={styles.statValue}>{bestStreak}</ThemedText>
           <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
         </View>
-        <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
+        <View
+          style={[
+            styles.statBox,
+            { backgroundColor: isDark ? "#333" : "#fff" },
+          ]}
+        >
           <ThemedText style={styles.statValue}>{totalDaysMet}</ThemedText>
           <ThemedText style={styles.statLabel}>Total Days Met</ThemedText>
         </View>
@@ -489,7 +564,9 @@ export default function GoalsMetScreen() {
 
   const renderFooter = () => (
     <View style={styles.footer}>
-      {isLoadingMore && <ActivityIndicator size="small" color={Colors.primary} />}
+      {isLoadingMore && (
+        <ActivityIndicator size="small" color={Colors.primary} />
+      )}
     </View>
   );
 
@@ -513,7 +590,12 @@ export default function GoalsMetScreen() {
       </BlurView>
 
       <View style={styles.listContainer}>
-        <View style={[styles.centerLine, { backgroundColor: isDark ? "#333" : "#e0e0e0", top: 0 }]} />
+        <View
+          style={[
+            styles.centerLine,
+            { backgroundColor: isDark ? "#333" : "#e0e0e0", top: 0 },
+          ]}
+        />
         <FlatList
           data={weeks}
           keyExtractor={(item) => item.id}
@@ -530,7 +612,10 @@ export default function GoalsMetScreen() {
           ListFooterComponent={renderFooter}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
-          contentContainerStyle={{ paddingTop: 60 + insets.top, paddingBottom: Spacing.xl }}
+          contentContainerStyle={{
+            paddingTop: 60 + insets.top,
+            paddingBottom: Spacing.xl,
+          }}
           showsVerticalScrollIndicator={false}
         />
       </View>
@@ -569,7 +654,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   heroSection: {
     alignItems: "center",
@@ -632,8 +717,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   centerLine: {
-    position: 'absolute',
-    left: '50%',
+    position: "absolute",
+    left: "50%",
     bottom: 0,
     width: 4,
     marginLeft: -2,
@@ -642,18 +727,18 @@ const styles = StyleSheet.create({
   },
   nodeRow: {
     marginBottom: Spacing.lg,
-    position: 'relative',
-    width: '100%',
-    justifyContent: 'center',
+    position: "relative",
+    width: "100%",
+    justifyContent: "center",
     paddingHorizontal: Spacing.md,
   },
   connectorLine: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: '50%',
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: "50%",
     height: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   nodeCard: {
     width: SCREEN_WIDTH * 0.85,
@@ -663,15 +748,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   nodeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: Spacing.md,
   },
   nodeInfo: {
@@ -679,7 +764,7 @@ const styles = StyleSheet.create({
   },
   nodeTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   nodeSubtitle: {
     fontSize: 12,
@@ -711,37 +796,37 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingVertical: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
     height: 60,
   },
   yearMarker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginVertical: Spacing.lg,
-    width: '100%',
+    width: "100%",
     paddingHorizontal: Spacing.xl,
   },
   yearLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
   yearText: {
     marginHorizontal: Spacing.md,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: "600",
+    color: "#8E8E93",
   },
   legendContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: Spacing.md,
     gap: Spacing.lg,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   legendDot: {
@@ -751,6 +836,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 10,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
 });

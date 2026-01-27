@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { StorageService } from "../services/storage";
@@ -35,7 +41,7 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
       if (state.isConnected) {
         // fire and forget; internal lock prevents overlap
         void processQueue();
@@ -46,7 +52,9 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
   const processQueue = async () => {
     if (isProcessingQueueRef.current) {
-      console.log("[SyncQueue] Skipping processQueue() because a run is already in progress");
+      console.log(
+        "[SyncQueue] Skipping processQueue() because a run is already in progress",
+      );
       return;
     }
 
@@ -87,95 +95,95 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   };
 
   const syncMeal = async (meal: MealEntry, token: string) => {
-      let serverImagePath = undefined;
-      let serverAudioPath = undefined;
+    let serverImagePath = undefined;
+    let serverAudioPath = undefined;
 
-      // Upload image if it's a local file
-      if (meal.image && meal.image?.startsWith("file://")) {
-        console.log("[SyncQueue] Uploading meal image...");
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("image", {
-          uri: meal.image,
-          name: "meal.jpg",
-          type: "image/jpeg",
-        });
-        
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/image`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-        
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverImagePath = data.image_path;
-        } else {
-            throw new Error(`Image upload failed: ${uploadResponse.status}`);
-        }
-      } else if (meal.image && !meal.image.startsWith("file://")) {
-          // Already a server path or remote URL
-          if (meal.image.includes("/static/")) {
-              serverImagePath = meal.image.split("/static/")[1];
-          } else {
-              serverImagePath = meal.image;
-          }
-      }
+    // Upload image if it's a local file
+    if (meal.image && meal.image?.startsWith("file://")) {
+      console.log("[SyncQueue] Uploading meal image...");
+      const formData = new FormData();
+      // @ts-ignore
+      formData.append("image", {
+        uri: meal.image,
+        name: "meal.jpg",
+        type: "image/jpeg",
+      });
 
-      // Upload audio if it's a local file
-      if (meal.audio && meal.audio?.startsWith("file://")) {
-        console.log("[SyncQueue] Uploading meal audio...");
-        const formData = new FormData();
-        // @ts-ignore
-        formData.append("audio", {
-          uri: meal.audio,
-          name: "meal.m4a",
-          type: "audio/m4a",
-        });
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/meals/audio`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-          body: formData,
-        });
-
-        if (uploadResponse.ok) {
-          const data = await uploadResponse.json();
-          serverAudioPath = data.audio_path;
-        } else {
-            throw new Error(`Audio upload failed: ${uploadResponse.status}`);
-        }
-      } else if (meal.audio && !meal.audio.startsWith("file://")) {
-          if (meal.audio.includes("/static/")) {
-              serverAudioPath = meal.audio.split("/static/")[1];
-          } else {
-              serverAudioPath = meal.audio;
-          }
-      }
-
-      const mealData = { ...meal };
-      if (serverImagePath) mealData.image = serverImagePath;
-      if (serverAudioPath) mealData.audio = serverAudioPath;
-
-      console.log("[SyncQueue] Posting meal data...");
-      const syncResponse = await fetch(`${API_BASE_URL}/meals`, {
+      const uploadResponse = await fetch(`${API_BASE_URL}/meals/image`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-        body: JSON.stringify(mealData),
+        body: formData,
       });
-      
-      if (!syncResponse.ok) {
-        throw new Error(`Meal sync failed: ${syncResponse.status}`);
+
+      if (uploadResponse.ok) {
+        const data = await uploadResponse.json();
+        serverImagePath = data.image_path;
+      } else {
+        throw new Error(`Image upload failed: ${uploadResponse.status}`);
       }
+    } else if (meal.image && !meal.image.startsWith("file://")) {
+      // Already a server path or remote URL
+      if (meal.image.includes("/static/")) {
+        serverImagePath = meal.image.split("/static/")[1];
+      } else {
+        serverImagePath = meal.image;
+      }
+    }
+
+    // Upload audio if it's a local file
+    if (meal.audio && meal.audio?.startsWith("file://")) {
+      console.log("[SyncQueue] Uploading meal audio...");
+      const formData = new FormData();
+      // @ts-ignore
+      formData.append("audio", {
+        uri: meal.audio,
+        name: "meal.m4a",
+        type: "audio/m4a",
+      });
+
+      const uploadResponse = await fetch(`${API_BASE_URL}/meals/audio`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        body: formData,
+      });
+
+      if (uploadResponse.ok) {
+        const data = await uploadResponse.json();
+        serverAudioPath = data.audio_path;
+      } else {
+        throw new Error(`Audio upload failed: ${uploadResponse.status}`);
+      }
+    } else if (meal.audio && !meal.audio.startsWith("file://")) {
+      if (meal.audio.includes("/static/")) {
+        serverAudioPath = meal.audio.split("/static/")[1];
+      } else {
+        serverAudioPath = meal.audio;
+      }
+    }
+
+    const mealData = { ...meal };
+    if (serverImagePath) mealData.image = serverImagePath;
+    if (serverAudioPath) mealData.audio = serverAudioPath;
+
+    console.log("[SyncQueue] Posting meal data...");
+    const syncResponse = await fetch(`${API_BASE_URL}/meals`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(mealData),
+    });
+
+    if (!syncResponse.ok) {
+      throw new Error(`Meal sync failed: ${syncResponse.status}`);
+    }
   };
 
   const refreshMeals = async () => {
@@ -210,14 +218,18 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       }
 
       const response = await fetch(`${API_BASE_URL}/meals`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (response.ok) {
         const serverMealsData = await response.json();
         const serverMeals = serverMealsData.map((m: any) => {
-          const imageUrl = m.image ? `${API_BASE_URL}/static/${m.image}` : undefined;
-          const audioUrl = m.audio ? `${API_BASE_URL}/static/${m.audio}` : undefined;
+          const imageUrl = m.image
+            ? `${API_BASE_URL}/static/${m.image}`
+            : undefined;
+          const audioUrl = m.audio
+            ? `${API_BASE_URL}/static/${m.audio}`
+            : undefined;
           return parseMealEntry({
             ...m,
             image: imageUrl,
@@ -241,17 +253,17 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log(`[MealContext] Adding meal ${meal.id} (Optimistic)`);
       await StorageService.addMeal(meal);
-      setMeals(prev => [...prev, meal]);
-      
+      setMeals((prev) => [...prev, meal]);
+
       await QueueService.addToQueue({
-          id: meal.id,
-          type: 'CREATE_MEAL',
-          payload: meal
+        id: meal.id,
+        type: "CREATE_MEAL",
+        payload: meal,
       });
-      
+
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          void processQueue();
+        void processQueue();
       }
     } catch (error) {
       console.error("[MealContext] Failed to add meal", error);
@@ -264,14 +276,14 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
       setMeals((prev) => prev.map((m) => (m.id === meal.id ? meal : m)));
 
       await QueueService.addToQueue({
-          id: meal.id,
-          type: 'UPDATE_MEAL',
-          payload: meal
+        id: meal.id,
+        type: "UPDATE_MEAL",
+        payload: meal,
       });
 
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          void processQueue();
+        void processQueue();
       }
     } catch (error) {
       console.error("Failed to update meal", error);
@@ -281,17 +293,17 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
   const deleteMeal = async (mealId: string) => {
     try {
       await StorageService.deleteMeal(mealId);
-      setMeals(prev => prev.filter(m => m.id !== mealId));
+      setMeals((prev) => prev.filter((m) => m.id !== mealId));
 
       await QueueService.addToQueue({
-          id: Math.random().toString(36).substring(7),
-          type: 'DELETE_MEAL',
-          payload: mealId
+        id: Math.random().toString(36).substring(7),
+        type: "DELETE_MEAL",
+        payload: mealId,
       });
 
       const state = await NetInfo.fetch();
       if (state.isConnected) {
-          void processQueue();
+        void processQueue();
       }
     } catch (error) {
       console.error("Failed to delete meal", error);
@@ -300,26 +312,27 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
 
   const fillLastXDays = async (days: number) => {
     try {
-      console.log(`[MealContext] Filling last ${days} days with generated meals...`);
-      
+      console.log(
+        `[MealContext] Filling last ${days} days with generated meals...`,
+      );
+
       // Generate all meals for the year
       const yearMealsRecord = generateYearMeals();
-      
+
       // Convert to flat array and filter for last X days
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const generatedMeals: MealEntry[] = [];
-      
+
       for (let i = 0; i < days; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
-        
-        const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(date.getDate()).padStart(2, "0")}`;
-        
+
+        const dateStr = `${date.getFullYear()}-${String(
+          date.getMonth() + 1,
+        ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
         const dayMeals = yearMealsRecord[dateStr];
         if (dayMeals) {
           Object.values(dayMeals).forEach((meal) => {
@@ -329,14 +342,16 @@ export function MealProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
-      
-      console.log(`[MealContext] Generated ${generatedMeals.length} meals for last ${days} days`);
-      
+
+      console.log(
+        `[MealContext] Generated ${generatedMeals.length} meals for last ${days} days`,
+      );
+
       // Add all generated meals
       for (const meal of generatedMeals) {
         await addMeal(meal);
       }
-      
+
       console.log("[MealContext] Finished filling last X days");
     } catch (error) {
       console.error("[MealContext] Failed to fill last X days", error);

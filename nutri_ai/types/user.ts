@@ -39,7 +39,7 @@ export interface User {
 
   // Body composition (optional, for more accurate calculations)
   bodyFatPercentage?: number;
-  
+
   // Dietary preferences
   proteinPreference?: "low" | "moderate" | "high"; // Affects macro split
 
@@ -57,8 +57,10 @@ export function parseUser(json: any): User {
     age: json.age,
     gender: json.gender ?? Gender.Male,
     heightCm: json.heightCm ?? json.height_cm ?? 175,
-    activityLevel: json.activityLevel ?? json.activity_level ?? ActivityLevel.Sedentary,
-    medicalCondition: json.medicalCondition ?? json.medical_condition ?? MedicalCondition.None,
+    activityLevel:
+      json.activityLevel ?? json.activity_level ?? ActivityLevel.Sedentary,
+    medicalCondition:
+      json.medicalCondition ?? json.medical_condition ?? MedicalCondition.None,
     weightKg: json.weightKg ?? json.weight_kg,
     motivation: json.motivation,
     email: json.email,

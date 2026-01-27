@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import React, { useEffect } from "react";
+import { StyleSheet, useWindowDimensions } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import Animated, {
   useAnimatedProps,
   useSharedValue,
@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
   Easing,
   SharedValue,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -19,9 +19,17 @@ interface IOSWaveformProps {
 }
 
 const WAVE_COUNT = 3;
-const COLORS = ['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0.3)'];
+const COLORS = [
+  "rgba(255, 255, 255, 0.8)",
+  "rgba(255, 255, 255, 0.5)",
+  "rgba(255, 255, 255, 0.3)",
+];
 
-export const IOSWaveform: React.FC<IOSWaveformProps> = ({ level, isRecording, isSpeaking }) => {
+export const IOSWaveform: React.FC<IOSWaveformProps> = ({
+  level,
+  isRecording,
+  isSpeaking,
+}) => {
   const { width: screenWidth } = useWindowDimensions();
 
   // Keep it narrower than before (more like iOS).
@@ -36,7 +44,11 @@ export const IOSWaveform: React.FC<IOSWaveformProps> = ({ level, isRecording, is
 
   useEffect(() => {
     if (isRecording) {
-      phase.value = withRepeat(withTiming(2 * Math.PI, { duration: 1600, easing: Easing.linear }), -1, false);
+      phase.value = withRepeat(
+        withTiming(2 * Math.PI, { duration: 1600, easing: Easing.linear }),
+        -1,
+        false,
+      );
     } else {
       phase.value = 0;
     }
@@ -57,7 +69,9 @@ export const IOSWaveform: React.FC<IOSWaveformProps> = ({ level, isRecording, is
   }, [isRecording, isSpeaking, level]);
 
   return (
-    <Animated.View style={[styles.container, { width, height, opacity: visibility }]}>
+    <Animated.View
+      style={[styles.container, { width, height, opacity: visibility }]}
+    >
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         {Array.from({ length: WAVE_COUNT }).map((_, i) => (
           <WaveLine
@@ -86,7 +100,15 @@ interface WaveLineProps {
   color: string;
 }
 
-const WaveLine: React.FC<WaveLineProps> = ({ index, width, midY, phase, amplitude, visibility, color }) => {
+const WaveLine: React.FC<WaveLineProps> = ({
+  index,
+  width,
+  midY,
+  phase,
+  amplitude,
+  visibility,
+  color,
+}) => {
   const animatedProps = useAnimatedProps(() => {
     // Make it more reactive: raise amplitude and make it non-linear.
     const base = Math.pow(amplitude.value, 0.65);
@@ -107,20 +129,30 @@ const WaveLine: React.FC<WaveLineProps> = ({ index, width, midY, phase, amplitud
       const normalization = x / width;
       const envelope = Math.pow(4 * normalization * (1 - normalization), 2.2);
 
-      const y = midY + Math.sin(x * (freq / width) * 2 * Math.PI + p) * amp * envelope * vis;
+      const y =
+        midY +
+        Math.sin(x * (freq / width) * 2 * Math.PI + p) * amp * envelope * vis;
       d += ` L ${x} ${y}`;
     }
 
     return { d };
   });
 
-  return <AnimatedPath animatedProps={animatedProps} stroke={color} strokeWidth={2.25} fill="none" strokeLinecap="round" />;
+  return (
+    <AnimatedPath
+      animatedProps={animatedProps}
+      stroke={color}
+      strokeWidth={2.25}
+      fill="none"
+      strokeLinecap="round"
+    />
+  );
 };
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
 });

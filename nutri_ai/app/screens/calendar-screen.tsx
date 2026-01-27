@@ -286,7 +286,9 @@ const MealCard: React.FC<MealCardProps> = ({
               Density
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.calorieDensity ? quality.calorieDensity.toFixed(1) : "0.0"}
+              {quality.calorieDensity
+                ? quality.calorieDensity.toFixed(1)
+                : "0.0"}
             </Text>
           </View>
         </View>
@@ -364,9 +366,7 @@ const MealCard: React.FC<MealCardProps> = ({
                 scrollEventThrottle={16}
               >
                 {meals.map((meal, index) => (
-                  <View key={meal.id || index}>
-                    {renderMealDetails(meal)}
-                  </View>
+                  <View key={meal.id || index}>{renderMealDetails(meal)}</View>
                 ))}
               </Animated.ScrollView>
               <View style={styles.dotsContainer}>
@@ -573,7 +573,10 @@ export default function CalendarScreen() {
           <View style={styles.calendarHeader}>
             {viewMode === "month" ? (
               <>
-                <TouchableOpacity onPress={prevMonth} style={styles.arrowButton}>
+                <TouchableOpacity
+                  onPress={prevMonth}
+                  style={styles.arrowButton}
+                >
                   <Ionicons
                     name="chevron-back"
                     size={24}
@@ -583,7 +586,10 @@ export default function CalendarScreen() {
                 <Text style={[styles.calendarTitle, { color: textColor }]}>
                   {monthNames[month]} {year}
                 </Text>
-                <TouchableOpacity onPress={nextMonth} style={styles.arrowButton}>
+                <TouchableOpacity
+                  onPress={nextMonth}
+                  style={styles.arrowButton}
+                >
                   <Ionicons
                     name="chevron-forward"
                     size={24}

@@ -13,7 +13,11 @@ export const mockMeals: MealEntry[] = [
   // Today
   createMealEntry({
     category: MealCategory.Breakfast,
-    mealQuality: { calorieDensity: 1.75, goalFitPercentage: 80, mealQualityScore: 8 },
+    mealQuality: {
+      calorieDensity: 1.75,
+      goalFitPercentage: 80,
+      mealQualityScore: 8,
+    },
     nutritionInfo: {
       calories: 350,
       carbs: 50,
@@ -26,7 +30,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Lunch,
-    mealQuality: { calorieDensity: 2.5, goalFitPercentage: 70, mealQualityScore: 7 },
+    mealQuality: {
+      calorieDensity: 2.5,
+      goalFitPercentage: 70,
+      mealQualityScore: 7,
+    },
     nutritionInfo: {
       calories: 600,
       carbs: 80,
@@ -39,7 +47,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Dinner,
-    mealQuality: { calorieDensity: 2.0, goalFitPercentage: 90, mealQualityScore: 9 },
+    mealQuality: {
+      calorieDensity: 2.0,
+      goalFitPercentage: 90,
+      mealQualityScore: 9,
+    },
     nutritionInfo: {
       calories: 800,
       carbs: 100,
@@ -52,7 +64,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Snack,
-    mealQuality: { calorieDensity: 1.33, goalFitPercentage: 60, mealQualityScore: 6 },
+    mealQuality: {
+      calorieDensity: 1.33,
+      goalFitPercentage: 60,
+      mealQualityScore: 6,
+    },
     nutritionInfo: {
       calories: 200,
       carbs: 30,
@@ -67,7 +83,11 @@ export const mockMeals: MealEntry[] = [
   // Yesterday
   createMealEntry({
     category: MealCategory.Breakfast,
-    mealQuality: { calorieDensity: 1.5, goalFitPercentage: 75, mealQualityScore: 7 },
+    mealQuality: {
+      calorieDensity: 1.5,
+      goalFitPercentage: 75,
+      mealQualityScore: 7,
+    },
     nutritionInfo: {
       calories: 400,
       carbs: 60,
@@ -80,7 +100,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Lunch,
-    mealQuality: { calorieDensity: 2.2, goalFitPercentage: 85, mealQualityScore: 8 },
+    mealQuality: {
+      calorieDensity: 2.2,
+      goalFitPercentage: 85,
+      mealQualityScore: 8,
+    },
     nutritionInfo: {
       calories: 550,
       carbs: 70,
@@ -93,7 +117,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Dinner,
-    mealQuality: { calorieDensity: 1.8, goalFitPercentage: 65, mealQualityScore: 6 },
+    mealQuality: {
+      calorieDensity: 1.8,
+      goalFitPercentage: 65,
+      mealQualityScore: 6,
+    },
     nutritionInfo: {
       calories: 900,
       carbs: 110,
@@ -108,7 +136,11 @@ export const mockMeals: MealEntry[] = [
   // 2 Days Ago
   createMealEntry({
     category: MealCategory.Breakfast,
-    mealQuality: { calorieDensity: 2.0, goalFitPercentage: 90, mealQualityScore: 9 },
+    mealQuality: {
+      calorieDensity: 2.0,
+      goalFitPercentage: 90,
+      mealQualityScore: 9,
+    },
     nutritionInfo: {
       calories: 300,
       carbs: 40,
@@ -121,7 +153,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Lunch,
-    mealQuality: { calorieDensity: 2.4, goalFitPercentage: 88, mealQualityScore: 8 },
+    mealQuality: {
+      calorieDensity: 2.4,
+      goalFitPercentage: 88,
+      mealQualityScore: 8,
+    },
     nutritionInfo: {
       calories: 500,
       carbs: 60,
@@ -134,7 +170,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Dinner,
-    mealQuality: { calorieDensity: 1.9, goalFitPercentage: 78, mealQualityScore: 7 },
+    mealQuality: {
+      calorieDensity: 1.9,
+      goalFitPercentage: 78,
+      mealQualityScore: 7,
+    },
     nutritionInfo: {
       calories: 750,
       carbs: 90,
@@ -149,7 +189,11 @@ export const mockMeals: MealEntry[] = [
   // 3 Days Ago
   createMealEntry({
     category: MealCategory.Breakfast,
-    mealQuality: { calorieDensity: 1.6, goalFitPercentage: 70, mealQualityScore: 6 },
+    mealQuality: {
+      calorieDensity: 1.6,
+      goalFitPercentage: 70,
+      mealQualityScore: 6,
+    },
     nutritionInfo: {
       calories: 380,
       carbs: 55,
@@ -162,7 +206,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Lunch,
-    mealQuality: { calorieDensity: 2.1, goalFitPercentage: 82, mealQualityScore: 8 },
+    mealQuality: {
+      calorieDensity: 2.1,
+      goalFitPercentage: 82,
+      mealQualityScore: 8,
+    },
     nutritionInfo: {
       calories: 580,
       carbs: 75,
@@ -175,7 +223,11 @@ export const mockMeals: MealEntry[] = [
   }),
   createMealEntry({
     category: MealCategory.Dinner,
-    mealQuality: { calorieDensity: 2.3, goalFitPercentage: 92, mealQualityScore: 9 },
+    mealQuality: {
+      calorieDensity: 2.3,
+      goalFitPercentage: 92,
+      mealQualityScore: 9,
+    },
     nutritionInfo: {
       calories: 650,
       carbs: 50,

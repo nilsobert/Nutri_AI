@@ -60,10 +60,7 @@ export default function ProfilePicture() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "Please grant camera permissions.",
-        );
+        Alert.alert("Permission required", "Please grant camera permissions.");
         return;
       }
 
@@ -86,10 +83,7 @@ export default function ProfilePicture() {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "Permission required",
-          "Please grant gallery permissions.",
-        );
+        Alert.alert("Permission required", "Please grant gallery permissions.");
         return;
       }
 
