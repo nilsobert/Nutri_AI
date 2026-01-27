@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
-import { BlurView } from "expo-blur";
 import { Colors, Spacing } from "../constants/theme";
 import { API_BASE_URL } from '../constants/values';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,7 +23,6 @@ type MealSuggestions = { breakfast: Meal; lunch: Meal; dinner: Meal };
 export default function SuggestionsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
 
   const remainingCalories = Number(params.remainingCalories || 0);
@@ -125,20 +123,16 @@ export default function SuggestionsScreen() {
 
   const bgColor = isDark ? "#121212" : "#f0f3f5";
   const textColor = isDark ? "#fff" : "#111";
-  const secondaryText = isDark ? "#999" : "#666";
-  const borderColor = isDark ? "#333" : "rgba(0,0,0,0.08)";
 
   return (
     <View style={[styles.screen, { backgroundColor: bgColor }]}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            paddingTop: 140 + insets.top,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+      <Stack.Screen
+        options={{
+          title: "Suggestions",
+          headerBackTitle: "Home",
+        }}
+      />
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, { color: textColor }]}>
           Today's Meal Suggestions
         </Text>
@@ -220,39 +214,6 @@ export default function SuggestionsScreen() {
           );
         })}
       </ScrollView>
-
-      <BlurView
-        intensity={80}
-        tint={isDark ? "dark" : "light"}
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + Spacing.md,
-            borderBottomColor: borderColor,
-          },
-        ]}
-      >
-        <View style={styles.headerTopRow}>
-          <View>
-            <Text style={[styles.headerDate, { color: secondaryText }]}>
-              TODAY
-            </Text>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Suggestions
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={styles.doneButton}
-            onPress={() => router.back()}
-          >
-            <Text
-              style={[styles.doneButtonText, { color: Colors.primary }]}
-            >
-              Done
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </BlurView>
     </View>
   );
 }
@@ -265,43 +226,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.xl,
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.md,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: "bold",
-    letterSpacing: 0.3,
-  },
-  headerDate: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 2,
-    letterSpacing: 0.5,
-  },
-  doneButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  doneButtonText: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 28, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: Spacing.lg,
+    marginBottom: 20,
+  },
   card: {
     borderRadius: 20,
     padding: 20,
