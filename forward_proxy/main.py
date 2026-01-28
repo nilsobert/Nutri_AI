@@ -1262,6 +1262,7 @@ async def suggest_meals(
                         "protein": m.protein,
                         "carbs": m.carbs,
                         "fat": m.fat,
+                        "recipe": m.recipe,
                     },
                 }
 
@@ -1298,23 +1299,45 @@ The value of lastMeal is: {request.last_meal}
 
 Rules:
 - lastMeal = 0 → generate breakfast, lunch, and dinner
-- lastMeal = 1 → generate lunch and dinner only, breakfast should have name "none"
-- lastMeal = 2 → generate dinner only, breakfast and lunch should have name "none"
+- lastMeal = 1 → generate lunch and dinner only
+- lastMeal = 2 → generate dinner only
 - For any meal that should not be served, set:
   {{
     "name": "none",
     "description": "",
+    "recipe": "",
     "nutrition": {{"calories": 0, "protein": 0, "carbs": 0, "fat": 0}}
   }}
+
+Calories rules (VERY IMPORTANT):
+- A single meal MUST NEVER exceed 700 kcal
+- Typical ranges:
+  - breakfast: 300–500 kcal
+  - lunch: 400–700 kcal
+  - dinner: 400–700 kcal
+- If remaining calories are low:
+  - distribute proportionally
+  - it is OK for meals to be smaller (200–400 kcal)
+- The sum of all generated meals MUST be ≤ remaining calories
+- Never generate a meal over 700 kcal even if remaining calories are high
+
+Recipe format (string):
+Ingredients
+- ...
+- ...
+
+Preparation
+1. ...
+2. ...
 
 Output format:
 - Return a JSON object with exactly three keys: "breakfast", "lunch", "dinner"
 - Each key maps to an object with:
-  - "name": string
-  - "description": string
-  - "nutrition": object with keys "calories", "protein", "carbs", "fat" (all numbers)
-- Do not include any text outside of the JSON.
-- Always use lowercase keys for meals and nutrition.
+  - "name"
+  - "description"
+  - "recipe"
+  - "nutrition" {{ calories, protein, carbs, fat }}
+- Do not include any text outside JSON
 """
 
         headers = {
@@ -1379,6 +1402,7 @@ Output format:
             protein = nutrition.get("protein", 0)
             carbs = nutrition.get("carbs", 0)
             fat = nutrition.get("fat", 0)
+            recipe = meal.get("recipe", "")
 
             logger.info(f"[Meal Suggestion] Adding {meal_type}: {name} (cal={calories}, p={protein}, c={carbs}, f={fat})")
             db.add(DailyMealSuggestion(
@@ -1389,6 +1413,7 @@ Output format:
                 description=description,
                 calories=calories,
                 protein=protein,
+                recipe = recipe,
                 carbs=carbs,
                 fat=fat,
             ))
