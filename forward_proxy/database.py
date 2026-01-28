@@ -116,6 +116,7 @@ class DailyMealSuggestion(Base):
 
     name = Column(String, nullable=True)
     description = Column(Text, nullable=True)
+    recipe = Column(Text)
 
     calories = Column(Integer, nullable=True)
     protein = Column(Integer, nullable=True)

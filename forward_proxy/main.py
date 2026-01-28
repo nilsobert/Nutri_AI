@@ -1216,11 +1216,13 @@ class MealSuggestion(BaseModel):
     name: str
     description: str
     nutrition: NutritionInfo
+    recipe: str
 
 class MealSuggestionsResponse(BaseModel):
     breakfast: MealSuggestion
     lunch: MealSuggestion
     dinner: MealSuggestion
+    
 
 # --- Suggest meals endpoint ---
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
