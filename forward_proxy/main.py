@@ -20,11 +20,11 @@ from dotenv import load_dotenv
 import os
 import uuid
 from typing import Optional
-from pydantic import BaseModel
 from datetime import date
-from sqlalchemy.orm import Session
-from fastapi import Depends
 from database import get_db, DailyMealSuggestion
+from typing import Dict
+import os, json, logging
+from datetime import date
 
 
 from database import get_db, init_db, User, Meal, AnalysisLog, AnalysisStatus
@@ -1186,16 +1186,9 @@ async def analyze_meal(
         log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
         db.commit()
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 
 
-
-from fastapi import FastAPI, Depends, HTTPException
-from pydantic import BaseModel
-from typing import Dict
-import os, httpx, json, logging
-from datetime import date
 
 # --- Pydantic models for request/response ---
 
