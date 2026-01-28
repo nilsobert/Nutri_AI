@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 type Nutrition = { calories: number; protein: number; carbs: number; fat: number };
-type Meal = { name: string; description: string; nutrition: Nutrition };
+type Meal = { name: string; description: string; nutrition: Nutrition; recipe: string; };
 type MealSuggestions = { breakfast: Meal; lunch: Meal; dinner: Meal };
 
 export default function SuggestionsScreen() {
@@ -34,6 +34,7 @@ export default function SuggestionsScreen() {
   const [mealSuggestions, setMealSuggestions] = useState<MealSuggestions | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openRecipe, setOpenRecipe] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -207,10 +208,23 @@ export default function SuggestionsScreen() {
                   styles.recipeButton,
                   { backgroundColor: Colors.primary },
                 ]}
+                onPress={() =>
+                  setOpenRecipe(openRecipe === key ? null : key)
+                }
               >
-                <Text style={styles.recipeButtonText}>Show Recipe</Text>
+                <Text style={styles.recipeButtonText}>
+                  {openRecipe === key ? "Hide Recipe" : "Show Recipe"}
+                </Text>
               </TouchableOpacity>
-            </View>
+
+              {openRecipe === key && item.recipe?.length > 0 && (
+                  <View style={styles.recipeBox}>
+                    <Text style={[styles.recipeText, { color: textColor }]}>
+                      {item.recipe}
+                    </Text>
+                  </View>
+)}
+              </View>
           );
         })}
       </ScrollView>
@@ -255,4 +269,16 @@ const styles = StyleSheet.create({
   recipeButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
   loadingText: { marginTop: 12, fontSize: 16 },
   errorText: { fontSize: 16, fontWeight: "600" },
+
+  recipeBox: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  recipeText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
 });
