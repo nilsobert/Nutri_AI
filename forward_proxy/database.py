@@ -123,6 +123,7 @@ class DailyMealSuggestion(Base):
     fat = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    recipe = Column(Text, nullable = True)
 
 
 

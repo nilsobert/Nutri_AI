@@ -1189,8 +1189,6 @@ async def analyze_meal(
     
 
 
-
-
 from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Dict
@@ -1216,75 +1214,65 @@ class MealSuggestion(BaseModel):
     name: str
     description: str
     nutrition: NutritionInfo
+    recipe: str
 
 class MealSuggestionsResponse(BaseModel):
     breakfast: MealSuggestion
     lunch: MealSuggestion
     dinner: MealSuggestion
 
+
 # --- Suggest meals endpoint ---
 @app.post("/api/suggest-meals", response_model=MealSuggestionsResponse)
 async def suggest_meals(
     request: NutritionRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
-    try:
-        user_id = current_user.id
-        today = date.today()
+    user_id = current_user["id"]
+    today = date.today()
 
-        logger.info(f"[Meal Suggestion] User={user_id} (type={type(user_id).__name__}) Date={today}")
-        logger.info(f"[Meal Suggestion] Request: calories={request.remaining_calories}, "
-                   f"protein={request.remaining_protein}, carbs={request.remaining_carbs}, "
-                   f"fat={request.remaining_fat}, last_meal={request.last_meal}")
+    logger.info(f"[Meal Suggestion] User={user_id} Date={today}")
 
-        # 1️⃣ Check if today's suggestions already exist
-        logger.info(f"[Meal Suggestion] Querying DB for existing suggestions...")
-        existing = (
-            db.query(DailyMealSuggestion)
-            .filter(DailyMealSuggestion.user_id == user_id,
-                    DailyMealSuggestion.date == today)
-            .all()
-        )
+    # 1️⃣ Check if today's suggestions already exist
+    existing = (
+        db.query(DailyMealSuggestion)
+        .filter(DailyMealSuggestion.user_id == user_id,
+                DailyMealSuggestion.date == today)
+        .all()
+    )
 
-        if existing:
-            logger.info(f"[Meal Suggestion] Found {len(existing)} cached suggestions")
+    if existing:
+        logger.info("Returning cached meal suggestions")
 
-            def build(meal_type):
-                m = next(x for x in existing if x.meal_type == meal_type)
-                return {
-                    "name": m.name,
-                    "description": m.description,
-                    "nutrition": {
-                        "calories": m.calories,
-                        "protein": m.protein,
-                        "carbs": m.carbs,
-                        "fat": m.fat,
-                    },
-                }
-
-            result = {
-                "breakfast": build("breakfast"),
-                "lunch": build("lunch"),
-                "dinner": build("dinner"),
+        def build(meal_type):
+            m = next(x for x in existing if x.meal_type == meal_type)
+            return {
+                "name": m.name,
+                "description": m.description,
+                "recipe": m.recipe, 
+                "nutrition": {
+                    "calories": m.calories,
+                    "protein": m.protein,
+                    "carbs": m.carbs,
+                    "fat": m.fat,
+                },
             }
-            logger.info(f"[Meal Suggestion] Returning cached suggestions: {[m['name'] for m in result.values()]}")
-            return result
 
-        # 2️⃣ Generate suggestions via LLM (OpenRouter Gateway)
-        logger.info(f"[Meal Suggestion] No cached suggestions found, generating new ones...")
-        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-        openrouter_base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        return {
+            "breakfast": build("breakfast"),
+            "lunch": build("lunch"),
+            "dinner": build("dinner"),
+        }
 
-        if not openrouter_api_key or not openrouter_base_url:
-            logger.error(
-                "[Meal Suggestion] Missing environment variables: "
-                f"OPENROUTER_API_KEY={bool(openrouter_api_key)}, "
-                f"OPENROUTER_BASE_URL={bool(openrouter_base_url)}"
-            )
-            raise HTTPException(status_code=500, detail="Server misconfiguration")
+    # 2️⃣ Generate suggestions via LLM
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
 
-        prompt = f"""You are a helpful nutrition assistant.
+    if not OPENAI_API_KEY or not OPENAI_BASE_URL:
+        raise HTTPException(status_code=500, detail="Server misconfiguration")
+
+    prompt = f"""You are a helpful nutrition assistant.
 
 Based on the remaining nutrients for today:
 - Calories: {request.remaining_calories} kcal
@@ -1296,114 +1284,117 @@ The value of lastMeal is: {request.last_meal}
 
 Rules:
 - lastMeal = 0 → generate breakfast, lunch, and dinner
-- lastMeal = 1 → generate lunch and dinner only, breakfast should have name "none"
-- lastMeal = 2 → generate dinner only, breakfast and lunch should have name "none"
+- lastMeal = 1 → generate lunch and dinner only
+- lastMeal = 2 → generate dinner only
 - For any meal that should not be served, set:
   {{
     "name": "none",
     "description": "",
+    "recipe": "",
     "nutrition": {{"calories": 0, "protein": 0, "carbs": 0, "fat": 0}}
   }}
+
+Calories rules (VERY IMPORTANT):
+- A single meal MUST NEVER exceed 700 kcal
+- Typical ranges:
+  - breakfast: 300–500 kcal
+  - lunch: 400–700 kcal
+  - dinner: 400–700 kcal
+- If remaining calories are low:
+  - distribute proportionally
+  - it is OK for meals to be smaller (200–400 kcal)
+- The sum of all generated meals MUST be ≤ remaining calories
+- Never generate a meal over 700 kcal even if remaining calories are high
+
+Recipe format (string):
+Ingredients
+- ...
+- ...
+
+Preparation
+1. ...
+2. ...
 
 Output format:
 - Return a JSON object with exactly three keys: "breakfast", "lunch", "dinner"
 - Each key maps to an object with:
-  - "name": string
-  - "description": string
-  - "nutrition": object with keys "calories", "protein", "carbs", "fat" (all numbers)
-- Do not include any text outside of the JSON.
-- Always use lowercase keys for meals and nutrition.
+  - "name"
+  - "description"
+  - "recipe"
+  - "nutrition" {{ calories, protein, carbs, fat }}
+- Do not include any text outside JSON
 """
 
-        headers = {
-            "Authorization": f"Bearer {openrouter_api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "MealTracker",
-        }
 
-        payload = {
-            "model": "openai/gpt-4.1",
-            "messages": [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.7,
-            "max_tokens": 512,
-        }
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-        try:
-            logger.info(f"[Meal Suggestion] Calling LLM API...")
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(f"{openrouter_base_url}/chat/completions",
-                                             headers=headers, json=payload)
+    payload = {
+        "model": "gpt-4.1",
+        "messages": [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": 512,
+    }
 
-            logger.info(f"[Meal Suggestion] LLM API response status: {response.status_code}")
-            if response.status_code != 200:
-                logger.error(f"[Meal Suggestion] LLM API error: {response.text}")
-                raise HTTPException(status_code=500, detail="LLM API error")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(f"{OPENAI_BASE_URL}/chat/completions",
+                                         headers=headers, json=payload)
 
-            content = response.json()["choices"][0]["message"]["content"]
-            logger.info(f"[Meal Suggestion] LLM raw response (first 200 chars): {content[:200]}")
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="LLM API error")
 
-            # Remove code fences if present
-            if "```" in content:
-                content = content.split("```")[-2].strip()
-                logger.info(f"[Meal Suggestion] Removed code fences from LLM response")
+        content = response.json()["choices"][0]["message"]["content"]
 
-            suggestions: Dict[str, Dict] = json.loads(content)
-            logger.info(f"[Meal Suggestion] Parsed suggestions: {list(suggestions.keys())}")
+        # Remove code fences if present
+        if "```" in content:
+            content = content.split("```")[-2].strip()
 
-        except json.JSONDecodeError as e:
-            logger.error(f"[Meal Suggestion] JSON parsing failed: {e}. Content: {content}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Failed to parse LLM response")
-        except Exception as e:
-            logger.error(f"[Meal Suggestion] LLM generation failed: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Failed to generate suggestions")
+        suggestions: Dict[str, Dict] = json.loads(content)
 
-        # 3️⃣ Save suggestions to DB
-        logger.info(f"[Meal Suggestion] Saving suggestions to database...")
-        for meal_type in ["breakfast", "lunch", "dinner"]:
-            meal = suggestions.get(meal_type)
-            if not meal:
-                logger.warning(f"[Meal Suggestion] Missing {meal_type} in suggestions")
-                continue
-
-            # Safe defaults in case keys are missing
-            name = meal.get("name", "none")
-            description = meal.get("description", "")
-            nutrition = meal.get("nutrition", {})
-            calories = nutrition.get("calories", 0)
-            protein = nutrition.get("protein", 0)
-            carbs = nutrition.get("carbs", 0)
-            fat = nutrition.get("fat", 0)
-
-            logger.info(f"[Meal Suggestion] Adding {meal_type}: {name} (cal={calories}, p={protein}, c={carbs}, f={fat})")
-            db.add(DailyMealSuggestion(
-                user_id=user_id,
-                date=today,
-                meal_type=meal_type,
-                name=name,
-                description=description,
-                calories=calories,
-                protein=protein,
-                carbs=carbs,
-                fat=fat,
-            ))
-
-        db.commit()
-        logger.info("[Meal Suggestion] Meal suggestions generated and saved successfully")
-        return suggestions
-    
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
     except Exception as e:
-        logger.error(f"[Meal Suggestion] Unexpected error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        logger.error(f"LLM generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to generate suggestions")
 
+    # 3️⃣ Save suggestions to DB
+    for meal_type in ["breakfast", "lunch", "dinner"]:
+        meal = suggestions.get(meal_type)
+        if not meal:
+            # Skip missing meals (should not happen with improved prompt)
+            continue
 
-    
+        # Safe defaults in case keys are missing
+        name = meal.get("name", "none")
+        description = meal.get("description", "")
+        nutrition = meal.get("nutrition", {})
+        calories = nutrition.get("calories", 0)
+        protein = nutrition.get("protein", 0)
+        carbs = nutrition.get("carbs", 0)
+        fat = nutrition.get("fat", 0)
+        recipe = meal.get("recipe", "")
+
+        db.add(DailyMealSuggestion(
+            user_id=user_id,
+            date=today,
+            meal_type=meal_type,
+            name=name,
+            description=description,
+            calories=calories,
+            protein=protein,
+            carbs=carbs,
+            fat=fat,
+            recipe=recipe, 
+        ))
+
+    db.commit()
+    logger.info("Meal suggestions generated and saved")
+    return suggestions
+
 
 
 
