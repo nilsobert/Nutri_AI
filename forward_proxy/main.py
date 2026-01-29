@@ -1213,7 +1213,7 @@ class MealSuggestion(BaseModel):
     name: str
     description: str
     nutrition: NutritionInfo
-    recipe: Recipe | None
+    recipe: Recipe
 
 class MealSuggestionsResponse(BaseModel):
     breakfast: MealSuggestion
