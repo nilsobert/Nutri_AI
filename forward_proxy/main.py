@@ -1356,7 +1356,7 @@ Output format:
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.7,
-            "max_tokens": 512,
+            "max_tokens": 2000,
         }
 
         try:
