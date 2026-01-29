@@ -175,18 +175,36 @@ export default function SuggestionsScreen() {
               </Text>
 
               {/* Nutrition */}
+              {/* Nutrition */}
               <View style={styles.nutritionContainer}>
-                {["calories", "protein", "carbs", "fat"].map((n) => (
-                  <View key={n} style={styles.nutritionItem}>
-                    <Text style={styles.nutritionLabel}>
-                      {n.charAt(0).toUpperCase() + n.slice(1)}
+                {["calories", "protein", "carbs", "fat"].map((nutr) => (
+                  <View style={styles.nutritionItem} key={nutr}>
+                    <Text
+                      style={[
+                        styles.nutritionLabel,
+                        {
+                          color:
+                            Colors.secondary[
+                              nutr as keyof typeof Colors.secondary
+                            ],
+                        },
+                      ]}
+                    >
+                      {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
                     </Text>
-                    <Text style={{ color: textColor }}>
-                      {item.nutrition[n as keyof Nutrition]} {n === "calories" ? "kcal" : "g"}
+                    <Text
+                      style={[
+                        styles.nutritionValue,
+                        { color: textColor },
+                      ]}
+                    >
+                      {item.nutrition[nutr as keyof Nutrition]}{" "}
+                      {nutr === "calories" ? "kcal" : "g"}
                     </Text>
                   </View>
                 ))}
               </View>
+
 
               {/* Button */}
               {item.recipe && (
@@ -252,6 +270,7 @@ const styles = StyleSheet.create({
   nutritionContainer: { flexDirection: "row", marginBottom: 12 },
   nutritionItem: { flex: 1, alignItems: "center" },
   nutritionLabel: { fontWeight: "700", fontSize: 12 },
+  nutritionValue: { fontSize: 14, fontWeight: "600" },
 
   recipeButton: {
     paddingVertical: 12,
@@ -268,15 +287,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
-
+  
   recipeTitle: {
     fontWeight: "700",
     marginTop: 8,
     marginBottom: 4,
+    color: "#fff", // bold white
   },
-
+  
   recipeText: {
     fontSize: 14,
     lineHeight: 20,
+    color: "#fff", // white text
   },
 });

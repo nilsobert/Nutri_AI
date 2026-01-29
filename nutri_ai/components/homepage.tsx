@@ -623,6 +623,12 @@ const MealCard: React.FC<MealCardProps> = ({
   );
 };
 
+export function getCurrentDate(): string {
+  const today = new Date();
+  return today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+}
+
+
 const IOSStyleHomeScreen: React.FC = () => {
   const { isServerReachable } = useNetwork();
   const router = useRouter();
@@ -755,6 +761,8 @@ const IOSStyleHomeScreen: React.FC = () => {
     setCurrentDate(today);
     scrollViewRef.current?.scrollToEnd({ animated: true });
   };
+
+  const today = getCurrentDate();
 
   const meals: MealEntry[] = allMeals.filter((meal) => {
     const mealDate = new Date(meal.timestamp * 1000);
@@ -1112,6 +1120,7 @@ const bgColor = isDark ? Colors.background.dark : Colors.background.light;
         </Animated.View>
       </BlurView>
 
+     {isSameDay(currentDate, new Date(today)) && (
       <TouchableOpacity
         style={[
           styles.suggestionsButton,
@@ -1138,6 +1147,7 @@ const bgColor = isDark ? Colors.background.dark : Colors.background.light;
         <Ionicons name="bulb-outline" size={20} color="white" />
         <Text style={styles.suggestionsButtonText}>Suggestions for the day </Text> 
       </TouchableOpacity>
+      )}
 
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
