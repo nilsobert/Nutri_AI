@@ -12,13 +12,36 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams } from "expo-router";
 import { Colors, Spacing } from "../constants/theme";
-import { API_BASE_URL } from '../constants/values';
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { API_BASE_URL } from "../constants/values";
 
+/* ---------------- TYPES ---------------- */
 
-type Nutrition = { calories: number; protein: number; carbs: number; fat: number };
-type Meal = { name: string; description: string; nutrition: Nutrition; recipe: string; };
-type MealSuggestions = { breakfast: Meal; lunch: Meal; dinner: Meal };
+type Nutrition = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+type Recipe = {
+  ingredients: string[];
+  preparation: string[];
+};
+
+type Meal = {
+  name: string;
+  description: string;
+  nutrition: Nutrition;
+  recipe?: Recipe; // optional & structured
+};
+
+type MealSuggestions = {
+  breakfast: Meal;
+  lunch: Meal;
+  dinner: Meal;
+};
+
+/* ---------------- COMPONENT ---------------- */
 
 export default function SuggestionsScreen() {
   const colorScheme = useColorScheme();
@@ -36,6 +59,8 @@ export default function SuggestionsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [openRecipe, setOpenRecipe] = useState<string | null>(null);
 
+  /* ---------------- FETCH ---------------- */
+
   useEffect(() => {
     const fetchSuggestions = async () => {
       try {
@@ -52,9 +77,6 @@ export default function SuggestionsScreen() {
 
         const token = await AsyncStorage.getItem("auth_token");
 
-        console.log('[Meal Suggestions] Fetching suggestions from:', `${API_BASE_URL}/api/suggest-meals`);
-        console.log('[Meal Suggestions] Request body:', JSON.stringify(requestBody, null, 2));
-
         const response = await fetch(`${API_BASE_URL}/api/suggest-meals`, {
           method: "POST",
           headers: {
@@ -64,29 +86,14 @@ export default function SuggestionsScreen() {
           body: JSON.stringify(requestBody),
         });
 
-        console.log('[Meal Suggestions] Response status:', response.status);
-        console.log('[Meal Suggestions] Response ok:', response.ok);
-
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[Meal Suggestions] Error response body:', errorText);
-          throw new Error(`Server error: ${response.status} - ${errorText}`);
+          const text = await response.text();
+          throw new Error(text);
         }
 
         const data: MealSuggestions = await response.json();
-        console.log('[Meal Suggestions] Received data:', JSON.stringify(data, null, 2));
-
-        // Check that JSON has the correct structure
-        if (data.breakfast && data.lunch && data.dinner) {
-          console.log('[Meal Suggestions] Data structure valid, setting meal suggestions');
-          setMealSuggestions(data);
-        } else {
-          console.error('[Meal Suggestions] Invalid data structure:', data);
-          throw new Error("Invalid JSON structure from server");
-        }
+        setMealSuggestions(data);
       } catch (err: any) {
-        console.error('[Meal Suggestions] Error:', err);
-        console.error('[Meal Suggestions] Error stack:', err.stack);
         setError(err.message || "Failed to fetch meal suggestions");
       } finally {
         setLoading(false);
@@ -94,13 +101,21 @@ export default function SuggestionsScreen() {
     };
 
     fetchSuggestions();
-  }, [remainingCalories, remainingProtein, remainingCarbs, remainingFat, lastMeal]);
+  }, [
+    remainingCalories,
+    remainingProtein,
+    remainingCarbs,
+    remainingFat,
+    lastMeal,
+  ]);
+
+  /* ---------------- STATES ---------------- */
 
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={[styles.loadingText, { color: isDark ? "#fff" : "#111" }]}>
+        <Text style={{ marginTop: 12, color: isDark ? "#fff" : "#111" }}>
           Generating suggestions…
         </Text>
       </View>
@@ -110,47 +125,35 @@ export default function SuggestionsScreen() {
   if (error || !mealSuggestions) {
     return (
       <View style={styles.center}>
-        <Text style={[styles.errorText, { color: isDark ? "#fff" : "#111" }]}>
-          {error || "No suggestions available."}
+        <Text style={{ color: isDark ? "#fff" : "#111" }}>
+          {error || "No suggestions available"}
         </Text>
       </View>
     );
   }
 
-  // Filter out meals with name "none"
   const filteredMeals = Object.keys(mealSuggestions).filter(
-    (key) => mealSuggestions[key as keyof MealSuggestions].name.toLowerCase() !== "none"
+    (key) => mealSuggestions[key as keyof MealSuggestions].name !== "none"
   );
 
   const bgColor = isDark ? "#121212" : "#f0f3f5";
   const textColor = isDark ? "#fff" : "#111";
 
+  /* ---------------- RENDER ---------------- */
+
   return (
     <View style={[styles.screen, { backgroundColor: bgColor }]}>
-      <Stack.Screen
-        options={{
-          title: "Suggestions",
-          headerBackTitle: "Home",
-        }}
-      />
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Stack.Screen options={{ title: "Suggestions", headerBackTitle: "Home" }} />
+
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={[styles.title, { color: textColor }]}>
           Today's Meal Suggestions
         </Text>
 
-        {filteredMeals.length === 0 && (
-          <Text
-            style={[
-              styles.errorText,
-              { color: textColor, textAlign: "center" },
-            ]}
-          >
-            No meals suggested for today.
-          </Text>
-        )}
-
         {filteredMeals.map((key) => {
           const item = mealSuggestions[key as keyof MealSuggestions];
+          const recipeOpen = openRecipe === key;
+
           return (
             <View
               key={key}
@@ -160,71 +163,60 @@ export default function SuggestionsScreen() {
               ]}
             >
               <Text style={[styles.mealType, { color: Colors.primary }]}>
-                {key.charAt(0).toUpperCase() + key.slice(1)}
+                {key.toUpperCase()}
               </Text>
+
               <Text style={[styles.mealName, { color: textColor }]}>
                 {item.name}
               </Text>
-              <Text
-                style={[
-                  styles.mealDescription,
-                  { color: isDark ? "#ccc" : "#555" },
-                ]}
-              >
+
+              <Text style={[styles.mealDescription, { color: isDark ? "#ccc" : "#555" }]}>
                 {item.description}
               </Text>
 
+              {/* Nutrition */}
               <View style={styles.nutritionContainer}>
-                {["calories", "protein", "carbs", "fat"].map((nutr) => (
-                  <View style={styles.nutritionItem} key={nutr}>
-                    <Text
-                      style={[
-                        styles.nutritionLabel,
-                        {
-                          color:
-                            Colors.secondary[
-                              nutr as keyof typeof Colors.secondary
-                            ],
-                        },
-                      ]}
-                    >
-                      {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
+                {["calories", "protein", "carbs", "fat"].map((n) => (
+                  <View key={n} style={styles.nutritionItem}>
+                    <Text style={styles.nutritionLabel}>
+                      {n.charAt(0).toUpperCase() + n.slice(1)}
                     </Text>
-                    <Text
-                      style={[
-                        styles.nutritionValue,
-                        { color: textColor },
-                      ]}
-                    >
-                      {item.nutrition[nutr as keyof Nutrition]}{" "}
-                      {nutr === "calories" ? "kcal" : "g"}
+                    <Text style={{ color: textColor }}>
+                      {item.nutrition[n as keyof Nutrition]} {n === "calories" ? "kcal" : "g"}
                     </Text>
                   </View>
                 ))}
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.recipeButton,
-                  { backgroundColor: Colors.primary },
-                ]}
-                onPress={() =>
-                  setOpenRecipe(openRecipe === key ? null : key)
-                }
-              >
-                <Text style={styles.recipeButtonText}>
-                  {openRecipe === key ? "Hide Recipe" : "Show Recipe"}
-                </Text>
-              </TouchableOpacity>
+              {/* Button */}
+              {item.recipe && (
+                <TouchableOpacity
+                  style={[styles.recipeButton, { backgroundColor: Colors.primary }]}
+                  onPress={() => setOpenRecipe(recipeOpen ? null : key)}
+                >
+                  <Text style={styles.recipeButtonText}>
+                    {recipeOpen ? "Hide Recipe" : "Show Recipe"}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              {openRecipe === key && item.recipe?.length > 0 && (
-                  <View style={styles.recipeBox}>
-                    <Text style={[styles.recipeText, { color: textColor }]}>
-                      {item.recipe}
+              {/* Recipe */}
+              {recipeOpen && item.recipe && (
+                <View style={styles.recipeBox}>
+                  <Text style={styles.recipeTitle}>Ingredients</Text>
+                  {item.recipe.ingredients.map((i, idx) => (
+                    <Text key={idx} style={styles.recipeText}>• {i}</Text>
+                  ))}
+
+                  <Text style={styles.recipeTitle}>Preparation</Text>
+                  {item.recipe.preparation.map((p, idx) => (
+                    <Text key={idx} style={styles.recipeText}>
+                      {idx + 1}. {p}
                     </Text>
-                  </View>
-)}
-              </View>
+                  ))}
+                </View>
+              )}
+            </View>
           );
         })}
       </ScrollView>
@@ -232,43 +224,43 @@ export default function SuggestionsScreen() {
   );
 }
 
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  container: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.xl,
-  },
+  screen: { flex: 1 },
+  container: { padding: Spacing.xl },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+
   title: {
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
-    marginTop: Spacing.lg,
-    marginBottom: 20,
+    marginBottom: 24,
   },
+
   card: {
     borderRadius: 20,
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 5,
+    elevation: 4,
   },
-  mealType: { fontSize: 14, fontWeight: "600", marginBottom: 6, textTransform: "uppercase" },
-  mealName: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
-  mealDescription: { fontSize: 16, marginBottom: 16, lineHeight: 22 },
-  nutritionContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  nutritionItem: { alignItems: "center", flex: 1 },
-  nutritionLabel: { fontSize: 14, marginBottom: 4, fontWeight: "bold" },
-  nutritionValue: { fontSize: 14, fontWeight: "600" },
-  recipeButton: { paddingVertical: 14, borderRadius: 12, alignItems: "center" },
-  recipeButtonText: { color: "white", fontSize: 16, fontWeight: "600" },
-  loadingText: { marginTop: 12, fontSize: 16 },
-  errorText: { fontSize: 16, fontWeight: "600" },
+
+  mealType: { fontSize: 12, fontWeight: "700", marginBottom: 6 },
+  mealName: { fontSize: 20, fontWeight: "700", marginBottom: 6 },
+  mealDescription: { fontSize: 16, marginBottom: 12 },
+
+  nutritionContainer: { flexDirection: "row", marginBottom: 12 },
+  nutritionItem: { flex: 1, alignItems: "center" },
+  nutritionLabel: { fontWeight: "700", fontSize: 12 },
+
+  recipeButton: {
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  recipeButtonText: { color: "#fff", fontWeight: "600" },
 
   recipeBox: {
     marginTop: 12,
@@ -276,9 +268,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
+
+  recipeTitle: {
+    fontWeight: "700",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+
   recipeText: {
     fontSize: 14,
     lineHeight: 20,
   },
-
 });

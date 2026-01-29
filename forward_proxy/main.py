@@ -1205,11 +1205,15 @@ class NutritionInfo(BaseModel):
     carbs: int
     fat: int
 
+class Recipe(BaseModel):
+    ingredients: list[str]
+    preparation: list[str]
+
 class MealSuggestion(BaseModel):
     name: str
     description: str
     nutrition: NutritionInfo
-    recipe: str
+    recipe: Recipe | None
 
 class MealSuggestionsResponse(BaseModel):
     breakfast: MealSuggestion
@@ -1250,12 +1254,12 @@ async def suggest_meals(
                 return {
                     "name": m.name,
                     "description": m.description,
+                    "recipe": m.recipe,
                     "nutrition": {
                         "calories": m.calories,
                         "protein": m.protein,
                         "carbs": m.carbs,
                         "fat": m.fat,
-                        "recipe": m.recipe,
                     },
                 }
 
@@ -1314,14 +1318,19 @@ Calories rules (VERY IMPORTANT):
 - The sum of all generated meals MUST be ≤ remaining calories
 - Never generate a meal over 700 kcal even if remaining calories are high
 
-Recipe format (string):
-Ingredients
-- ...
-- ...
+Recipe format (IMPORTANT):
+- recipe MUST be an object, not a string
+- recipe.ingredients MUST be an array of strings
+- recipe.preparation MUST be an array of strings
 
-Preparation
-1. ...
-2. ...
+Example:
+"recipe": {
+  "ingredients": ["100g salmon fillet", "100g brown rice"],
+  "preparation": ["Pan sear salmon", "Cook rice"]
+}
+
+Do NOT use multiline strings anywhere.
+Do NOT use newline characters in values
 
 Output format:
 - Return a JSON object with exactly three keys: "breakfast", "lunch", "dinner"

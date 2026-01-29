@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, Enum
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import date, datetime
@@ -116,7 +116,7 @@ class DailyMealSuggestion(Base):
 
     name = Column(String, nullable=True)
     description = Column(Text, nullable=True)
-    recipe = Column(Text)
+    recipe = Column(JSON)
 
     calories = Column(Integer, nullable=True)
     protein = Column(Integer, nullable=True)
