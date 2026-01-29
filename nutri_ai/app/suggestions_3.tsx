@@ -139,15 +139,19 @@ export default function SuggestionsScreen() {
     (key) => mealSuggestions[key as keyof MealSuggestions].name !== "none"
   );
 
+  /* ---------------- COLORS ---------------- */
   const bgColor = isDark ? "#121212" : "#f0f3f5";
+  const cardBg = isDark ? "#1e1e1e" : "#fff";
   const textColor = isDark ? "#fff" : "#111";
+  const descriptionColor = isDark ? "#ccc" : "#555";
+  const recipeBoxBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
 
   /* ---------------- RENDER ---------------- */
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: bgColor }]}>
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 8 }]}>
-        {/* -------- Header inside ScrollView -------- */}
-        <Text style={[styles.headerText, { color: "#fff", marginBottom: Spacing.lg }]}>
+        {/* Header inside ScrollView */}
+        <Text style={[styles.headerText, { color: textColor, marginBottom: Spacing.lg }]}>
           Today's Suggestions
         </Text>
 
@@ -158,10 +162,7 @@ export default function SuggestionsScreen() {
           return (
             <View
               key={key}
-              style={[
-                styles.card,
-                { backgroundColor: isDark ? "#1e1e1e" : "#fff" },
-              ]}
+              style={[styles.card, { backgroundColor: cardBg }]}
             >
               <Text style={[styles.mealType, { color: Colors.primary }]}>
                 {key.toUpperCase()}
@@ -171,12 +172,7 @@ export default function SuggestionsScreen() {
                 {item.name}
               </Text>
 
-              <Text
-                style={[
-                  styles.mealDescription,
-                  { color: isDark ? "#ccc" : "#555" },
-                ]}
-              >
+              <Text style={[styles.mealDescription, { color: descriptionColor }]}>
                 {item.description}
               </Text>
 
@@ -188,10 +184,9 @@ export default function SuggestionsScreen() {
                       style={[
                         styles.nutritionLabel,
                         {
-                          color:
-                            Colors.secondary[
-                              nutr as keyof typeof Colors.secondary
-                            ],
+                          color: Colors.secondary[
+                            nutr as keyof typeof Colors.secondary
+                          ],
                         },
                       ]}
                     >
@@ -208,10 +203,7 @@ export default function SuggestionsScreen() {
               {/* Recipe Button */}
               {item.recipe && (
                 <TouchableOpacity
-                  style={[
-                    styles.recipeButton,
-                    { backgroundColor: Colors.primary },
-                  ]}
+                  style={[styles.recipeButton, { backgroundColor: Colors.primary }]}
                   onPress={() => setOpenRecipe(recipeOpen ? null : key)}
                 >
                   <Text style={styles.recipeButtonText}>
@@ -222,17 +214,17 @@ export default function SuggestionsScreen() {
 
               {/* Recipe */}
               {recipeOpen && item.recipe && (
-                <View style={styles.recipeBox}>
-                  <Text style={styles.recipeTitle}>Ingredients</Text>
+                <View style={[styles.recipeBox, { backgroundColor: recipeBoxBg }]}>
+                  <Text style={[styles.recipeTitle, { color: textColor }]}>Ingredients</Text>
                   {item.recipe.ingredients.map((i, idx) => (
-                    <Text key={idx} style={styles.recipeText}>
+                    <Text key={idx} style={[styles.recipeText, { color: textColor }]}>
                       • {i}
                     </Text>
                   ))}
 
-                  <Text style={styles.recipeTitle}>Preparation</Text>
+                  <Text style={[styles.recipeTitle, { color: textColor }]}>Preparation</Text>
                   {item.recipe.preparation.map((p, idx) => (
-                    <Text key={idx} style={styles.recipeText}>
+                    <Text key={idx} style={[styles.recipeText, { color: textColor }]}>
                       {idx + 1}. {p}
                     </Text>
                   ))}
@@ -287,19 +279,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.05)",
   },
 
   recipeTitle: {
     fontWeight: "700",
     marginTop: 8,
     marginBottom: 4,
-    color: "#fff",
   },
 
   recipeText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#fff",
   },
 });
