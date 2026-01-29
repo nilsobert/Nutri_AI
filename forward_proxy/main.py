@@ -1324,10 +1324,10 @@ Recipe format (IMPORTANT):
 - recipe.preparation MUST be an array of strings
 
 Example:
-"recipe": {
+"recipe": {{
   "ingredients": ["100g salmon fillet", "100g brown rice"],
   "preparation": ["Pan sear salmon", "Cook rice"]
-}
+}}
 
 Do NOT use multiline strings anywhere.
 Do NOT use newline characters in values
@@ -1338,7 +1338,7 @@ Output format:
   - "name"
   - "description"
   - "recipe"
-  - "nutrition": {{"calories", "protein", "carbs", "fat"}}
+  - "nutrition": object with keys "calories", "protein", "carbs", "fat" (all numbers)
 - Do not include any text outside JSON
 """
 
