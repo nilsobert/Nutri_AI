@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { Stack, useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
@@ -8,14 +8,20 @@ import {
   TouchableOpacity,
   useColorScheme,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useLocalSearchParams } from "expo-router";
 import { Colors, Spacing } from "../constants/theme";
 import { API_BASE_URL } from "../constants/values";
 
-/* ---------------- TYPES ---------------- */
+/* ---------------- ROUTE OPTIONS ---------------- */
+export const options = {
+  headerShown: false,
+  animation: "none",
+};
 
+/* ---------------- TYPES ---------------- */
 type Nutrition = {
   calories: number;
   protein: number;
@@ -32,7 +38,7 @@ type Meal = {
   name: string;
   description: string;
   nutrition: Nutrition;
-  recipe?: Recipe; // optional & structured
+  recipe?: Recipe;
 };
 
 type MealSuggestions = {
@@ -42,12 +48,12 @@ type MealSuggestions = {
 };
 
 /* ---------------- COMPONENT ---------------- */
-
 export default function SuggestionsScreen() {
+  const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const params = useLocalSearchParams();
 
+  const params = useLocalSearchParams();
   const remainingCalories = Number(params.remainingCalories || 0);
   const remainingProtein = Number(params.remainingProtein || 0);
   const remainingCarbs = Number(params.remainingCarbs || 0);
@@ -58,8 +64,6 @@ export default function SuggestionsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [openRecipe, setOpenRecipe] = useState<string | null>(null);
-
-  /* ---------------- FETCH ---------------- */
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -109,8 +113,7 @@ export default function SuggestionsScreen() {
     lastMeal,
   ]);
 
-  /* ---------------- STATES ---------------- */
-
+  /* ---------------- LOADING & ERROR ---------------- */
   if (loading) {
     return (
       <View style={styles.center}>
@@ -140,14 +143,12 @@ export default function SuggestionsScreen() {
   const textColor = isDark ? "#fff" : "#111";
 
   /* ---------------- RENDER ---------------- */
-
   return (
-    <View style={[styles.screen, { backgroundColor: bgColor }]}>
-      <Stack.Screen options={{ title: "Suggestions", headerBackTitle: "Home" }} />
-
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={[styles.title, { color: textColor }]}>
-          Today's Meal Suggestions
+    <SafeAreaView style={[styles.screen, { backgroundColor: bgColor }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 8 }]}>
+        {/* -------- Header inside ScrollView -------- */}
+        <Text style={[styles.headerText, { color: "#fff", marginBottom: Spacing.lg }]}>
+          Today's Suggestions
         </Text>
 
         {filteredMeals.map((key) => {
@@ -170,11 +171,15 @@ export default function SuggestionsScreen() {
                 {item.name}
               </Text>
 
-              <Text style={[styles.mealDescription, { color: isDark ? "#ccc" : "#555" }]}>
+              <Text
+                style={[
+                  styles.mealDescription,
+                  { color: isDark ? "#ccc" : "#555" },
+                ]}
+              >
                 {item.description}
               </Text>
 
-              {/* Nutrition */}
               {/* Nutrition */}
               <View style={styles.nutritionContainer}>
                 {["calories", "protein", "carbs", "fat"].map((nutr) => (
@@ -192,12 +197,7 @@ export default function SuggestionsScreen() {
                     >
                       {nutr.charAt(0).toUpperCase() + nutr.slice(1)}
                     </Text>
-                    <Text
-                      style={[
-                        styles.nutritionValue,
-                        { color: textColor },
-                      ]}
-                    >
+                    <Text style={[styles.nutritionValue, { color: textColor }]}>
                       {item.nutrition[nutr as keyof Nutrition]}{" "}
                       {nutr === "calories" ? "kcal" : "g"}
                     </Text>
@@ -205,11 +205,13 @@ export default function SuggestionsScreen() {
                 ))}
               </View>
 
-
-              {/* Button */}
+              {/* Recipe Button */}
               {item.recipe && (
                 <TouchableOpacity
-                  style={[styles.recipeButton, { backgroundColor: Colors.primary }]}
+                  style={[
+                    styles.recipeButton,
+                    { backgroundColor: Colors.primary },
+                  ]}
                   onPress={() => setOpenRecipe(recipeOpen ? null : key)}
                 >
                   <Text style={styles.recipeButtonText}>
@@ -223,7 +225,9 @@ export default function SuggestionsScreen() {
                 <View style={styles.recipeBox}>
                   <Text style={styles.recipeTitle}>Ingredients</Text>
                   {item.recipe.ingredients.map((i, idx) => (
-                    <Text key={idx} style={styles.recipeText}>• {i}</Text>
+                    <Text key={idx} style={styles.recipeText}>
+                      • {i}
+                    </Text>
                   ))}
 
                   <Text style={styles.recipeTitle}>Preparation</Text>
@@ -238,22 +242,20 @@ export default function SuggestionsScreen() {
           );
         })}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 /* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  container: { padding: Spacing.xl },
+  container: { paddingHorizontal: Spacing.xl },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
+  headerText: {
+    fontSize: 24,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 24,
   },
 
   card: {
@@ -287,17 +289,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "rgba(0,0,0,0.05)",
   },
-  
+
   recipeTitle: {
     fontWeight: "700",
     marginTop: 8,
     marginBottom: 4,
-    color: "#fff", // bold white
+    color: "#fff",
   },
-  
+
   recipeText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#fff", // white text
+    color: "#fff",
   },
 });
