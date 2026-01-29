@@ -1338,7 +1338,7 @@ Output format:
   - "name"
   - "description"
   - "recipe"
-  - "nutrition" {{ calories, protein, carbs, fat }}
+  - "nutrition": {{"calories", "protein", "carbs", "fat"}}
 - Do not include any text outside JSON
 """
 
