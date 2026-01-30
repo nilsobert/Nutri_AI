@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, Enum
+from sqlalchemy import create_engine, Column, Integer, String, Date, ForeignKey, Float, DateTime, Text, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import date, datetime
@@ -105,6 +105,27 @@ class AnalysisLog(Base):
     vlm_raw_response = Column(Text, nullable=True)
     status = Column(String, default=AnalysisStatus.PENDING.value)
     processing_duration_ms = Column(Integer, nullable=True)
+
+class DailyMealSuggestion(Base):
+    __tablename__ = "daily_meal_suggestions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    date = Column(Date, index=True, default=date.today)
+    meal_type = Column(String, index=True)  # breakfast | lunch | dinner
+
+    name = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    recipe = Column(JSON)
+
+    calories = Column(Integer, nullable=True)
+    protein = Column(Integer, nullable=True)
+    carbs = Column(Integer, nullable=True)
+    fat = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 
 def init_db():
     Base.metadata.create_all(bind=engine)
