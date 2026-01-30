@@ -48,3 +48,10 @@ app-example
 ../package-lock.json
 ./package-lock.json
 nutri_ai/package-lock.json
+
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
