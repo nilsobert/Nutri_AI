@@ -181,7 +181,7 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
                     { color: isDark ? Colors.text.dark : Colors.text.light },
                   ]}
                 >
-                  Abort
+                  Exit
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -239,7 +239,7 @@ export const MealReviewModal: React.FC<MealReviewModalProps> = ({
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.headerButton}>
             <Text style={[styles.headerButtonText, { color: "#FF3B30" }]}>
-              Abort
+              Exit
             </Text>
           </TouchableOpacity>
         </View>
