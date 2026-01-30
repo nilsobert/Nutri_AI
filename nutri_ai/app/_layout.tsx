@@ -138,12 +138,12 @@ function RootLayoutNav() {
             headerShown: false,
           }}
         />
-        <Stack.Screen
-          name="suggestions_3"
-          options={{
-            headerShown: false,
-          }}
-        />
+          <Stack.Screen
+            name="suggestions"
+            options={{
+              headerShown: false,
+            }}
+          />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
