@@ -623,6 +623,12 @@ const MealCard: React.FC<MealCardProps> = ({
   );
 };
 
+export function getCurrentDate(): string {
+  const today = new Date();
+  return today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+}
+
+
 const IOSStyleHomeScreen: React.FC = () => {
   const { isServerReachable } = useNetwork();
   const router = useRouter();
@@ -756,6 +762,8 @@ const IOSStyleHomeScreen: React.FC = () => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   };
 
+  const today = getCurrentDate();
+
   const meals: MealEntry[] = allMeals.filter((meal) => {
     const mealDate = new Date(meal.timestamp * 1000);
     return isSameDay(mealDate, currentDate);
@@ -810,9 +818,44 @@ const IOSStyleHomeScreen: React.FC = () => {
   const proteinGoal = goals?.protein || 150;
   const fatGoal = goals?.fat || 80;
 
-  const remainingCalories = calorieGoal - totalCalories;
+  //Calculate remaning  nutrients for the day
 
-  const bgColor = isDark ? Colors.background.dark : Colors.background.light;
+  const remainingCalories = calorieGoal - totalCalories;
+  const remainingCarbs = carbsGoal - totalCarbs;
+  const remainingProtein = proteinGoal - totalProtein;
+  const remainingFat = fatGoal - totalFat;
+
+  //Caculate which categories of meal are still remaining
+   
+  // Map categories to numbers
+// Map categories to numbers
+const categoryToNumber: Record<MealCategory, number> = {
+  [MealCategory.Breakfast]: 1,
+  [MealCategory.Lunch]: 2,
+  [MealCategory.Dinner]: 3,
+  [MealCategory.Snack]: 4,
+  [MealCategory.Other]: 5,
+};
+
+// Get number corresponding to last logged meal
+const getLastMealNumber = (meals: MealEntry[]): number => {
+  if (!meals || meals.length === 0) return 0; // No meals logged
+
+  // Sort by timestamp descending (latest first)
+  const sortedMeals = [...meals].sort(
+    (a, b) => b.timestamp - a.timestamp
+  );
+
+  const lastMeal = sortedMeals[0];
+  return categoryToNumber[lastMeal.category] || 0; // fallback to 0
+};
+
+// Usage
+const lastMealNumber = getLastMealNumber(meals);
+console.log(lastMealNumber); // 0 if no meals, else 1, 2, or 3
+
+
+const bgColor = isDark ? Colors.background.dark : Colors.background.light;
   const cardBg = isDark
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
@@ -1077,6 +1120,35 @@ const IOSStyleHomeScreen: React.FC = () => {
         </Animated.View>
       </BlurView>
 
+     {isSameDay(currentDate, new Date(today)) && (
+      <TouchableOpacity
+        style={[
+          styles.suggestionsButton,
+          !isServerReachable && { opacity: 0.5 },
+        ]}
+        onPress={() => {
+          if (isServerReachable) {
+            router.push({
+              pathname: "/suggestions_3",
+              params: {
+                remainingCalories,
+                remainingCarbs,
+                remainingProtein,
+                remainingFat,
+                lastMealNumber,
+              },
+            });
+            console.log("Last meal number:", lastMealNumber);
+          }
+        }}
+        activeOpacity={isServerReachable ? 0.8 : 1}
+        disabled={!isServerReachable}
+      >
+        <Ionicons name="bulb-outline" size={20} color="white" />
+        <Text style={styles.suggestionsButtonText}>Suggestions for the day </Text> 
+      </TouchableOpacity>
+      )}
+
       {/* Floating Action Button */}
       <AnimatedTouchableOpacity
         style={[styles.fab, !isServerReachable && { opacity: 0.5 }]}
@@ -1200,6 +1272,27 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 100,
   },
+  suggestionsButton: {
+    position: "absolute",
+    bottom: Spacing["3xl"], // distance from bottom edge
+    left: 20,   // distance from left edge
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    borderRadius: 50,
+    ...Shadows.medium,
+    zIndex: 200, // ensure above other elements
+  },
+  suggestionsButtonText: {
+    color: "white",
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  
+
+
   summaryCard: {
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.xl,
