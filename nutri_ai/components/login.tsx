@@ -142,7 +142,11 @@ const IOSStyleLoginScreen = () => {
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="mail-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
@@ -153,7 +157,10 @@ const IOSStyleLoginScreen = () => {
                   onChangeText={setEmail}
                   placeholder="Enter your email"
                   placeholderTextColor={placeholderColor}
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   returnKeyType="next"
@@ -163,7 +170,11 @@ const IOSStyleLoginScreen = () => {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="lock-closed-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
@@ -175,7 +186,10 @@ const IOSStyleLoginScreen = () => {
                   placeholder="Enter your password"
                   placeholderTextColor={placeholderColor}
                   secureTextEntry
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   returnKeyType="done"
                 />
               </View>

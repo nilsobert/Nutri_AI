@@ -120,14 +120,14 @@ interface WeekData {
   days: DayStatus[];
   loggedCount: number;
   isCurrentWeek: boolean;
-  score: 'perfect' | 'good' | 'low';
+  score: "perfect" | "good" | "low";
   yearLabel?: string;
 }
 
 function getWeeks(meals: any[], count: number): WeekData[] {
   const weeks: WeekData[] = [];
   const now = new Date();
-  
+
   // Start from the beginning of the current week (Monday)
   const currentWeekStart = new Date(now);
   const day = currentWeekStart.getDay();
@@ -138,7 +138,7 @@ function getWeeks(meals: any[], count: number): WeekData[] {
   for (let i = 0; i < count; i++) {
     const start = new Date(currentWeekStart);
     start.setDate(start.getDate() - i * 7);
-    
+
     const end = new Date(start);
     end.setDate(end.getDate() + 6);
     end.setHours(23, 59, 59, 999);
@@ -149,7 +149,7 @@ function getWeeks(meals: any[], count: number): WeekData[] {
     for (let j = 0; j < 7; j++) {
       const d = new Date(start);
       d.setDate(d.getDate() + j);
-      
+
       const dayCalories = meals
         .filter((m) => {
           const mealDate = new Date(m.timestamp * MS_TO_S);
@@ -167,7 +167,7 @@ function getWeeks(meals: any[], count: number): WeekData[] {
         d.getDate() === now.getDate() &&
         d.getMonth() === now.getMonth() &&
         d.getFullYear() === now.getFullYear();
-      
+
       const isFuture = d > now;
 
       if (hasMeal) loggedCount++;
@@ -175,9 +175,9 @@ function getWeeks(meals: any[], count: number): WeekData[] {
       days.push({ date: d, hasMeal, isToday, isFuture });
     }
 
-    let score: 'perfect' | 'good' | 'low' = 'low';
-    if (loggedCount === 7) score = 'perfect';
-    else if (loggedCount >= 4) score = 'good';
+    let score: "perfect" | "good" | "low" = "low";
+    if (loggedCount === 7) score = "perfect";
+    else if (loggedCount >= 4) score = "good";
 
     weeks.push({
       id: start.toISOString(),
@@ -230,11 +230,11 @@ const WeekNode = ({
   let iconName: any = "star-outline";
   let iconColor = secondaryText;
 
-  if (week.score === 'perfect') {
+  if (week.score === "perfect") {
     nodeColor = Colors.secondary.carbs; // Orange/Gold-ish
     iconName = "trophy";
     iconColor = "#fff";
-  } else if (week.score === 'good') {
+  } else if (week.score === "good") {
     nodeColor = Colors.primary; // Blue
     iconName = "star";
     iconColor = "#fff";
@@ -256,9 +256,19 @@ const WeekNode = ({
     <View>
       {week.yearLabel && (
         <View style={styles.yearMarker}>
-          <View style={[styles.yearLine, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]} />
+          <View
+            style={[
+              styles.yearLine,
+              { backgroundColor: isDark ? "#444" : "#e0e0e0" },
+            ]}
+          />
           <ThemedText style={styles.yearText}>{week.yearLabel}</ThemedText>
-          <View style={[styles.yearLine, { backgroundColor: isDark ? '#444' : '#e0e0e0' }]} />
+          <View
+            style={[
+              styles.yearLine,
+              { backgroundColor: isDark ? "#444" : "#e0e0e0" },
+            ]}
+          />
         </View>
       )}
       <View style={styles.nodeRow}>
@@ -269,11 +279,11 @@ const WeekNode = ({
         <TouchableOpacity
           style={[
             styles.nodeCard,
-            { 
+            {
               backgroundColor: bgColor,
-              alignSelf: 'center',
+              alignSelf: "center",
             },
-            week.score === 'perfect' && {
+            week.score === "perfect" && {
               shadowColor: Colors.secondary.carbs,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
@@ -292,34 +302,49 @@ const WeekNode = ({
               <ThemedText style={[styles.nodeTitle, { color: textColor }]}>
                 {week.isCurrentWeek ? "Current Week" : dateRange}
               </ThemedText>
-              <ThemedText style={[styles.nodeSubtitle, { color: secondaryText }]}>
+              <ThemedText
+                style={[styles.nodeSubtitle, { color: secondaryText }]}
+              >
                 {week.loggedCount}/7 Days
               </ThemedText>
             </View>
-            <Ionicons 
-              name={isExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={secondaryText} 
+            <Ionicons
+              name={isExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={secondaryText}
             />
           </View>
 
           {isExpanded && (
-            <Animated.View 
+            <Animated.View
               entering={FadeInDown.duration(300)}
               style={styles.expandedContent}
             >
               <View style={styles.daysRow}>
                 {week.days.map((day, i) => (
                   <View key={i} style={styles.dayColumn}>
-                    <ThemedText style={[styles.dayName, { color: secondaryText }]}>
-                      {day.date.toLocaleDateString("en-US", { weekday: "narrow" }).charAt(0)}
+                    <ThemedText
+                      style={[styles.dayName, { color: secondaryText }]}
+                    >
+                      {day.date
+                        .toLocaleDateString("en-US", { weekday: "narrow" })
+                        .charAt(0)}
                     </ThemedText>
                     <View
                       style={[
                         styles.dayStatusCircle,
-                        day.hasMeal && { backgroundColor: Colors.secondary.carbs },
-                        !day.hasMeal && day.isToday && { borderWidth: 2, borderColor: Colors.secondary.carbs },
-                        !day.hasMeal && !day.isToday && { backgroundColor: isDark ? "#444" : "#f0f0f0" },
+                        day.hasMeal && {
+                          backgroundColor: Colors.secondary.carbs,
+                        },
+                        !day.hasMeal &&
+                          day.isToday && {
+                            borderWidth: 2,
+                            borderColor: Colors.secondary.carbs,
+                          },
+                        !day.hasMeal &&
+                          !day.isToday && {
+                            backgroundColor: isDark ? "#444" : "#f0f0f0",
+                          },
                       ]}
                     >
                       {day.hasMeal && (
@@ -380,7 +405,7 @@ export default function StreaksScreen() {
     setIsLoadingMore(true);
     // Simulate network delay or just wait a bit for UX
     setTimeout(() => {
-      setWeeksCount(prev => prev + 12);
+      setWeeksCount((prev) => prev + 12);
       setIsLoadingMore(false);
     }, 500);
   };
@@ -412,11 +437,21 @@ export default function StreaksScreen() {
 
       {/* Stats Grid */}
       <View style={styles.statsGrid}>
-        <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
+        <View
+          style={[
+            styles.statBox,
+            { backgroundColor: isDark ? "#333" : "#fff" },
+          ]}
+        >
           <ThemedText style={styles.statValue}>{longestStreak}</ThemedText>
           <ThemedText style={styles.statLabel}>Longest Streak</ThemedText>
         </View>
-        <View style={[styles.statBox, { backgroundColor: isDark ? "#333" : "#fff" }]}>
+        <View
+          style={[
+            styles.statBox,
+            { backgroundColor: isDark ? "#333" : "#fff" },
+          ]}
+        >
           <ThemedText style={styles.statValue}>{totalDaysLogged}</ThemedText>
           <ThemedText style={styles.statLabel}>Total Days Logging</ThemedText>
         </View>
@@ -426,7 +461,9 @@ export default function StreaksScreen() {
 
   const renderFooter = () => (
     <View style={styles.footer}>
-      {isLoadingMore && <ActivityIndicator size="small" color={Colors.primary} />}
+      {isLoadingMore && (
+        <ActivityIndicator size="small" color={Colors.primary} />
+      )}
     </View>
   );
 
@@ -450,7 +487,12 @@ export default function StreaksScreen() {
       </BlurView>
 
       <View style={styles.listContainer}>
-        <View style={[styles.centerLine, { backgroundColor: isDark ? "#333" : "#e0e0e0", top: 0 }]} />
+        <View
+          style={[
+            styles.centerLine,
+            { backgroundColor: isDark ? "#333" : "#e0e0e0", top: 0 },
+          ]}
+        />
         <FlatList
           data={weeks}
           keyExtractor={(item) => item.id}
@@ -467,7 +509,10 @@ export default function StreaksScreen() {
           ListFooterComponent={renderFooter}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
-          contentContainerStyle={{ paddingTop: 60 + insets.top, paddingBottom: Spacing.xl }}
+          contentContainerStyle={{
+            paddingTop: 60 + insets.top,
+            paddingBottom: Spacing.xl,
+          }}
           showsVerticalScrollIndicator={false}
         />
       </View>
@@ -506,7 +551,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   heroSection: {
     alignItems: "center",
@@ -569,8 +614,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   centerLine: {
-    position: 'absolute',
-    left: '50%',
+    position: "absolute",
+    left: "50%",
     bottom: 0,
     width: 4,
     marginLeft: -2,
@@ -579,18 +624,18 @@ const styles = StyleSheet.create({
   },
   nodeRow: {
     marginBottom: Spacing.lg,
-    position: 'relative',
-    width: '100%',
-    justifyContent: 'center',
+    position: "relative",
+    width: "100%",
+    justifyContent: "center",
     paddingHorizontal: Spacing.md,
   },
   connectorLine: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: '50%',
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: "50%",
     height: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   nodeCard: {
     width: SCREEN_WIDTH * 0.85,
@@ -600,15 +645,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   nodeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: Spacing.md,
   },
   nodeInfo: {
@@ -616,7 +661,7 @@ const styles = StyleSheet.create({
   },
   nodeTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   nodeSubtitle: {
     fontSize: 12,
@@ -648,26 +693,26 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingVertical: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
     height: 60,
   },
   yearMarker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     marginVertical: Spacing.lg,
-    width: '100%',
+    width: "100%",
     paddingHorizontal: Spacing.xl,
   },
   yearLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: "rgba(0,0,0,0.1)",
   },
   yearText: {
     marginHorizontal: Spacing.md,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: "600",
+    color: "#8E8E93",
   },
 });

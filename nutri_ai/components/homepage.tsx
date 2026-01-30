@@ -49,7 +49,6 @@ import { MealCategory, MealEntry } from "../types/mealEntry";
 import { ActivityRings } from "./ActivityRings";
 import { MealImage } from "./MealImage";
 
-
 if (
   Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -249,32 +248,33 @@ const DayItem: React.FC<DayItemProps> = ({
 };
 
 const checkRateLimit = async (isServerReachable: boolean) => {
-    if (!isServerReachable) return true;
-    try {
-      const token = await AsyncStorage.getItem("auth_token");
-      if (!token) return true;
+  if (!isServerReachable) return true;
+  try {
+    const token = await AsyncStorage.getItem("auth_token");
+    if (!token) return true;
 
-      const response = await fetch(`${API_BASE_URL}/user/limits`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const response = await fetch(`${API_BASE_URL}/user/limits`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (!data.allowed) {
-           const msg = data.daily_remaining === 0 
-             ? "You have reached your daily limit of 5 requests." 
-             : "You are sending requests too fast. Please wait a minute.";
-           Alert.alert("Rate Limit Exceeded", msg);
-           return false;
-        }
-      } else if (response.status === 429) {
-          Alert.alert("Limit Exceeded", "You have reached your request limit.");
-          return false;
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.allowed) {
+        const msg =
+          data.daily_remaining === 0
+            ? "You have reached your daily limit of 5 requests."
+            : "You are sending requests too fast. Please wait a minute.";
+        Alert.alert("Rate Limit Exceeded", msg);
+        return false;
       }
-    } catch (e) {
-      console.warn("Rate limit check failed", e);
+    } else if (response.status === 429) {
+      Alert.alert("Limit Exceeded", "You have reached your request limit.");
+      return false;
     }
-    return true;
+  } catch (e) {
+    console.warn("Rate limit check failed", e);
+  }
+  return true;
 };
 
 interface MealCardProps {
@@ -316,35 +316,39 @@ const MealCard: React.FC<MealCardProps> = ({
   };
 
   const showMealOptions = (meal: MealEntry) => {
-    Alert.alert(
-        "Meal Options",
-        `Options for ${meal.name || 'this meal'}`,
-        [
-            {
-                text: "Edit",
-                onPress: () => {
-                    router.push({
-                        pathname: "/add-meal",
-                        params: { 
-                            date: currentDate.toISOString(),
-                            meal: JSON.stringify(meal) 
-                        }
-                    });
-                }
+    Alert.alert("Meal Options", `Options for ${meal.name || "this meal"}`, [
+      {
+        text: "Edit",
+        onPress: () => {
+          router.push({
+            pathname: "/add-meal",
+            params: {
+              date: currentDate.toISOString(),
+              meal: JSON.stringify(meal),
             },
-            {
+          });
+        },
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            "Delete Meal",
+            "Are you sure you want to delete this meal?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
                 text: "Delete",
                 style: "destructive",
-                onPress: () => {
-                    Alert.alert("Delete Meal", "Are you sure you want to delete this meal?", [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Delete", style: "destructive", onPress: () => deleteMeal(meal.id) }
-                    ]);
-                }
-            },
-            { text: "Cancel", style: "cancel" }
-        ]
-    );
+                onPress: () => deleteMeal(meal.id),
+              },
+            ],
+          );
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const chevronStyle = useAnimatedStyle(() => {
@@ -477,7 +481,9 @@ const MealCard: React.FC<MealCardProps> = ({
               Density
             </Text>
             <Text style={[styles.statValue, { color: textColor }]}>
-              {quality.calorieDensity ? quality.calorieDensity.toFixed(1) : "0.0"}
+              {quality.calorieDensity
+                ? quality.calorieDensity.toFixed(1)
+                : "0.0"}
             </Text>
           </View>
         </View>
@@ -495,9 +501,9 @@ const MealCard: React.FC<MealCardProps> = ({
         activeOpacity={0.7}
         style={styles.mealCardHeader}
         onLongPress={() => {
-            if (meals.length === 1) {
-                showMealOptions(meals[0]);
-            }
+          if (meals.length === 1) {
+            showMealOptions(meals[0]);
+          }
         }}
       >
         <View
@@ -563,9 +569,7 @@ const MealCard: React.FC<MealCardProps> = ({
                 scrollEventThrottle={16}
               >
                 {meals.map((meal, index) => (
-                  <View key={meal.id || index}>
-                    {renderMealDetails(meal)}
-                  </View>
+                  <View key={meal.id || index}>{renderMealDetails(meal)}</View>
                 ))}
               </Animated.ScrollView>
               <View style={styles.dotsContainer}>
@@ -784,8 +788,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   ];
 
   const totalCalories = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.calories,
+    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.calories,
     0,
   );
 
@@ -795,8 +798,7 @@ const IOSStyleHomeScreen: React.FC = () => {
   );
 
   const totalProtein = meals.reduce(
-    (sum: number, meal: MealEntry) =>
-      sum + meal.nutritionInfo.protein,
+    (sum: number, meal: MealEntry) => sum + meal.nutritionInfo.protein,
     0,
   );
 
@@ -1031,7 +1033,9 @@ const IOSStyleHomeScreen: React.FC = () => {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: isServerReachable ? "#34C759" : "#FF3B30" },
+                  {
+                    backgroundColor: isServerReachable ? "#34C759" : "#FF3B30",
+                  },
                 ]}
               />
             </TouchableOpacity>

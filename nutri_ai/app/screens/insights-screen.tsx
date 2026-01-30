@@ -37,7 +37,11 @@ import Animated, {
 import { ThemedText } from "@/components/themed-text";
 import { useMeals } from "@/context/MealContext";
 import { useUser } from "@/context/UserContext";
-import { MS_TO_S, DAILY_CALORIE_GOAL, MIN_LOGGING_THRESHOLD } from "@/constants/values";
+import {
+  MS_TO_S,
+  DAILY_CALORIE_GOAL,
+  MIN_LOGGING_THRESHOLD,
+} from "@/constants/values";
 import {
   Colors,
   Spacing,
@@ -215,21 +219,23 @@ const CalorieChart = ({
 
         {/* Week Separators for Month View */}
         {selectedRange === "Month" &&
-          Array.from({ length: Math.ceil(data.length / 7) }).map((_, weekIndex) => {
-            const xPos = paddingX + weekIndex * 7 * step;
-            return (
-              <Line
-                key={`week-separator-${weekIndex}`}
-                x1={xPos}
-                y1={0}
-                x2={xPos}
-                y2={CHART_HEIGHT - 30}
-                stroke={isDark ? "#666" : "#ddd"}
-                strokeWidth={1}
-                strokeDasharray="2, 2"
-              />
-            );
-          })}
+          Array.from({ length: Math.ceil(data.length / 7) }).map(
+            (_, weekIndex) => {
+              const xPos = paddingX + weekIndex * 7 * step;
+              return (
+                <Line
+                  key={`week-separator-${weekIndex}`}
+                  x1={xPos}
+                  y1={0}
+                  x2={xPos}
+                  y2={CHART_HEIGHT - 30}
+                  stroke={isDark ? "#666" : "#ddd"}
+                  strokeWidth={1}
+                  strokeDasharray="2, 2"
+                />
+              );
+            },
+          )}
 
         {/* X-Axis Labels */}
         {axisLabels.map((label, i) => {
@@ -402,9 +408,12 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
   else if (range === "Week") dataPoints = 7;
   else if (range === "Month") {
     // Get number of days in the month
-    dataPoints = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
-  }
-  else if (range === "Year") dataPoints = 12;
+    dataPoints = new Date(
+      baseDate.getFullYear(),
+      baseDate.getMonth() + 1,
+      0,
+    ).getDate();
+  } else if (range === "Year") dataPoints = 12;
 
   const data = Array(dataPoints)
     .fill(null)
@@ -447,7 +456,10 @@ function aggregateData(range: string, startDate?: Date, meals: any[] = []) {
         index = diff;
       }
     } else if (range === "Year") {
-      const diff = mealDate.getMonth() - baseDate.getMonth() + (12 * (mealDate.getFullYear() - baseDate.getFullYear()));
+      const diff =
+        mealDate.getMonth() -
+        baseDate.getMonth() +
+        12 * (mealDate.getFullYear() - baseDate.getFullYear());
       if (diff >= 0 && diff < dataPoints) {
         index = diff;
       }
@@ -1191,7 +1203,11 @@ export default function InsightsScreen() {
   } else if (selectedRange === "Month") {
     prevPeriodStartDate = new Date(startDate);
     prevPeriodStartDate.setMonth(startDate.getMonth() - 1);
-    prevPeriodEndDate = new Date(prevPeriodStartDate.getFullYear(), prevPeriodStartDate.getMonth() + 1, 0);
+    prevPeriodEndDate = new Date(
+      prevPeriodStartDate.getFullYear(),
+      prevPeriodStartDate.getMonth() + 1,
+      0,
+    );
   } else {
     // Year
     prevPeriodStartDate = new Date(startDate.getFullYear() - 1, 0, 1);

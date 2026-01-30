@@ -221,8 +221,6 @@ export default function BasicInfo() {
               </View>
             </View>
           </View>
-
-          
         </ScrollView>
 
         {/* Footer */}

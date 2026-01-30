@@ -15,7 +15,10 @@ const randomAround = (mean: number, ratio: number) => {
 };
 
 /* Generate a single MealEntry from a template */
-export const generateMeal = (template: MealEntry, timestamp?: number): MealEntry => {
+export const generateMeal = (
+  template: MealEntry,
+  timestamp?: number,
+): MealEntry => {
   const n = template.getNutritionInfo();
 
   // Only modify nutrition randomly, keep other fields unchanged
@@ -33,7 +36,7 @@ export const generateMeal = (template: MealEntry, timestamp?: number): MealEntry
     newNutrition,
     template.getImage(),
     template.getTranscription(),
-    timestamp
+    timestamp,
   );
 };
 
@@ -51,17 +54,13 @@ export const generateYearMeals = (): Record<
   today.setHours(0, 0, 0, 0);
 
   const templates = Object.fromEntries(
-    mockMeals.map((m) => [m.getCategory(), m])
+    mockMeals.map((m) => [m.getCategory(), m]),
   ) as Record<MealCategory, MealEntry>;
 
-  for (
-    let d = new Date(startDate);
-    d <= today;
-    d.setDate(d.getDate() + 1)
-  ) {
+  for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(d.getDate()).padStart(2, "0")}`;
 
     const timestamp = Math.floor(d.getTime() / MS_TO_S);
@@ -69,24 +68,22 @@ export const generateYearMeals = (): Record<
     meals[dateStr] = {
       [MealCategory.Breakfast]: generateMeal(
         templates[MealCategory.Breakfast],
-        timestamp
+        timestamp,
       ),
       [MealCategory.Lunch]: generateMeal(
         templates[MealCategory.Lunch],
-        timestamp
+        timestamp,
       ),
       [MealCategory.Snack]: generateMeal(
         templates[MealCategory.Snack],
-        timestamp
+        timestamp,
       ),
       [MealCategory.Dinner]: generateMeal(
         templates[MealCategory.Dinner],
-        timestamp
+        timestamp,
       ),
     };
   }
 
   return meals;
 };
-
-

@@ -67,7 +67,7 @@ function RootLayoutNav() {
           name="add-meal"
           options={{
             headerShown: false,
-            presentation: 'fullScreenModal',
+            presentation: "fullScreenModal",
             gestureEnabled: false,
           }}
         />
@@ -75,7 +75,7 @@ function RootLayoutNav() {
           name="meal-detail"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            presentation: "modal",
           }}
         />
         <Stack.Screen

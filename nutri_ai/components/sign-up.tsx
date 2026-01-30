@@ -100,14 +100,21 @@ export default function SignUp() {
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="person-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
                   Username
                 </Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   placeholder="Enter your username"
                   placeholderTextColor={placeholderColor}
                   value={username}
@@ -119,14 +126,21 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="mail-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="mail-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
                   Email
                 </Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   placeholder="Enter your email"
                   placeholderTextColor={placeholderColor}
                   value={email}
@@ -139,14 +153,21 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="lock-closed-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
                   Password
                 </Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   placeholder="Enter your password"
                   placeholderTextColor={placeholderColor}
                   secureTextEntry
@@ -158,14 +179,21 @@ export default function SignUp() {
 
             <View style={styles.inputContainer}>
               <View style={styles.inputIcon}>
-                <Ionicons name="lock-closed-outline" size={20} color={Colors.primary} />
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={20}
+                  color={Colors.primary}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.inputLabel, { color: secondaryText }]}>
                   Confirm Password
                 </Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: inputBg, color: textColor }]}
+                  style={[
+                    styles.input,
+                    { backgroundColor: inputBg, color: textColor },
+                  ]}
                   placeholder="Confirm your password"
                   placeholderTextColor={placeholderColor}
                   secureTextEntry
@@ -194,7 +222,8 @@ export default function SignUp() {
           <TouchableOpacity
             style={[
               styles.nextButton,
-              (!username || !email || !password || !confirm) && styles.nextButtonDisabled,
+              (!username || !email || !password || !confirm) &&
+                styles.nextButtonDisabled,
             ]}
             onPress={handleSignUp}
             disabled={!username || !email || !password || !confirm}

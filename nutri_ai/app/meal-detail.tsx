@@ -17,7 +17,13 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMeals } from "../context/MealContext";
-import { Colors, Spacing, Typography, BorderRadius, Shadows } from "../constants/theme";
+import {
+  Colors,
+  Spacing,
+  Typography,
+  BorderRadius,
+  Shadows,
+} from "../constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { MealImage } from "../components/MealImage";
 
@@ -61,11 +67,32 @@ interface StatBoxProps {
   isDark: boolean;
 }
 
-const StatBox: React.FC<StatBoxProps> = ({ label, value, subValue, color, isDark }) => (
-  <View style={[styles.statBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f8f9fa' }]}>
-    <Text style={[styles.statLabel, { color: isDark ? '#999' : '#666' }]}>{label}</Text>
-    <Text style={[styles.statValue, { color: color || (isDark ? '#fff' : '#000') }]}>{value}</Text>
-    {subValue && <Text style={[styles.statSub, { color: isDark ? '#666' : '#999' }]}>{subValue}</Text>}
+const StatBox: React.FC<StatBoxProps> = ({
+  label,
+  value,
+  subValue,
+  color,
+  isDark,
+}) => (
+  <View
+    style={[
+      styles.statBox,
+      { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#f8f9fa" },
+    ]}
+  >
+    <Text style={[styles.statLabel, { color: isDark ? "#999" : "#666" }]}>
+      {label}
+    </Text>
+    <Text
+      style={[styles.statValue, { color: color || (isDark ? "#fff" : "#000") }]}
+    >
+      {value}
+    </Text>
+    {subValue && (
+      <Text style={[styles.statSub, { color: isDark ? "#666" : "#999" }]}>
+        {subValue}
+      </Text>
+    )}
   </View>
 );
 
@@ -87,14 +114,14 @@ export default function MealDetailScreen() {
           translateY: interpolate(
             scrollOffset.value,
             [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-            [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75]
+            [-HEADER_HEIGHT / 2, 0, HEADER_HEIGHT * 0.75],
           ),
         },
         {
           scale: interpolate(
             scrollOffset.value,
             [-HEADER_HEIGHT, 0, HEADER_HEIGHT],
-            [2, 1, 1]
+            [2, 1, 1],
           ),
         },
       ],
@@ -105,18 +132,34 @@ export default function MealDetailScreen() {
 
   if (!meal) {
     return (
-      <View style={[styles.container, { backgroundColor: isDark ? Colors.background.dark : Colors.background.light }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: isDark
+              ? Colors.background.dark
+              : Colors.background.light,
+          },
+        ]}
+      >
         <View style={[styles.navHeader, { paddingTop: 20 }]}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-                <Ionicons 
-                  name="close-circle" 
-                  size={36} 
-                  color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"} 
-                />
-            </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.closeButton}
+          >
+            <Ionicons
+              name="close-circle"
+              size={36}
+              color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.1)"}
+            />
+          </TouchableOpacity>
         </View>
         <View style={styles.centerContent}>
-            <Text style={{ color: isDark ? Colors.text.dark : Colors.text.light }}>Meal not found</Text>
+          <Text
+            style={{ color: isDark ? Colors.text.dark : Colors.text.light }}
+          >
+            Meal not found
+          </Text>
         </View>
       </View>
     );
@@ -144,29 +187,61 @@ export default function MealDetailScreen() {
         {/* Parallax Header Image */}
         <Animated.View style={[styles.header, headerAnimatedStyle]}>
           {meal.image ? (
-            <MealImage uri={meal.image} style={styles.image} resizeMode="cover" />
+            <MealImage
+              uri={meal.image}
+              style={styles.image}
+              resizeMode="cover"
+            />
           ) : (
-            <View style={[styles.placeholderImage, { backgroundColor: isDark ? "#333" : "#f5f5f5" }]}>
-              <Ionicons name="restaurant" size={64} color={isDark ? "#555" : "#ccc"} />
+            <View
+              style={[
+                styles.placeholderImage,
+                { backgroundColor: isDark ? "#333" : "#f5f5f5" },
+              ]}
+            >
+              <Ionicons
+                name="restaurant"
+                size={64}
+                color={isDark ? "#555" : "#ccc"}
+              />
             </View>
           )}
           {/* Gradient Overlay for better text contrast if we had text on image, but we don't. 
               However, a slight gradient at the bottom helps the sheet blend in. */}
-          <View style={[styles.imageOverlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)' }]} />
+          <View
+            style={[
+              styles.imageOverlay,
+              {
+                backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.1)",
+              },
+            ]}
+          />
         </Animated.View>
 
         {/* Content Sheet */}
         <View style={[styles.contentContainer, { backgroundColor: bgColor }]}>
           <View style={styles.handleContainer}>
-            <View style={[styles.handle, { backgroundColor: isDark ? '#333' : '#e0e0e0' }]} />
+            <View
+              style={[
+                styles.handle,
+                { backgroundColor: isDark ? "#333" : "#e0e0e0" },
+              ]}
+            />
           </View>
 
           {/* Header Info */}
           <View style={styles.headerSection}>
             <View style={styles.categoryRow}>
-              <Text style={[styles.category, { color: Colors.primary }]}>{meal.category}</Text>
+              <Text style={[styles.category, { color: Colors.primary }]}>
+                {meal.category}
+              </Text>
               <Text style={[styles.date, { color: secondaryText }]}>
-                {new Date(meal.timestamp * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {new Date(meal.timestamp * 1000).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </View>
             <Text style={[styles.title, { color: textColor }]}>
@@ -177,17 +252,27 @@ export default function MealDetailScreen() {
           {/* Description */}
           {meal.transcription ? (
             <View style={styles.section}>
-              <Text style={[styles.sectionLabel, { color: secondaryText }]}>Description</Text>
-              <Text style={[styles.description, { color: textColor }]}>{meal.transcription}</Text>
+              <Text style={[styles.sectionLabel, { color: secondaryText }]}>
+                Description
+              </Text>
+              <Text style={[styles.description, { color: textColor }]}>
+                {meal.transcription}
+              </Text>
             </View>
           ) : null}
 
           {/* Nutrition */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: secondaryText }]}>Nutrition</Text>
+            <Text style={[styles.sectionLabel, { color: secondaryText }]}>
+              Nutrition
+            </Text>
             <View style={styles.caloriesRow}>
-              <Text style={[styles.caloriesValue, { color: textColor }]}>{nutritionInfo.calories}</Text>
-              <Text style={[styles.caloriesLabel, { color: secondaryText }]}>kcal</Text>
+              <Text style={[styles.caloriesValue, { color: textColor }]}>
+                {nutritionInfo.calories}
+              </Text>
+              <Text style={[styles.caloriesLabel, { color: secondaryText }]}>
+                kcal
+              </Text>
             </View>
             <View style={styles.macrosRow}>
               <NutrientPill
@@ -212,23 +297,27 @@ export default function MealDetailScreen() {
           </View>
 
           {/* Analysis */}
-          <View style={[styles.section, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-            <Text style={[styles.sectionLabel, { color: secondaryText }]}>Analysis</Text>
+          <View
+            style={[styles.section, { borderBottomWidth: 0, paddingBottom: 0 }]}
+          >
+            <Text style={[styles.sectionLabel, { color: secondaryText }]}>
+              Analysis
+            </Text>
             <View style={styles.analysisGrid}>
-              <StatBox 
-                label="Quality" 
-                value={`${mealQuality.mealQualityScore}/10`} 
+              <StatBox
+                label="Quality"
+                value={`${mealQuality.mealQualityScore}/10`}
                 color={getQualityColor(mealQuality.mealQualityScore)}
                 isDark={isDark}
               />
-              <StatBox 
-                label="Goal Fit" 
-                value={`${mealQuality.goalFitPercentage}%`} 
+              <StatBox
+                label="Goal Fit"
+                value={`${mealQuality.goalFitPercentage}%`}
                 isDark={isDark}
               />
-              <StatBox 
-                label="Density" 
-                value={mealQuality.calorieDensity.toFixed(1)} 
+              <StatBox
+                label="Density"
+                value={mealQuality.calorieDensity.toFixed(1)}
                 subValue="cal/g"
                 isDark={isDark}
               />
@@ -239,14 +328,14 @@ export default function MealDetailScreen() {
 
       {/* Floating Close Button */}
       <View style={[styles.closeButtonContainer, { top: 20 }]}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
+        <TouchableOpacity
+          onPress={() => router.back()}
           style={styles.closeButton}
         >
-          <Ionicons 
-            name="close-circle" 
-            size={36} 
-            color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)"} 
+          <Ionicons
+            name="close-circle"
+            size={36}
+            color={isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.15)"}
           />
         </TouchableOpacity>
       </View>
@@ -259,9 +348,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   navHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
@@ -270,23 +359,23 @@ const styles = StyleSheet.create({
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     height: HEADER_HEIGHT,
-    width: '100%',
-    overflow: 'hidden',
+    width: "100%",
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   placeholderImage: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -302,7 +391,7 @@ const styles = StyleSheet.create({
     ...Shadows.large,
   },
   handleContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: Spacing.lg,
   },
   handle: {
@@ -314,19 +403,19 @@ const styles = StyleSheet.create({
   headerSection: {
     marginBottom: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150,150,150,0.1)',
+    borderBottomColor: "rgba(150,150,150,0.1)",
     paddingBottom: Spacing.lg,
   },
   categoryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.xs,
   },
   category: {
     fontSize: Typography.sizes.sm,
     fontWeight: Typography.weights.bold,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   date: {
@@ -340,13 +429,13 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(150,150,150,0.1)',
+    borderBottomColor: "rgba(150,150,150,0.1)",
     paddingBottom: Spacing.lg,
   },
   sectionLabel: {
     fontSize: Typography.sizes.xs,
     fontWeight: Typography.weights.bold,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: Spacing.md,
     letterSpacing: 1,
   },
@@ -355,8 +444,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   caloriesRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: Spacing.md,
     gap: 6,
   },
@@ -369,7 +458,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.medium,
   },
   macrosRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   nutrientPill: {
@@ -392,23 +481,23 @@ const styles = StyleSheet.create({
   nutrientLabel: {
     fontSize: 10,
     fontWeight: Typography.weights.bold,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   analysisGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.md,
   },
   statBox: {
     flex: 1,
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   statLabel: {
     fontSize: 10,
     fontWeight: Typography.weights.bold,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: 4,
   },
   statValue: {
@@ -420,7 +509,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     right: Spacing.lg,
     zIndex: 100,
   },
