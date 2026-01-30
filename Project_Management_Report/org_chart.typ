@@ -43,31 +43,36 @@
   node((15mm, -25mm), role_style("Product & Design"), width: 34mm, fill: role_bg),
   node((15mm, -40mm), person_style("Laura", "Product Owner"), width: 32mm, fill: person_bg),
   node((15mm, -52mm), person_style("Manuel", "Product Owner"), width: 32mm, fill: person_bg),
-  node((15mm, -64mm), person_style("Joana", "UX Design"), width: 32mm, fill: person_bg),
+  node((15mm, -64mm), person_style("Joana", "UX / Design"), width: 32mm, fill: person_bg),
 
   // 2. Architecture
   node((59mm, -25mm), role_style("Architecture"), width: 34mm, fill: role_bg),
-  node((59mm, -40mm), person_style("Laura", "Architect"), width: 32mm, fill: person_bg),
-  node((59mm, -52mm), person_style("Manuel", "Architect"), width: 32mm, fill: person_bg),
+  node((59mm, -40mm), person_style("Manuel", "Architect"), width: 32mm, fill: person_bg),
+  node((59mm, -52mm), person_style("Laura", "Architect"), width: 32mm, fill: person_bg),
 
   // 3. Implementation
   node((103mm, -25mm), role_style("Implementation"), width: 34mm, fill: role_bg),
-  node((103mm, -40mm), person_style("Laura", "Full Stack Dev"), width: 32mm, fill: person_bg),
-  node((103mm, -52mm), person_style("Manuel", "Full Stack Dev"), width: 32mm, fill: person_bg),
-  node((103mm, -64mm), person_style("Joana", "Frontend Dev"), width: 32mm, fill: person_bg),
-  node((103mm, -76mm), person_style("Eduardo", "Dev"), width: 32mm, fill: person_bg),
+  node((103mm, -40mm), person_style("Manuel", "Full Stack Dev"), width: 32mm, fill: person_bg),
+  node((103mm, -52mm), person_style("Laura", "Full Stack Dev"), width: 32mm, fill: person_bg),
+  node((103mm, -64mm), person_style("Eduardo", "Full Stack Dev"), width: 32mm, fill: person_bg),
+  node((103mm, -76mm), person_style("Joana", "Frontend Dev"), width: 32mm, fill: person_bg),
 
   // 4. Deployment / Ops
   node((147mm, -25mm), role_style("Deployment / Ops"), width: 34mm, fill: role_bg),
   node((147mm, -40mm), person_style("Manuel", "Deployment"), width: 32mm, fill: person_bg),
 
   // 5. Testing
-  node((191mm, -25mm), role_style("Testing"), width: 34mm, fill: role_bg),
-  node((191mm, -40mm), person_style("Joana", "UAT"), width: 32mm, fill: person_bg),
+  node((191mm, -24mm), role_style("Evaluation / Testing"), width: 34mm, fill: role_bg),
+  node((191mm, -42mm), person_style("Joana", "UAT Report, App Accuracy Comparison"), width: 32mm, fill: person_bg),
+  node((191mm, -58mm), person_style("Laura", "Prompt Evaluation, VLM Evaluation"), width: 32mm, fill: person_bg),
+  node((191mm, -72mm), person_style("Eduardo", "User Guide"), width: 32mm, fill: person_bg),
+
 
   // 6. Support
-  node((235mm, -25mm), role_style("Support"), width: 34mm, fill: role_bg),
-  node((235mm, -40mm), person_style("Nils", "Support"), width: 32mm, fill: person_bg),
+  node((235mm, -24mm), role_style("Other"), width: 34mm, fill: role_bg),
+  node((235mm, -42mm), person_style("Laura", "Project Management Rep, Safety Report"), width: 32mm, fill: person_bg),
+  node((235mm, -58mm), person_style("Manuel", "Project Management Rep, Safety Report"), width: 32mm, fill: person_bg),
+  node((235mm, -72mm), person_style("Nils", "Presentation Slides"), width: 32mm, fill: person_bg),
 
   // -- EDGES --
   // Header to Roles (straight down)
@@ -97,8 +102,12 @@
   edge((147mm,-25mm), (147mm,-40mm), stroke: barblue.lighten(50%)),
 
   // Vertical flows (Testing)
-  edge((191mm,-25mm), (191mm,-40mm), stroke: barblue.lighten(50%)),
+  edge((191mm,-25mm), (191mm,-43mm), stroke: barblue.lighten(50%)),
+  edge((191mm,-43mm), (191mm,-59mm), stroke: barblue.lighten(50%)),
+  edge((191mm,-59mm), (191mm,-73mm), stroke: barblue.lighten(50%)),
 
   // Vertical flows (Support)
-  edge((235mm,-25mm), (235mm,-40mm), stroke: barblue.lighten(50%)),
+  edge((235mm,-25mm), (235mm,-43mm), stroke: barblue.lighten(50%)),
+  edge((235mm,-43mm), (235mm,-59mm), stroke: barblue.lighten(50%)),
+  edge((235mm,-59mm), (235mm,-73mm), stroke: barblue.lighten(50%)),
 )
