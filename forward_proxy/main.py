@@ -1170,7 +1170,12 @@ async def analyze_meal(
              log_entry.status = AnalysisStatus.FAILURE.value
         else:
              log_entry.status = AnalysisStatus.SUCCESS.value
-             
+
+        db.query(DailyMealSuggestion).filter(
+        DailyMealSuggestion.user_id == current_user.id,
+        DailyMealSuggestion.date == date.today()
+        ).delete(synchronize_session=False)
+        
         log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
         db.commit()
         
