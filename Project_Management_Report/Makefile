@@ -21,7 +21,8 @@ DATA_CSVS = \
 PLOT_PDFS = \
 	$(PLOT_OUT)/overall_mae_bar.pdf \
 	$(PLOT_OUT)/percentage_error_boxplots.pdf \
-	$(PLOT_OUT)/org_chart.pdf
+	$(PLOT_OUT)/org_chart.pdf \
+	$(PLOT_OUT)/gantt_chart.pdf
 
 all: $(MAIN).pdf
 
