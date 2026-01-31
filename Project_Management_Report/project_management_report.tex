@@ -26,15 +26,6 @@
 
 \usepackage{xcolor}
 
-% Eval Plots
-\usepackage{array}
-\usepackage{colortbl}
-\usepackage{pgfplots}
-\usepackage{tikz}
-\usepackage{float}
-\pgfplotsset{compat=1.18}
-\usepgfplotslibrary{statistics}
-
 % prompt stuff:
 % Configuration for the JSON/Code blocks
 \lstset{
@@ -167,9 +158,9 @@ To keep the project focused and manageable, we decided on the following project 
     \item Simple, modern and intuitive user interface
     \item Testing using 10–20 example meals with known nutritional values (manually calculated)
     \item User has the possibility to see real-time insights considering his meal tracking activities
+    \item User can generate meal suggestions based on his current nutritional intake
 \end{itemize}
 
-\newpage
 \noindent
 \textbf{Out of Scope}
 \begin{itemize}
@@ -259,7 +250,7 @@ During early development, we used simple JSON-based storage to iterate quickly o
 
 \FloatBarrier
 \subsection{Prompt Engineering}
-During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets - one simpler and one more complex. The prompt set includes the system and user prompt. 
+During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets for our main feature - one simpler and one more complex. The prompt set includes the system and user prompt. 
 For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
 \noindent
 For the second prompt set, we utilized various prompt engineering techniques presented in the lecture.
@@ -271,11 +262,9 @@ With these two versions, we now proceeded evaluating and comparing the performan
 Against all expectations, the simpler prompt set performed much better in meal calorie and nutriant estimation than the second, more detailed prompt set.
 Although both prompt sets, across all tested models, were overestimating calorie and nutriant values, prompt set one was still the more precise one of the two. Consequently, we kept prompt set one as our production-level prompt set.
 On a smaller set of ground truth meals, we also assessed whether varying temperatures changed the estimation quality. This, however, was not the case; results were neither less precise nor more accurate, so we decided to leave the selected temperature at 0.0.
-
-
-- ggf. write that we adapted prompt s.t. fats are not as heavily overstimated anymore
-
-\vspace{6cm}
+As we observed that the model consistently overestimated fat values and miscalculated portion sizes, we further refined the production prompt. We added a specific instruction to maintain conservative estimates, directing the model to assume standard restaurant portions of approximately 100-150g for proteins, and to assign high fat or carbohydrate values only when visual evidence of oil, frying, or large starch portions was clearly present.
+\\
+Finally, a comprehensive VLM evaluation against our ground truth meal dataset, further elaborated in Section \ref{chap:eval}, revealed that among all tested models, \texttt{qwen3-vl-235b-a22b-instruct} was the most precise in nutrient estimation, serving as our current production-ready model.
 
 \FloatBarrier
 \section{Team roles}
@@ -289,287 +278,30 @@ The NutriAI project team comprised five members with overlapping responsibilitie
     \caption{Team Chart}
 \end{figure}
  
-
 \section{Evaluation}
-\begin{table}[H]
-\centering
-\label{tab:mean_percentage_error}
-\begin{tabular}{l r r r r}
-\toprule
-\textbf{App} & \textbf{Calories} & \textbf{Carbs} & \textbf{Proteins} & \textbf{Fats} \\
- & \textbf{MPE (\%)} & \textbf{MPE (\%)} & \textbf{MPE (\%)} & \textbf{MPE (\%)} \\
-\midrule
-NutriAI: Photo Input only & 20.62 & 45.70 & 16.42 & 14.11 \\
-NutriAI: Photo + Audio Input & 21.96 & 38.21 & 18.60 & 44.60 \\
-CalorieCueAI & 41.06 & 45.89 & 40.16 & 78.17 \\
-CalorixAI & 25.09 & 18.90 & 27.83 & 97.66 \\
-arise & 46.22 & 32.78 & 65.83 & 147.91 \\
-\bottomrule
-\end{tabular}
-\caption{Mean Percentage Error (MPE) by App and Nutrient. The MPE is calculated as $(Estimation - Ground Truth) / Ground Truth \times 100$. Positive values indicate overestimation, while negative values indicate underestimation of the actual nutritional content.}
-\end{table}
-
-\begin{tikzpicture}
-\begin{axis}[
-    ybar,
-    bar width=0.7cm,
-    width=12cm,
-    height=8cm,
-    enlarge x limits=0.15,
-    ylabel={Overall MAE (\%)},
-    xlabel={App},
-    symbolic x coords={NutriAI: Photo + Audio Input, NutriAI: Photo Input only, CalorixAI, CalorieCueAI, arise},
-    xtick=data,
-    x tick label style={rotate=20, anchor=east, font=\small},
-    nodes near coords,
-    nodes near coords align={vertical},
-    nodes near coords style={font=\footnotesize},
-    ymin=0,
-    ymax=100,
-    grid=major,
-    grid style={dashed, gray!30},
-    title={Overall Mean Absolute Percentage Error by App},
-    legend style={at={(0.5,-0.25)}, anchor=north, legend columns=-1},
-]
-\addplot[
-    fill=blue!70,
-    draw=blue!90,
-] coordinates {
-    (NutriAI: Photo + Audio Input, 45.18)
-    (NutriAI: Photo Input only, 52.24)
-    (CalorixAI, 58.74)
-    (CalorieCueAI, 66.60)
-    (arise, 81.32)
-};
-\end{axis}
-\end{tikzpicture}
-
-\begin{tikzpicture}
-\begin{axis}[
-    boxplot/draw direction=y,
-    width=16cm,
-    height=10cm,
-    ylabel={Percentage Error (\%)},
-    xlabel={App},
-    xtick={1,2,3,4,5},
-    xticklabels={
-        {Calorie Cue AI},
-        {Calorix AI},
-        {Nutri AI-Photo\\input only},
-        {NutriAI-Photo+\\Audio Input},
-        {arise}
-    },
-    x tick label style={font=\small, align=center},
-    ymin=-150,
-    ymax=550,
-    grid=major,
-    grid style={dashed, gray!30},
-    title={Percentage Error Distribution by App (All Nutrients + Calories)},
-    legend style={at={(1.02,1)}, anchor=north west, font=\small},
-    cycle list={
-        {fill=blue!30, draw=blue!70},
-        {fill=red!30, draw=red!70},
-        {fill=green!30, draw=green!70},
-        {fill=orange!30, draw=orange!70}
-    },
-]
-
-% Add a reference line at y=0
-\addplot[gray, dashed, thick, forget plot] coordinates {(0.5,0) (5.5,0)};
-
-% Calorie Cue AI - position 1
-\addplot+[boxplot prepared={
-    lower whisker=-51.82,
-    lower quartile=-5.39,
-    median=27.31,
-    upper quartile=54.05,
-    upper whisker=204.82
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-25.35,
-    lower quartile=0.78,
-    median=19.55,
-    upper quartile=70.21,
-    upper whisker=195.52
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-52.63,
-    lower quartile=-8.74,
-    median=13.81,
-    upper quartile=35.35,
-    upper whisker=328.57
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-75.00,
-    lower quartile=1.92,
-    median=55.00,
-    upper quartile=82.29,
-    upper whisker=383.33
-}, ] coordinates {};
-
-% Calorix AI - position 2
-\addplot+[boxplot prepared={
-    lower whisker=-25.74,
-    lower quartile=-13.22,
-    median=24.64,
-    upper quartile=35.66,
-    upper whisker=100.00
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-42.25,
-    lower quartile=-15.11,
-    median=-1.16,
-    upper quartile=4.69,
-    upper whisker=203.23
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-60.87,
-    lower quartile=-18.85,
-    median=-2.63,
-    upper quartile=21.88,
-    upper whisker=285.71
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-36.36,
-    lower quartile=35.53,
-    median=62.39,
-    upper quartile=189.58,
-    upper whisker=260.00
-}, ] coordinates {};
-
-% Nutri AI-Photo input only - position 3
-\addplot+[boxplot prepared={
-    lower whisker=-52.76,
-    lower quartile=-16.61,
-    median=4.75,
-    upper quartile=30.44,
-    upper whisker=136.62
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-100.00,
-    lower quartile=-10.69,
-    median=37.70,
-    upper quartile=59.00,
-    upper whisker=248.39
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-65.22,
-    lower quartile=-14.29,
-    median=-9.58,
-    upper quartile=52.08,
-    upper whisker=111.76
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-66.67,
-    lower quartile=-32.78,
-    median=20.51,
-    upper quartile=43.86,
-    upper whisker=125.00
-}, ] coordinates {};
-
-% NutriAI-Photo+ Audio Input - position 4
-\addplot+[boxplot prepared={
-    lower whisker=-37.29,
-    lower quartile=0.00,
-    median=6.27,
-    upper quartile=34.94,
-    upper whisker=154.39
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-38.89,
-    lower quartile=7.26,
-    median=34.61,
-    upper quartile=39.99,
-    upper whisker=141.94
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-36.84,
-    lower quartile=-5.00,
-    median=2.94,
-    upper quartile=28.12,
-    upper whisker=128.57
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-66.67,
-    lower quartile=-11.84,
-    median=10.00,
-    upper quartile=51.28,
-    upper whisker=266.67
-}, ] coordinates {};
-
-% arise - position 5
-\addplot+[boxplot prepared={
-    lower whisker=-11.22,
-    lower quartile=7.33,
-    median=44.33,
-    upper quartile=64.33,
-    upper whisker=154.82
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-26.09,
-    lower quartile=-2.79,
-    median=9.33,
-    upper quartile=36.98,
-    upper whisker=183.87
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-36.84,
-    lower quartile=24.46,
-    median=36.67,
-    upper quartile=65.08,
-    upper whisker=342.86
-}, ] coordinates {};
-
-\addplot+[boxplot prepared={
-    lower whisker=-36.36,
-    lower quartile=38.89,
-    median=107.05,
-    upper quartile=207.29,
-    upper whisker=540.00 
-}, ] coordinates {};
-
-% Legend
-\legend{Calories, Carbs, Proteins, Fats}
-
-\end{axis}
-\end{tikzpicture}
-
-\begin{figure}[htbp]
-\centering
-\caption{Distribution of percentage errors across all apps and nutrients. Each box represents the interquartile range (IQR) with the median shown as a line inside the box. Whiskers extend to the minimum and maximum values. The dashed horizontal line at 0\% represents perfect accuracy. Values above 0\% indicate overestimation, while values below 0\% indicate underestimation.}
-\label{fig:percentage_error_boxplots}
-\end{figure}
-
-
-
+\label{chap:eval}
 
 \section{Current Progress and Future Plans}
-Provide a detailed status update on the
-current progress of the project, and discuss the future plans for the project
-completion.
+As of today, our nutrient estimation service has made significant progress in achieving its core objectives. The application now enables users to log their meals by capturing a photo and recording a voice note, allowing for AI-enabled nutrient and calorie estimation. This multi-modal approach ensures greater accuracy, particularly for complex or home-cooked meals. Additionally, the app provides meal suggestions tailored to the user’s past caloric and nutrient intake, helping them make informed dietary choices. Furthermore, the app offers analytics and insights, such as average meal quality, daily food intake, progress towards goals, and logging streaks, empowering users to better understand and manage their nutrition. While these features form the foundation of our service, there remain several areas for optimization prior to a full production rollout:
 
--> to be done
+\begin{itemize}
+    \item \textbf{Re-Prompting}: Currently, while users can manually adjust nutrient values and descriptions, the system lacks the capability to trigger a new VLM inference based on those corrections. Implementing a re-prompting mechanism, for instance, allowing the model to correct a misidentification of falafel as meatballs, would likely yield more precise results and streamline the user experience by preventing manual data entry.
+    \item \textbf{Transcription Accuracy}: The locally hosted Whisper model is currently limited by its size. Upgrading to a larger, more robust architecture would improve transcription precision, particularly in handling diverse accents and background noise.
+    \item \textbf{Inference Latency}: Although the  \texttt{qwen3-vl-235b-a22b-instruct} model delivers high precision, its current processing time is a bottleneck for real-time application usage. Reducing this latency is a critical requirement for ensuring a convenient and fluid user interface.
+    \item \textbf{UI/UX Refinements}: As detailed in our UAT report, several design improvements are necessary to increase intuitiveness. Specifically, interactive elements, such as the highlights in the 'Insights' tab, require clearer visual affordances to indicate they are clickable, as their current design does not effectively communicate their underlying functionality.
+    \item \textbf{Traditional Logging Features}: Beyond AI-driven estimation, integrating traditional logging methods, such as barcode scanning and verified nutrient database queries, would provide a more comprehensive and accurate baseline for user data and would give the user more flexibility.
+    \item \textbf{Out of Scope Features}: Apart from the more technical flaws our service could improve on, future steps could also include adding other features that were out of scope for the project timeline so far, such as a possibility for data im- and export or multi-language support.
+\end{itemize}
+\\
+\noindent
+There remain several avenues to improve the app’s stability and performance. Specifically, the AI framework allows for ongoing optimization through larger-scale ground truth testing, alternative prompting methodologies, and the continuous evaluation of emerging architectural models.
 
 \section{Project Pitch Video (Attached)}
 
 \section{Usage of GenAI during the Document's Creation}
 \noindent
 Generative AI was used during the writing process to help with brainstorming and organizing initial notes, and rephrasing passages.
-It was also used to assist with debugging certain problems occuring with LaTeX.
+It was also used to assist with debugging problems occuring with LaTeX.
 
 
 \printbibliography
