@@ -86,8 +86,7 @@
 \begin{document}
 %
 \title{\includegraphics[width=3.5cm]{logo.png} \\ \vspace{1cm} \textbf{Project Management Report}}
-\author{Laura Kotalczyk \\ Manuel Mühlberger \\ \textbf{Group 4}}
-\date{\today}
+\author{Laura Kotalczyk \\ Manuel Mühlberger \\ \textbf{Group 4}}\date{\today}
 \maketitle
 \vfill
 \newpage
@@ -268,7 +267,7 @@ Although both prompt sets, across all tested models, were overestimating calorie
 On a smaller set of ground truth meals, we also assessed whether varying temperatures changed the estimation quality. This, however, was not the case; results were neither less precise nor more accurate, so we decided to leave the selected temperature at 0.0.
 As we observed that the model consistently overestimated fat values and miscalculated portion sizes, we further refined the production prompt. We added a specific instruction to maintain conservative estimates, directing the model to assume standard restaurant portions of approximately 100-150g for proteins, and to assign high fat or carbohydrate values only when visual evidence of oil, frying, or large starch portions was clearly present.
 \\
-Finally, a comprehensive VLM evaluation against our ground truth meal dataset, further elaborated in Section \ref{chap:eval}, revealed that among all tested models, \texttt{qwen3-vl-235b-a22b-instruct} was the most precise in nutrient estimation, serving as our current production-ready model.
+Finally, a comprehensive VLM evaluation against our ground truth meal dataset, revealed that among all tested models, \texttt{qwen3-vl-235b-a22b-instruct} was the most precise in nutrient estimation, serving as our current production-ready model.
 
 \FloatBarrier
 \section{Team roles}
@@ -284,9 +283,11 @@ The NutriAI project team comprised five members with overlapping responsibilitie
 
 \section{Evaluation}
 \label{chap:eval}
+\noindent
+The evaluation results, as shown in Table \ref{tab:mean_percentage_error} and Figures \ref{fig:overall_mae_bar} and \ref{fig:percentage_error_boxplots}, provide a detailed comparison of the performance of NutriAI and other applications in nutrient estimation. The Mean Percentage Error (MPE) table indicates that NutriAI with both photo and audio inputs achieves relatively strong accuracy across all nutrients. For example, in the carbohydrate category, the MPE decreases from 45.70\% (photo-only) to 38.21\% when audio input is included. This suggests that the additional context from voice descriptions can help the model better interpret certain types of meals, particularly those that are more complex or ambiguous.
+
 \begin{table}[H]
 \centering
-\label{tab:mean_percentage_error}
 \begin{tabular}{l r r r r}
 \toprule
 \textbf{App} & \textbf{Calories} & \textbf{Carbs} & \textbf{Proteins} & \textbf{Fats} \\
@@ -300,7 +301,11 @@ arise & 46.22 & 32.78 & 65.83 & 147.91 \\
 \bottomrule
 \end{tabular}
 \caption{Mean Percentage Error (MPE) by App and Nutrient. The MPE is calculated as $(Estimation - Ground Truth) / Ground Truth \times 100$. Positive values indicate overestimation, while negative values indicate underestimation of the actual nutritional content.}
+\label{tab:mean_percentage_error}
 \end{table}
+
+\noindent
+The bar chart in Figure \ref{fig:overall_mae_bar} shows that NutriAI with audio input performs well in terms of overall Mean Absolute Percentage Error (MAPE) compared to the other tested applications. This metric was chosen to provide a general view of performance by aggregating errors across all nutrients, offering a useful perspective on overall accuracy.
 
 \begin{figure}[htbp]
 \centering
@@ -308,6 +313,8 @@ arise & 46.22 & 32.78 & 65.83 & 147.91 \\
 \caption{Overall Mean Absolute Percentage Error by App.}
 \label{fig:overall_mae_bar}
 \end{figure}
+\noindent
+The boxplots in Figure \ref{fig:percentage_error_boxplots} highlight the variability in performance across different apps and nutrients. NutriAI's results, particularly with audio input, show a narrower interquartile range (IQR) for some nutrients, indicating more consistent estimations. However, the results also reveal areas for improvement, such as increased variability in fat estimation when audio input is included. This suggests that while audio input generally contributes to better accuracy, it may also introduce some inconsistencies in specific cases, pointing to the need for further refinement in the integration of multi-modal data.
 
 \begin{figure}[htbp]
 \centering
@@ -316,12 +323,13 @@ arise & 46.22 & 32.78 & 65.83 & 147.91 \\
 \label{fig:percentage_error_boxplots}
 \end{figure}
 
+\noindent
+By using both MPE and MAPE, the evaluation provides a balanced understanding of the models' performance. MPE is effective for assessing individual nutrient estimations, while MAPE offers a broader measure of overall accuracy, ensuring a comprehensive analysis.
 \section{Current Progress and Future Plans}
 As of today, our nutrient estimation service has made significant progress in achieving its core objectives. The application now enables users to log their meals by capturing a photo and recording a voice note, allowing for AI-enabled nutrient and calorie estimation. This multi-modal approach ensures greater accuracy, particularly for complex or home-cooked meals. Additionally, the app provides meal suggestions tailored to the user’s past caloric and nutrient intake, helping them make informed dietary choices. Furthermore, the app offers analytics and insights, such as average meal quality, daily food intake, progress towards goals, and logging streaks, empowering users to better understand and manage their nutrition. While these features form the foundation of our service, there remain several areas for optimization prior to a full production rollout:
 
 \begin{itemize}
     \item \textbf{Re-Prompting}: Currently, while users can manually adjust nutrient values and descriptions, the system lacks the capability to trigger a new VLM inference based on those corrections. Implementing a re-prompting mechanism, for instance, allowing the model to correct a misidentification of falafel as meatballs, would likely yield more precise results and streamline the user experience by preventing manual data entry.
-    \item \textbf{Transcription Accuracy}: The locally hosted Whisper model is currently limited by its size. Upgrading to a larger, more robust architecture would improve transcription precision, particularly in handling diverse accents and background noise.
     \item \textbf{Inference Latency}: Although the  \texttt{qwen3-vl-235b-a22b-instruct} model delivers high precision, its current processing time is a bottleneck for real-time application usage. Reducing this latency is a critical requirement for ensuring a convenient and fluid user interface.
     \item \textbf{UI/UX Refinements}: As detailed in our UAT report, several design improvements are necessary to increase intuitiveness. Specifically, interactive elements, such as the highlights in the 'Insights' tab, require clearer visual affordances to indicate they are clickable, as their current design does not effectively communicate their underlying functionality.
     \item \textbf{Traditional Logging Features}: Beyond AI-driven estimation, integrating traditional logging methods, such as barcode scanning and verified nutrient database queries, would provide a more comprehensive and accurate baseline for user data and would give the user more flexibility.
