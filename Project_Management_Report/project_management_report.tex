@@ -26,6 +26,15 @@
 
 \usepackage{xcolor}
 
+% Eval Plots
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usepackage{float}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{statistics}
+
 % prompt stuff:
 % Configuration for the JSON/Code blocks
 \lstset{
@@ -280,6 +289,273 @@ The NutriAI project team comprised five members with overlapping responsibilitie
     \caption{Team Chart}
 \end{figure}
  
+
+\section{Evaluation}
+\begin{table}[H]
+\centering
+\label{tab:mean_percentage_error}
+\begin{tabular}{l r r r r}
+\toprule
+\textbf{App} & \textbf{Calories} & \textbf{Carbs} & \textbf{Proteins} & \textbf{Fats} \\
+ & \textbf{MPE (\%)} & \textbf{MPE (\%)} & \textbf{MPE (\%)} & \textbf{MPE (\%)} \\
+\midrule
+NutriAI: Photo Input only & 20.62 & 45.70 & 16.42 & 14.11 \\
+NutriAI: Photo + Audio Input & 21.96 & 38.21 & 18.60 & 44.60 \\
+CalorieCueAI & 41.06 & 45.89 & 40.16 & 78.17 \\
+CalorixAI & 25.09 & 18.90 & 27.83 & 97.66 \\
+arise & 46.22 & 32.78 & 65.83 & 147.91 \\
+\bottomrule
+\end{tabular}
+\caption{Mean Percentage Error (MPE) by App and Nutrient. The MPE is calculated as $(Estimation - Ground Truth) / Ground Truth \times 100$. Positive values indicate overestimation, while negative values indicate underestimation of the actual nutritional content.}
+\end{table}
+
+\begin{tikzpicture}
+\begin{axis}[
+    ybar,
+    bar width=0.7cm,
+    width=12cm,
+    height=8cm,
+    enlarge x limits=0.15,
+    ylabel={Overall MAE (\%)},
+    xlabel={App},
+    symbolic x coords={NutriAI: Photo + Audio Input, NutriAI: Photo Input only, CalorixAI, CalorieCueAI, arise},
+    xtick=data,
+    x tick label style={rotate=20, anchor=east, font=\small},
+    nodes near coords,
+    nodes near coords align={vertical},
+    nodes near coords style={font=\footnotesize},
+    ymin=0,
+    ymax=100,
+    grid=major,
+    grid style={dashed, gray!30},
+    title={Overall Mean Absolute Percentage Error by App},
+    legend style={at={(0.5,-0.25)}, anchor=north, legend columns=-1},
+]
+\addplot[
+    fill=blue!70,
+    draw=blue!90,
+] coordinates {
+    (NutriAI: Photo + Audio Input, 45.18)
+    (NutriAI: Photo Input only, 52.24)
+    (CalorixAI, 58.74)
+    (CalorieCueAI, 66.60)
+    (arise, 81.32)
+};
+\end{axis}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+\begin{axis}[
+    boxplot/draw direction=y,
+    width=16cm,
+    height=10cm,
+    ylabel={Percentage Error (\%)},
+    xlabel={App},
+    xtick={1,2,3,4,5},
+    xticklabels={
+        {Calorie Cue AI},
+        {Calorix AI},
+        {Nutri AI-Photo\\input only},
+        {NutriAI-Photo+\\Audio Input},
+        {arise}
+    },
+    x tick label style={font=\small, align=center},
+    ymin=-150,
+    ymax=550,
+    grid=major,
+    grid style={dashed, gray!30},
+    title={Percentage Error Distribution by App (All Nutrients + Calories)},
+    legend style={at={(1.02,1)}, anchor=north west, font=\small},
+    cycle list={
+        {fill=blue!30, draw=blue!70},
+        {fill=red!30, draw=red!70},
+        {fill=green!30, draw=green!70},
+        {fill=orange!30, draw=orange!70}
+    },
+]
+
+% Add a reference line at y=0
+\addplot[gray, dashed, thick, forget plot] coordinates {(0.5,0) (5.5,0)};
+
+% Calorie Cue AI - position 1
+\addplot+[boxplot prepared={
+    lower whisker=-51.82,
+    lower quartile=-5.39,
+    median=27.31,
+    upper quartile=54.05,
+    upper whisker=204.82
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-25.35,
+    lower quartile=0.78,
+    median=19.55,
+    upper quartile=70.21,
+    upper whisker=195.52
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-52.63,
+    lower quartile=-8.74,
+    median=13.81,
+    upper quartile=35.35,
+    upper whisker=328.57
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-75.00,
+    lower quartile=1.92,
+    median=55.00,
+    upper quartile=82.29,
+    upper whisker=383.33
+}, ] coordinates {};
+
+% Calorix AI - position 2
+\addplot+[boxplot prepared={
+    lower whisker=-25.74,
+    lower quartile=-13.22,
+    median=24.64,
+    upper quartile=35.66,
+    upper whisker=100.00
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-42.25,
+    lower quartile=-15.11,
+    median=-1.16,
+    upper quartile=4.69,
+    upper whisker=203.23
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-60.87,
+    lower quartile=-18.85,
+    median=-2.63,
+    upper quartile=21.88,
+    upper whisker=285.71
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-36.36,
+    lower quartile=35.53,
+    median=62.39,
+    upper quartile=189.58,
+    upper whisker=260.00
+}, ] coordinates {};
+
+% Nutri AI-Photo input only - position 3
+\addplot+[boxplot prepared={
+    lower whisker=-52.76,
+    lower quartile=-16.61,
+    median=4.75,
+    upper quartile=30.44,
+    upper whisker=136.62
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-100.00,
+    lower quartile=-10.69,
+    median=37.70,
+    upper quartile=59.00,
+    upper whisker=248.39
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-65.22,
+    lower quartile=-14.29,
+    median=-9.58,
+    upper quartile=52.08,
+    upper whisker=111.76
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-66.67,
+    lower quartile=-32.78,
+    median=20.51,
+    upper quartile=43.86,
+    upper whisker=125.00
+}, ] coordinates {};
+
+% NutriAI-Photo+ Audio Input - position 4
+\addplot+[boxplot prepared={
+    lower whisker=-37.29,
+    lower quartile=0.00,
+    median=6.27,
+    upper quartile=34.94,
+    upper whisker=154.39
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-38.89,
+    lower quartile=7.26,
+    median=34.61,
+    upper quartile=39.99,
+    upper whisker=141.94
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-36.84,
+    lower quartile=-5.00,
+    median=2.94,
+    upper quartile=28.12,
+    upper whisker=128.57
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-66.67,
+    lower quartile=-11.84,
+    median=10.00,
+    upper quartile=51.28,
+    upper whisker=266.67
+}, ] coordinates {};
+
+% arise - position 5
+\addplot+[boxplot prepared={
+    lower whisker=-11.22,
+    lower quartile=7.33,
+    median=44.33,
+    upper quartile=64.33,
+    upper whisker=154.82
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-26.09,
+    lower quartile=-2.79,
+    median=9.33,
+    upper quartile=36.98,
+    upper whisker=183.87
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-36.84,
+    lower quartile=24.46,
+    median=36.67,
+    upper quartile=65.08,
+    upper whisker=342.86
+}, ] coordinates {};
+
+\addplot+[boxplot prepared={
+    lower whisker=-36.36,
+    lower quartile=38.89,
+    median=107.05,
+    upper quartile=207.29,
+    upper whisker=540.00 
+}, ] coordinates {};
+
+% Legend
+\legend{Calories, Carbs, Proteins, Fats}
+
+\end{axis}
+\end{tikzpicture}
+
+\begin{figure}[htbp]
+\centering
+\caption{Distribution of percentage errors across all apps and nutrients. Each box represents the interquartile range (IQR) with the median shown as a line inside the box. Whiskers extend to the minimum and maximum values. The dashed horizontal line at 0\% represents perfect accuracy. Values above 0\% indicate overestimation, while values below 0\% indicate underestimation.}
+\label{fig:percentage_error_boxplots}
+\end{figure}
+
+
+
 
 \section{Current Progress and Future Plans}
 Provide a detailed status update on the
