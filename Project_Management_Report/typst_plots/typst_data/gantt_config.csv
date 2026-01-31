@@ -1,0 +1,54 @@
+# Gantt Chart Configuration
+# ==========================
+#
+# TIMELINE SETTINGS (first two non-comment lines must be these):
+# timeline_start,YYYY-MM-DD
+# timeline_end,YYYY-MM-DD
+#
+# PHASE FORMAT:
+# phase_id,parent_id,name,start_date,end_date,color
+# - phase_id: unique identifier for the phase
+# - parent_id: empty for main phases, phase_id of parent for subphases
+# - name: display name of the phase
+# - start_date: YYYY-MM-DD format (empty for main phases)
+# - end_date: YYYY-MM-DD format (empty for main phases)
+# - color: hex color code (e.g., #1E88E5)
+#
+# Main phases should be listed before their subphases
+# Lines starting with # are comments
+
+# === PROJECT TIMELINE ===
+timeline_start,2025-10-21
+timeline_end,2026-02-09
+
+# Organization Phase
+org,,Organization,,,#1E88E5
+org_topic,org,Submit Topic Proposal,2025-10-27,2025-11-02,#90CAF9
+
+# Requirements Engineering Phase
+req,,Requirements Engineering,,,#00ACC1
+req_formal,req,Define formal Requirements (NFRs & FRs),2025-11-03,2025-11-09,#80DEEA
+req_tech,req,Decide on Techstack (Data Classes),2025-11-03,2025-11-09,#80DEEA
+
+# System Architecture Phase
+arch,,System Architecture,,,#43A047
+arch_design,arch,System Design (Data Classes),2025-11-03,2025-12-21,#A5D6A7
+
+# Implementation Phase
+impl,,Implementation,,,#FFCC00
+impl_infra,impl,Setup Infrastructure,2025-11-10,2025-12-14,#FFDD99
+impl_backend,impl,Implement Backend,2025-11-03,2026-01-11,#FFDD77
+impl_frontend,impl,Implement Frontend,2025-11-03,2026-01-11,#FFDD77
+
+# Other Phase
+other,,Other,,,#FF6F00
+other_demo,other,Live Demo,2025-12-15,2025-12-18,#FF9800
+
+# Evaluation Phase
+eval,,Evaluation,,,#D32F2F
+eval_bench,eval,Benchmarking,2026-01-05,2026-01-31,#EF5350
+eval_uat,eval,User Acceptance Testing,2026-01-05,2026-01-31,#EF5350
+
+# Report Phase
+report,,Report,,,#7B1E62
+report_doc,report,Documentation,2025-12-29,2026-01-31,#D946A6
