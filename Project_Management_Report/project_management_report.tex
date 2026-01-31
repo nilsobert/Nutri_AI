@@ -15,26 +15,20 @@
 \usepackage[english]{babel} % Deutsche Bezeichnungen bei Inhaltsangabe etc
 \usepackage[T1]{fontenc}    % andere Schriftsatzkodierung für richtige Silbentrennung bei Umlauten
 \usepackage[locale = US, space-before-unit=true, per-mode=symbol]{siunitx} % Bessere Einheiten
-\usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)\usepackage{float} % Provides [H] placement specifier for strict figure positioning% \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
+\usepackage{placeins} % Definiert den Befehl “\FloatBarrier”, der die Ausgabe der davor eingebundenen Bilder erzwingt, befor der Text weiter geht. (Mit vorsicht zu verwenden)
+\usepackage{float} % Provides [H] placement specifier for strict figure positioning
+% \usepackage[natbib,abbreviate=true,doi=false,style=numeric-comp,giveninits=true,sorting=none]{biblatex} % Modernes Paket zur Erzeugung von Bibliografien (benötigt biber!)
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
 \usepackage[backend=biber]{biblatex}
 \usepackage{svg}
 \usepackage{amsmath} % usually needed if your SVG has text
-\usepackage[utf8]{inputenc}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{caption}
 \usepackage{pdflscape} % Key package for single-page landscape
 
 \usepackage{xcolor}
-
-% Eval Plots
-\usepackage{array}
-\usepackage{colortbl}
-\usepackage{pgfplots}
-\usepackage{tikz}
-\usepackage{float}
-\pgfplotsset{compat=1.18}
-\usepgfplotslibrary{statistics}
 
 % prompt stuff:
 % Configuration for the JSON/Code blocks
@@ -168,9 +162,9 @@ To keep the project focused and manageable, we decided on the following project 
     \item Simple, modern and intuitive user interface
     \item Testing using 10–20 example meals with known nutritional values (manually calculated)
     \item User has the possibility to see real-time insights considering his meal tracking activities
+    \item User can generate meal suggestions based on his current nutritional intake
 \end{itemize}
 
-\newpage
 \noindent
 \textbf{Out of Scope}
 \begin{itemize}
@@ -260,7 +254,7 @@ During early development, we used simple JSON-based storage to iterate quickly o
 
 \FloatBarrier
 \subsection{Prompt Engineering}
-During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets - one simpler and one more complex. The prompt set includes the system and user prompt. 
+During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets for our main feature - one simpler and one more complex. The prompt set includes the system and user prompt. 
 For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
 \noindent
 For the second prompt set, we utilized various prompt engineering techniques presented in the lecture.
@@ -272,11 +266,9 @@ With these two versions, we now proceeded evaluating and comparing the performan
 Against all expectations, the simpler prompt set performed much better in meal calorie and nutriant estimation than the second, more detailed prompt set.
 Although both prompt sets, across all tested models, were overestimating calorie and nutriant values, prompt set one was still the more precise one of the two. Consequently, we kept prompt set one as our production-level prompt set.
 On a smaller set of ground truth meals, we also assessed whether varying temperatures changed the estimation quality. This, however, was not the case; results were neither less precise nor more accurate, so we decided to leave the selected temperature at 0.0.
-
-
-- ggf. write that we adapted prompt s.t. fats are not as heavily overstimated anymore
-
-\vspace{6cm}
+As we observed that the model consistently overestimated fat values and miscalculated portion sizes, we further refined the production prompt. We added a specific instruction to maintain conservative estimates, directing the model to assume standard restaurant portions of approximately 100-150g for proteins, and to assign high fat or carbohydrate values only when visual evidence of oil, frying, or large starch portions was clearly present.
+\\
+Finally, a comprehensive VLM evaluation against our ground truth meal dataset, further elaborated in Section \ref{chap:eval}, revealed that among all tested models, \texttt{qwen3-vl-235b-a22b-instruct} was the most precise in nutrient estimation, serving as our current production-ready model.
 
 \FloatBarrier
 \section{Team roles}
@@ -290,8 +282,8 @@ The NutriAI project team comprised five members with overlapping responsibilitie
     \caption{Team Chart}
 \end{figure}
  
-
 \section{Evaluation}
+\label{chap:eval}
 \begin{table}[H]
 \centering
 \label{tab:mean_percentage_error}
@@ -324,22 +316,26 @@ arise & 46.22 & 32.78 & 65.83 & 147.91 \\
 \label{fig:percentage_error_boxplots}
 \end{figure}
 
-
-
-
 \section{Current Progress and Future Plans}
-Provide a detailed status update on the
-current progress of the project, and discuss the future plans for the project
-completion.
+As of today, our nutrient estimation service has made significant progress in achieving its core objectives. The application now enables users to log their meals by capturing a photo and recording a voice note, allowing for AI-enabled nutrient and calorie estimation. This multi-modal approach ensures greater accuracy, particularly for complex or home-cooked meals. Additionally, the app provides meal suggestions tailored to the user’s past caloric and nutrient intake, helping them make informed dietary choices. Furthermore, the app offers analytics and insights, such as average meal quality, daily food intake, progress towards goals, and logging streaks, empowering users to better understand and manage their nutrition. While these features form the foundation of our service, there remain several areas for optimization prior to a full production rollout:
 
--> to be done
+\begin{itemize}
+    \item \textbf{Re-Prompting}: Currently, while users can manually adjust nutrient values and descriptions, the system lacks the capability to trigger a new VLM inference based on those corrections. Implementing a re-prompting mechanism, for instance, allowing the model to correct a misidentification of falafel as meatballs, would likely yield more precise results and streamline the user experience by preventing manual data entry.
+    \item \textbf{Transcription Accuracy}: The locally hosted Whisper model is currently limited by its size. Upgrading to a larger, more robust architecture would improve transcription precision, particularly in handling diverse accents and background noise.
+    \item \textbf{Inference Latency}: Although the  \texttt{qwen3-vl-235b-a22b-instruct} model delivers high precision, its current processing time is a bottleneck for real-time application usage. Reducing this latency is a critical requirement for ensuring a convenient and fluid user interface.
+    \item \textbf{UI/UX Refinements}: As detailed in our UAT report, several design improvements are necessary to increase intuitiveness. Specifically, interactive elements, such as the highlights in the 'Insights' tab, require clearer visual affordances to indicate they are clickable, as their current design does not effectively communicate their underlying functionality.
+    \item \textbf{Traditional Logging Features}: Beyond AI-driven estimation, integrating traditional logging methods, such as barcode scanning and verified nutrient database queries, would provide a more comprehensive and accurate baseline for user data and would give the user more flexibility.
+    \item \textbf{Out of Scope Features}: Apart from the more technical flaws our service could improve on, future steps could also include adding other features that were out of scope for the project timeline so far, such as a possibility for data im- and export or multi-language support.
+\end{itemize}
+\noindent
+There remain several avenues to improve the app’s stability and performance. Specifically, the AI framework allows for ongoing optimization through larger-scale ground truth testing, alternative prompting methodologies, and the continuous evaluation of emerging architectural models.
 
 \section{Project Pitch Video (Attached)}
 
 \section{Usage of GenAI during the Document's Creation}
 \noindent
 Generative AI was used during the writing process to help with brainstorming and organizing initial notes, and rephrasing passages.
-It was also used to assist with debugging certain problems occuring with LaTeX.
+It was also used to assist with debugging problems occuring with LaTeX.
 
 
 \printbibliography
