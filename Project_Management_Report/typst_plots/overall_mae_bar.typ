@@ -6,16 +6,16 @@
 #let app_keys = (
   "NutriAI-Photo+ Audio Input",
   "Nutri AI-Photo input only",
-  "Calorie Cue AI",
   "Calorix AI",
+  "Calorie Cue AI",
   "arise",
 )
 
 #let app_labels = (
   [NutriAI-Photo+ #linebreak() Audio Input],
   [Nutri AI-Photo #linebreak() input only],
-  "Calorie Cue AI",
   "Calorix AI",
+  "Calorie Cue AI",
   "arise",
 )
 
