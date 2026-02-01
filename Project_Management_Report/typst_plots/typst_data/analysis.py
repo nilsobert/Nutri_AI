@@ -94,6 +94,13 @@ def build_summary_table(df):
 
 
 def build_overall_accuracy(df):
+    """Compute per-app MAPE (absolute percentage error) per nutrient and an overall aggregate.
+
+    Given percentage errors $PE_m = (est - gt) / gt$, we compute $MAPE_m = mean(|PE_m|) \cdot 100$.
+    The overall score averages the four nutrient MAPEs:
+
+        Overall\_MAPE = (MAPE_Calories + MAPE_Carbs + MAPE_Proteins + MAPE_Fats) / 4
+    """
     metrics = ['Calories', 'Carbs', 'Proteins', 'Fats']
     pe_cols = [f'PE_{metric}' for metric in metrics]
 

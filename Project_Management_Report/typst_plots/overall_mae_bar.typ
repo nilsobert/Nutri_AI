@@ -40,10 +40,10 @@
 
 #lq.diagram(
   width: 16cm,
-  height: 7cm,
+  height: 5cm,
   ylim: (0, 100),
-  xlabel: [App],
-  ylabel: [Overall MAE (%)],
+  xlabel: none,
+  ylabel: [Overall MAPE (%)],
   grid: (stroke: (paint: luma(80%), thickness: 0.7pt, dash: "dashed")),
   xaxis: (
     ticks: app_labels

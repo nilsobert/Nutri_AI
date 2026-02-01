@@ -149,7 +149,7 @@ This solution aims to make nutrition tracking simpler, smarter, and more accessi
 \end{minipage}
 
 \subsubsection{Project Boundaries}
-To keep the project focused and manageable, we decided on the following project boundaries as well as mandatory and optional app features.
+To keep the project focused and manageable, we defined the following boundaries and mandatory/optional features.
 \newline
 
 \noindent
@@ -168,8 +168,8 @@ To keep the project focused and manageable, we decided on the following project 
 \textbf{Out of Scope}
 \begin{itemize}
     \item Support for multiple languages or complex dishes with many unknown ingredients
-    \item Integration with wearables or fitness trackers
-    \item Integration of a user's training activities to increase available calories
+    \item Integration with fitness trackers / Apple Health to increase available calories
+    %\item Integration of a user's training activities 
     \item Nutrient database integration for more accurate results
     \item Possibility for data import/export
     \item Universally trusted server certificate
@@ -203,7 +203,7 @@ Secondly, server two (2) runs a reimplementation of OpenAI's Whisper model \cite
 By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive information, allowing us to maintain a better control over the data. Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. A more detailed explanation on data privacy and possible improvements in this regard for our service is given in the Project Safety and Reflection Report.
 \FloatBarrier\subsection{Core Technical Components}
 \label{chap:3.2}
-In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
+%In the following paragraphs, we will elaborate on each of our system's components from a technical perspective, pointing out its role and interactions in the overall system.
 
 \subsubsection{Client}
 \noindent
@@ -220,7 +220,7 @@ When the user uses the app to sign up, login or log a meal, corresponding reques
 \subsubsection{Server}
 The On-Premise Server operates as a composed Docker stack on a shared Docker network, consisting of three primary components: the Newt connector, the Whisper transcription service, and the main NutriAI executable. As detailed in the Proxy section, the Newt container maintains the secure WireGuard tunnel, receiving forwarded requests from the upstream Pangolin instance and returning Nutri AI server responses. For voice processing, the system utilizes faster-whisper; however, to mitigate the lack of security in the stock container, a custom wrapper was implemented to handle authentication via API keys.
 \\
-The core NutriAI server handles the main application logic, utilizing the aforementioned custom SSL certificate for encrypted communication to the clients and an SQLite database for persistent storage. User credentials are secured using bcrypt to salt and hash passwords, and successful login or sign-up events issue a JSON Web Token (JWT) to authenticate subsequent requests. When processing a meal log, the server forwards the audio (.wav) file internally to Whisper, then combines the resulting transcription with the user’s image and a system prompt to send to an external OpenAI-compatible VLM endpoint. This design enables flexibility in model selection. While locally hosting the VLM would be an ideal feature to keep all data on-premise and the open source selection of VLM's is great, hardware constraints necessitated an external solution for this project. The server parses the VLM's structured JSON response — containing the meal name, description, and nutritional info — and stores it alongside the media in the database for the client to retrieve.
+The core NutriAI server handles the main application logic, utilizing the aforementioned custom SSL certificate for encrypted communication to the clients and an SQLite database for persistent storage. User credentials are secured using bcrypt to salt and hash passwords, and successful login or sign-up events issue a JSON Web Token (JWT) to authenticate subsequent requests. When processing a meal log, the server forwards the audio (.wav) file internally to Whisper, then combines the resulting transcription with the user’s image and a system prompt to send to an external OpenAI-compatible VLM endpoint. This design enables flexibility in model selection. While locally hosting the VLM would be an ideal feature to keep all data on-premise and the open source selection of VLM's is great, hardware constraints necessitated an external solution for this project. The server parses the VLM's structured JSON response — containing the meal name, description, and nutritional info — and stores it alongside the media in the database. % for the client to retrieve.
 
 \section{Methodology}
 
@@ -235,10 +235,10 @@ To organize our team and the development process of the mobile application prope
 \end{figure}
 
 \noindent
-To keep track of the tickets and overall tasks concerning our project, we used Trello, a project management tool that uses a flexible, Kanban-style system of boards, lists, and cards to help individuals and teams organize tasks, workflows, and ideas, making it easy to track progress from "to-do" to "done" \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
+To track tickets and tasks, we used Trello, a Kanban-style tool that organizes work into boards, lists, and cards and tracks progress from “to-do” to “done” \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates and discuss immediate questions or provide advice faster.
 \\
-With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges. A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively. After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvement. Based on the feedback from user acceptance testing, we then focused on addressing the identified areas to enhance usability, and overall quality.
+With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges. A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively. After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvement. Based on the feedback from user acceptance testing, we then focused on addressing the identified areas to enhance the overall quality.
 
 \FloatBarrier
 \subsection{System Design}
@@ -255,13 +255,13 @@ During early development, we used simple JSON-based storage to iterate quickly o
 
 \FloatBarrier
 \subsection{Prompt Engineering}
-During the development process, we applied various prompt engineering techniques to evaluate and compare two distinct prompt sets for our main feature - one simpler and one more complex. The prompt set includes the system and user prompt. 
+During development, we applied prompt engineering techniques to evaluate and compare two distinct prompt sets (system and user prompts) for our main feature - one simpler and one more complex.
 For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
 \noindent
 For the second prompt set, we utilized various prompt engineering techniques presented in the lecture.
-Adopting a meta-prompting approach, we used Google’s Gemini 3 Flash Preview model to generate a suitable prompt for our use case. We began by providing it with a foundational context for the task, then explicitly instructed it to adopt the persona of a prompt engineer. We asked it to analyze the requirements and clearly articulate exactly what information it needed to craft an effective, targeted, and well-structured prompt. In addition, we instructed the model to request further context or clarification if any ambiguity or imprecision remained, and to explicitly signal when the prompt had reached a sufficiently accurate state, ensuring we could collaboratively finalize it confidently. Following our initial prompt, the model requested clarification, particularly regarding which input to prioritize in cases of ambiguity between image and text/transcription. After addressing these unclear aspects, we received a precise and sophisticated system prompt, along with a rather simple user prompt. We opted for a structured prompt, used delimiters to clearly indicate distinct parts of input and specifically stated our desired output format, a custom JSON. Additionally, during the development of prompt set two, we incorporated a full example, comprising an image and its corresponding transcription, to guide and inform prompt design. For both prompt sets, we also provided an example output to facilitate in-context learning.\\
+Adopting a meta-prompting approach, we used Google’s Gemini 3 Flash Preview model to generate a suitable prompt for our use case. We began by providing it with foundational context for the task and instructed it to adopt the persona of a prompt engineer, analyze the requirements, and articulate what information it needed to craft an effective, targeted, and well-structured prompt. In addition, we instructed the model to request further context or clarification if any ambiguity or imprecision remained, and to signal when the prompt had reached a sufficiently accurate state, ensuring we could collaboratively finalize it confidently. Following our initial prompt, the model requested clarification, particularly regarding which input to prioritize in cases of ambiguity between image and text/transcription. After addressing these unclear aspects, we received a precise and sophisticated system prompt, along with a rather simple user prompt. We opted for a structured prompt, used delimiters to clearly indicate distinct parts of input and specifically stated our desired output format, a custom JSON. Additionally, during the development of prompt set two, we incorporated a full example, comprising an image and its corresponding transcription, to guide and inform prompt design. For both prompt sets, we also provided an example output to facilitate in-context learning.\\
 \noindent
-With these two versions, we now proceeded evaluating and comparing the performance of both prompt sets with different models and a set of ground truth meals\footnote{Ground truth meals are those for which we have both an image and complete nutritional data, enabling us to accurately assess and compare the performance of different prompt sets.}.
+We then evaluated and compared the performance of both prompt sets across different models using a set of ground truth meals\footnote{Ground truth meals are those for which we have both an image and complete nutritional data, enabling us to accurately assess and compare the performance of different prompt sets.}.
 \\
 \noindent
 Against all expectations, the simpler prompt set performed much better in meal calorie and nutriant estimation than the second, more detailed prompt set.
@@ -286,7 +286,7 @@ The NutriAI project team comprised five members with overlapping responsibilitie
 \section{Evaluation}
 \label{chap:eval}
 \noindent
-The evaluation results, as shown in Table \ref{tab:mean_percentage_error} and Figures \ref{fig:overall_mae_bar} and \ref{fig:percentage_error_boxplots}, provide a detailed comparison of the performance of NutriAI and other applications in nutrient estimation. The Mean Percentage Error (MPE) table indicates that NutriAI with both photo and audio inputs achieves relatively strong accuracy across all nutrients. For example, in the carbohydrate category, the MPE decreases from 45.70\% (photo-only) to 38.21\% when audio input is included. This suggests that the additional context from voice descriptions can help the model better interpret certain types of meals, particularly those that are more complex or ambiguous.
+To evaluate the system's accuracy, we benchmarked NutriAI against three competitor apps (arise, Calorix AI, Calorie Cue AI) using the previously established ground truth dataset. We tested our solution in "Photo only" and "Photo + Audio" modes. As shown in Table \ref{tab:mean_percentage_error}, all apps tended to overestimate calories, though NutriAI achieved the best performance in this regard. While audio input notably improved carbohydrate estimation (45.7\% to 38.2\%), it inadvertently increased error in fat estimation (14.1\% to 44.6\%). However, given the limited sample size of the dataset, these trends should be interpreted as indicative rather than definitive.
 
 \begin{table}[H]
 \centering
@@ -307,16 +307,17 @@ arise & 46.22 & 32.78 & 65.83 & 147.91 \\
 \end{table}
 
 \noindent
-The bar chart in Figure \ref{fig:overall_mae_bar} shows that NutriAI with audio input performs well in terms of overall Mean Absolute Percentage Error (MAPE) compared to the other tested applications. This metric was chosen to provide a general view of performance by aggregating errors across all nutrients, offering a useful perspective on overall accuracy.
+Figure \ref{fig:overall_mae_bar} displays the Overall Mean Absolute Percentage Error (MAPE). NutriAI with audio input achieved the lowest overall error rate of approximately 45\%, a clear improvement over the "Photo only" mode which resulted in a MAPE of ~52\%. In contrast, competitor apps demonstrated considerably higher error rates, with "arise" performing worst at over 80\% MAPE.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.9\textwidth]{typst_plots_out/overall_mae_bar.pdf}
-\caption{Overall Mean Absolute Percentage Error by App.}
+\caption{Overall Mean Absolute Percentage Error (MAPE) by App.\protect\footnotemark}
 \label{fig:overall_mae_bar}
 \end{figure}
+\footnotetext{Overall MAPE is computed as $\mathrm{MAPE}_{\mathrm{overall}} = \tfrac{1}{4}\sum_{m\in\{\mathrm{Cal},\mathrm{Carb},\mathrm{Prot},\mathrm{Fat}\}} \mathrm{MAPE}_m$. Unlike the signed MPE in Table \ref{tab:mean_percentage_error}, it is unsigned (error magnitude), so rankings can differ.}
 \noindent
-The boxplots in Figure \ref{fig:percentage_error_boxplots} highlight the variability in performance across different apps and nutrients. NutriAI's results, particularly with audio input, show a narrower interquartile range (IQR) for some nutrients, indicating more consistent estimations. However, the results also reveal areas for improvement, such as increased variability in fat estimation when audio input is included. This suggests that while audio input generally contributes to better accuracy, it may also introduce some inconsistencies in specific cases, pointing to the need for further refinement in the integration of multi-modal data.
+The error distribution is visualized in Figure \ref{fig:percentage_error_boxplots}. The boxplots reveal that NutriAI with audio input maintains the tightest distribution around the zero-error line across most categories. While fat estimation showed slightly increased variance with audio included, the overall consistency is superior to competitors like Calorix AI and arise, which exhibit large interquartile ranges and extreme outliers.
 
 \begin{figure}[htbp]
 \centering
@@ -324,9 +325,7 @@ The boxplots in Figure \ref{fig:percentage_error_boxplots} highlight the variabi
 \caption{Distribution of percentage errors across all apps and nutrients. Each box represents the interquartile range (IQR) with the median shown as a line inside the box. Whiskers extend to the minimum and maximum values. The dashed horizontal line at 0\% represents perfect accuracy. Values above 0\% indicate overestimation, while values below 0\% indicate underestimation.}
 \label{fig:percentage_error_boxplots}
 \end{figure}
-
-\noindent
-By using both MPE and MAPE, the evaluation provides a balanced understanding of the models' performance. MPE is effective for assessing individual nutrient estimations, while MAPE offers a broader measure of overall accuracy, ensuring a comprehensive analysis.
+\FloatBarrier
 \section{Current Progress and Future Plans}
 As of today, our nutrient estimation service has achieved its core objectives. The application now enables users to log their meals by capturing a photo and recording a voice note, allowing for AI-enabled nutrient and calorie estimation. This multi-modal approach ensures greater accuracy, particularly for complex or home-cooked meals. Additionally, the app provides meal suggestions tailored to the user’s past caloric and nutrient intake, helping them make informed dietary choices. Furthermore, the app offers analytics and insights, such as average meal quality, daily food intake, progress towards goals, and logging streaks, empowering users to better understand and manage their nutrition. While these features form the foundation of our service, there remain several areas for optimization prior to a full production rollout:
 

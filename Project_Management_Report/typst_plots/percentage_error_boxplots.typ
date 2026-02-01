@@ -91,9 +91,9 @@
 
 #lq.diagram(
   width: 16cm,
-  height: 9cm,
+  height: 7.5cm,
   ylim: (-150, 550),
-  xlabel: [App],
+  xlabel: none,
   ylabel: [Percentage Error (%)],
   legend: (position: top + left),
   grid: (stroke: (paint: luma(80%), thickness: 0.7pt, dash: "dashed")),
