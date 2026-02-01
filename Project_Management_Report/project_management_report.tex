@@ -140,8 +140,6 @@ This solution aims to make nutrition tracking simpler, smarter, and more accessi
         Test Data \& Results & Uses 10–20 real example meals (e.g., homemade pancakes) with known nutrition values to test accuracy. \\
         \addlinespace[10pt]
         Benchmarking Results & Uses the ground-truth real example meals for benchmarking the prototype against other competitor apps, evaluating its accuracy in estimation of nutrients and calories. \\
-        \addlinespace[10pt]
-        Project Report & A written report illustrating the design and functioning of the app, test results, and lessons learned from the project, in particular referring to the use of GenAI. \\
         \bottomrule
     \end{tabularx}
     \captionof{table}{Project Key Deliverables}
@@ -163,7 +161,7 @@ To keep the project focused and manageable, we defined the following boundaries 
     \item User has the possibility to see real-time insights considering his meal tracking activities
     \item User can generate meal suggestions based on his current nutritional intake
 \end{itemize}
-
+\newpage
 \noindent
 \textbf{Out of Scope}
 \begin{itemize}
@@ -197,7 +195,7 @@ Secondly, server two (2) runs a reimplementation of OpenAI's Whisper model \cite
     \label{fig:system_design}
 \end{figure}
 
-\footnotetext{Note: During later development, \texttt{qwen2.5-vl} was replaced with \texttt{qwen3-vl-235b-a22b-instruct}}
+\footnotetext{Note: During later development, \texttt{qwen2.5-vl} was replaced with \texttt{qwen3-vl-235b-a22b-instruct}.}
 
 \noindent
 By hosting all user data on our own locally managed server, we eliminate reliance on external service providers for storing sensitive information, allowing us to maintain a better control over the data. Furthermore, our locally hosted implementation of OpenAI’s Whisper model ensures that user voice data is never shared with external systems or used for AI training. Instead, audio recordings are securely processed within our private infrastructure, and only the resulting transcription, paired with the user’s meal photo, is sent to the externally hosted VLM. A more detailed explanation on data privacy and possible improvements in this regard for our service is given in the Project Safety and Reflection Report.
@@ -238,7 +236,10 @@ To organize our team and the development process of the mobile application prope
 To track tickets and tasks, we used Trello, a Kanban-style tool that organizes work into boards, lists, and cards and tracks progress from “to-do” to “done” \cite{trello}. For a screenshot taken from our project's board, refer to Figure \ref{fig:trello}.
 Apart from using a project management tool, we also created a WhatsApp group with all the team members to agree on meeting dates and discuss immediate questions or provide advice faster.
 \\
-With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges. A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively. After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvement. Based on the feedback from user acceptance testing, we then focused on addressing the identified areas to enhance the overall quality.
+With respect to roadmap planning, our overall strategy, in terms of application design, was to go from the coarse overview to the more granular subsystems, and, thereby, develop in a step-by-step fashion. We started with a target audience analysis to inform and guide the requirements engineering process, resulting in the functional (FRs) and non-functional (NFRs) requirements our application needed to meet. Following our requirements collection, we then proceeded with system design. 
+Once an initial architecture was established, we began with the implementation, making adjustments as needed to accommodate changes or unforeseen challenges.
+A more detailed explanation for our techniques employed during system design as well as database design will be given in sections \ref{chap:sys} and \ref{chap:db}, respectively.
+After completing the overall implementation, we initiated user acceptance testing to gather feedback on the application and identify any remaining weaknesses or areas needing improvemen in the future.
 
 \FloatBarrier
 \subsection{System Design}
