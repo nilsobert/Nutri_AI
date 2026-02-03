@@ -1291,6 +1291,8 @@ async def suggest_meals(
 
         prompt = f"""You are a helpful nutrition assistant.
 
+Please suggest some meals according to the user's remaining daily nutritional needs.
+
 Based on the remaining nutrients for today:
 - Calories: {request.remaining_calories} kcal
 - Protein: {request.remaining_protein} g
