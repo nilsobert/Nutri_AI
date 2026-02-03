@@ -1,0 +1,52 @@
+,,,,,,,,,
+App,Meal,Ground_Truth_Calories,Estimation_Calories,Ground_Truth_Carbs,Estimation_Carbs,Ground_Truth_Proteins,Estimation_Proteins,Ground_Truth_Fats,Estimation_Fats
+NutriAI-Photo+ Audio Input,1,377,520,42,58,24,32,13,18
+Nutri AI-Photo input only,1,377,520,42,62,24,38,13,14
+arise,1,377,599,42,43,24,41,13,30
+Calorix AI,1,377,470,42,35,24,27,13,22
+Calorie Cue AI,1,377,453,42,53,24,25,13,14
+NutriAI-Photo+ Audio Input,2,385,420,31,40,16,18,8,22
+Nutri AI-Photo input only,2,385,320,31,26,16,14,8,18
+arise,2,385,348,31,30,16,14,8,21
+Calorix AI,2,385,327,31,31,16,20,8,18
+Calorie Cue AI,2,385,330,31,35,16,13,8,15
+NutriAI-Photo+ Audio Input,3,406,420,43,58,7,16,9,14
+Nutri AI-Photo input only,3,406,420,43,70,7,14,9,8
+arise,3,406,586,43,50,7,31,9,29
+Calorix AI,3,406,520,43,42,7,27,9,28
+Calorie Cue AI,3,406,616,43,60,7,30,9,30
+NutriAI-Photo+ Audio Input,4,606,380,71,65,19,12,24,8
+Nutri AI-Photo input only,4,606,420,71,75,19,14,24,8
+arise,4,606,538,71,53,19,12,24,32
+Calorix AI,4,606,450,71,41,19,18,24,24
+Calorie Cue AI,4,606,292,71,53,19,9,24,6
+NutriAI-Photo+ Audio Input,5,228,580,38,80,9,16,6,22
+Nutri AI-Photo input only,5,228,525,38,95,9,12,6,10
+arise,5,228,581,38,84,9,12,6,22
+Calorix AI,5,228,455,38,68,9,8,6,19
+Calorie Cue AI,5,228,695,38,91,9,15,6,29
+NutriAI-Photo+ Audio Input,6,264,210,36,22,7,5,12,12
+Nutri AI-Photo input only,6,264,280,36,30,7,6,12,16
+arise,6,264,381,36,42,7,"8,7",12,22
+Calorix AI,6,264,329,36,26,7,5,12,16
+Calorie Cue AI,6,264,355,36,36,7,8,12,18
+NutriAI-Photo+ Audio Input,7,352,352,46,46,23,23,9,9
+Nutri AI-Photo input only,7,352,380,46,62,23,8,9,12
+arise,7,352,383,46,34,23,34,9,14
+Calorix AI,7,352,325,46,46,23,9,9,14
+Calorie Cue AI,7,352,545,46,83,23,20,9,15
+NutriAI-Photo+ Audio Input,8,254,320,"33,5",45,28,28,"2,5",3
+Nutri AI-Photo input only,8,254,120,"33,5",0,28,24,"2,5","1,5"
+arise,8,254,422,"33,5",33,28,35,"2,5",16
+Calorix AI,8,254,351,"33,5",30,28,22,"2,5",9
+Calorie Cue AI,8,254,539,"33,5",99,28,33,"2,5",4
+NutriAI-Photo+ Audio Input,9,355,520,31,75,17,18,19,16
+Nutri AI-Photo input only,9,355,840,31,108,17,36,19,28
+arise,9,355,706,31,88,17,38,19,23
+Calorix AI,9,355,710,31,94,17,31,19,27
+Calorie Cue AI,9,355,385,31,27,17,24,19,19
+NutriAI-Photo+ Audio Input,10,380,380,32,45,15,14,22,16
+Nutri AI-Photo input only,10,380,320,32,45,15,14,22,10
+arise,10,380,406,32,46,15,21,22,14
+Calorix AI,10,380,320,32,34,15,15,22,14
+Calorie Cue AI,10,380,342,32,33,15,17,22,15
