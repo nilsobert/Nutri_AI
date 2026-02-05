@@ -56,6 +56,7 @@
   node((103mm, -52mm), person_style("Laura", "Full Stack Dev"), width: 32mm, fill: person_bg),
   node((103mm, -64mm), person_style("Eduardo", "Full Stack Dev"), width: 32mm, fill: person_bg),
   node((103mm, -76mm), person_style("Joana", "Frontend Dev"), width: 32mm, fill: person_bg),
+  node((103mm, -88mm), person_style("Nils", "Prompt Engineering"), width: 32mm, fill: person_bg),
 
   // 4. Deployment / Ops
   node((147mm, -25mm), role_style("Deployment / Ops"), width: 34mm, fill: role_bg),
@@ -97,6 +98,7 @@
   edge((103mm,-40mm), (103mm,-52mm), stroke: barblue.lighten(50%)),
   edge((103mm,-52mm), (103mm,-64mm), stroke: barblue.lighten(50%)),
   edge((103mm,-64mm), (103mm,-76mm), stroke: barblue.lighten(50%)),
+  edge((103mm,-76mm), (103mm,-88mm), stroke: barblue.lighten(50%)),
 
   // Vertical flows (Dep/Ops)
   edge((147mm,-25mm), (147mm,-40mm), stroke: barblue.lighten(50%)),
