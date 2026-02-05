@@ -1,7 +1,7 @@
 #import "@preview/lilaq:0.5.0" as lq
 
 // Produce tightly-cropped PDFs for LaTeX inclusion.
-#set page(width: auto, height: auto, margin: (top: 2mm, bottom: 2mm, left: 0pt, right: 2mm))
+#set page(width: auto, height: auto, margin: (top: 2mm, bottom: 2mm, left: 5mm, right: 2mm))
 
 
 #let app_keys = (
@@ -89,12 +89,21 @@
   ),
 )
 
+#show label: it => {
+  // This targets the small boxes/lines specifically inside the legend
+  if (it.has("body")) {
+    it
+  } else {
+    scale(x: 150%, it) // Change 150% to make it as wide as you need
+  }
+}
+
 #lq.diagram(
   width: 16cm,
   height: 7.5cm,
   ylim: (-150, 550),
   xlabel: none,
-  ylabel: [Percentage Error (%)],
+  ylabel: [Mean Absolute Percentage Error (%)],
   legend: (position: top + left),
   grid: (stroke: (paint: luma(80%), thickness: 0.7pt, dash: "dashed")),
   xaxis: (
@@ -115,44 +124,44 @@
     ..calories,
     x: xs(-0.45),
     width: 0.18,
-    fill: blue.lighten(55%),
-    stroke: 0.9pt + blue.darken(15%),
+    fill: rgb("#c79293").lighten(30%),
+    stroke: 0.9pt + rgb("#3b2222"),
     median: 0.9pt + black,
     outliers: none,
     label: [Calories],
   ),
-  ..add_data_points(calories, xs(-0.45), blue),
+  ..add_data_points(calories, xs(-0.45), rgb("#c79293")),
   lq.boxplot(
     ..carbs,
     x: xs(-0.15),
     width: 0.18,
-    fill: red.lighten(55%),
-    stroke: 0.9pt + red.darken(15%),
+    fill: rgb("#537276").lighten(40%),
+    stroke: 0.9pt + rgb("#2c4240"),
     median: 0.9pt + black,
     outliers: none,
     label: [Carbs],
   ),
-  ..add_data_points(carbs, xs(-0.15), red),
+  ..add_data_points(carbs, xs(-0.15), rgb("#537276")),
   lq.boxplot(
     ..proteins,
     x: xs(0.15),
     width: 0.18,
-    fill: green.lighten(55%),
-    stroke: 0.9pt + green.darken(15%),
+    fill: rgb("#2c4240").lighten(50%),
+    stroke: 0.9pt + rgb("#2c4240"),
     median: 0.9pt + black,
     outliers: none,
     label: [Proteins],
   ),
-  ..add_data_points(proteins, xs(0.15), green),
+  ..add_data_points(proteins, xs(0.15), rgb("#2c4240")),
   lq.boxplot(
     ..fats,
     x: xs(0.45),
     width: 0.18,
-    fill: orange.lighten(45%),
-    stroke: 0.9pt + orange.darken(10%),
+    fill: rgb("#ccc287").lighten(20%),
+    stroke: 0.9pt + rgb("#3b2222"),
     median: 0.9pt + black,
     outliers: none,
     label: [Fats],
   ),
-  ..add_data_points(fats, xs(0.45), orange),
+  ..add_data_points(fats, xs(0.45), rgb("#ccc287")),
 )
