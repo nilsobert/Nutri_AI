@@ -378,6 +378,7 @@ const MealCard: React.FC<MealCardProps> = ({
     ? Colors.cardBackground.dark
     : Colors.cardBackground.light;
   const textColor = isDark ? Colors.text.dark : Colors.text.light;
+  const headerImage = meals.find((meal) => meal.image)?.image;
   const secondaryText = isDark ? "#999" : "#666";
   const borderColor = isDark ? "#333" : "#f0f0f0";
 
@@ -506,11 +507,20 @@ const MealCard: React.FC<MealCardProps> = ({
             { backgroundColor: isDark ? "#2C2C2E" : "#F2F2F7" },
           ]}
         >
-          <Ionicons
-            name={getMealIcon(category) as any}
-            size={24}
-            color={Colors.primary}
-          />
+          {headerImage ? (
+            <MealImage
+              uri={headerImage}
+              style={styles.mealIconImage}
+              resizeMode="cover"
+              showPlaceholder={false}
+            />
+          ) : (
+            <Ionicons
+              name={getMealIcon(category) as any}
+              size={24}
+              color={Colors.primary}
+            />
+          )}
         </View>
 
         <View style={styles.mealHeaderInfo}>
@@ -1377,6 +1387,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: Spacing.md,
+    overflow: "hidden",
+  },
+  mealIconImage: {
+    width: "100%",
+    height: "100%",
   },
   mealHeaderInfo: {
     flex: 1,
