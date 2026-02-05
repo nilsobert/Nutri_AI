@@ -256,7 +256,8 @@ During early development, we used simple JSON-based storage to iterate quickly o
 
 \FloatBarrier
 \subsection{Prompt Engineering}
-During development, we applied prompt engineering techniques to evaluate and compare two distinct prompt sets (system and user prompts) for our main feature - one simpler and one more complex.
+During development, we applied prompt engineering techniques for our main logging feature as well as for the recipe suggestion feature. The following section, however, focuses on our service's main feature, meal logging, since similar methods were employed for both features.
+To evaluate the performance of different prompts, we compared two distinct prompt sets (system and user prompts) - a simpler and a more complex one.
 For the first prompt set, we devised a straightforward task description, providing the model with minimal context. This included a basic ruleset and an example JSON template to guide the model’s output, specifically designed for our desired meal analyzer use case. \\
 \noindent
 For the second prompt set, we utilized various prompt engineering techniques presented in the lecture.
