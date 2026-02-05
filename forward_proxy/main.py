@@ -1170,7 +1170,12 @@ async def analyze_meal(
              log_entry.status = AnalysisStatus.FAILURE.value
         else:
              log_entry.status = AnalysisStatus.SUCCESS.value
-             
+
+        db.query(DailyMealSuggestion).filter(
+        DailyMealSuggestion.user_id == current_user.id,
+        DailyMealSuggestion.date == date.today()
+        ).delete(synchronize_session=False)
+        
         log_entry.processing_duration_ms = int((time.time() - request_start_time) * 1000)
         db.commit()
         
@@ -1286,6 +1291,8 @@ async def suggest_meals(
 
         prompt = f"""You are a helpful nutrition assistant.
 
+Please suggest some meals according to the user's remaining daily nutritional needs.
+
 Based on the remaining nutrients for today:
 - Calories: {request.remaining_calories} kcal
 - Protein: {request.remaining_protein} g
@@ -1302,7 +1309,10 @@ Rules:
   {{
     "name": "none",
     "description": "",
-    "recipe": "",
+    "recipe": {{
+        "ingredients": [],
+        "preparation": []
+   }},
     "nutrition": {{"calories": 0, "protein": 0, "carbs": 0, "fat": 0}}
   }}
 
