@@ -56,7 +56,7 @@
   node((103mm, -52mm), person_style("Laura", "Full Stack Dev"), width: 32mm, fill: person_bg),
   node((103mm, -64mm), person_style("Eduardo", "Full Stack Dev"), width: 32mm, fill: person_bg),
   node((103mm, -76mm), person_style("Joana", "Frontend Dev"), width: 32mm, fill: person_bg),
-  node((103mm, -88mm), person_style("Nils", "Prompt Engineering"), width: 32mm, fill: person_bg),
+  node((103mm, -88mm), person_style("Nils", "Prompt Engineer"), width: 32mm, fill: person_bg),
 
   // 4. Deployment / Ops
   node((147mm, -25mm), role_style("Deployment / Ops"), width: 34mm, fill: role_bg),
