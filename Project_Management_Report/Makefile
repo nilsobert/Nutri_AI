@@ -51,7 +51,7 @@ $(PLOT_OUT)/percentage_error_boxplots.pdf: $(DATA_CSVS)
 
 $(PLOT_OUT)/%.pdf: $(PLOT_DIR)/%.typ
 	mkdir -p $(PLOT_OUT)
-	$(TYPST) compile $< $@
+	$(TYPST) compile --ppi 300 $< $@
 
 
 clean:

@@ -89,22 +89,43 @@
   ),
 )
 
-#show label: it => {
-  // This targets the small boxes/lines specifically inside the legend
-  if (it.has("body")) {
-    it
-  } else {
-    scale(x: 150%, it) // Change 150% to make it as wide as you need
-  }
+// Custom legend as a workaround for small legend markers
+#let legend_box(fill_color, stroke_color, label_text) = {
+  box(
+    inset: 0pt,
+    stack(
+      dir: ltr,
+      spacing: 4pt,
+      rect(width: 14pt, height: 10pt, fill: fill_color, stroke: 0.9pt + stroke_color),
+      label_text,
+    )
+  )
 }
 
-#lq.diagram(
+#let custom_legend = box(
+  fill: rgb("#ffffff"),
+  inset: 6pt,
+  radius: 3pt,
+  stroke: 1pt + luma(50%),
+  stack(
+    dir: ltr,
+    spacing: 12pt,
+    legend_box(rgb("#c79293").lighten(30%), rgb("#3b2222"), [Calories]),
+    legend_box(rgb("#537276").lighten(40%), rgb("#2c4240"), [Carbs]),
+    legend_box(rgb("#2c4240").lighten(50%), rgb("#2c4240"), [Proteins]),
+    legend_box(rgb("#ccc287").lighten(20%), rgb("#3b2222"), [Fats]),
+  )
+)
+
+#block[
+  #place(top + left, dx: 52pt, dy: 12pt, custom_legend)
+  #lq.diagram(
   width: 16cm,
   height: 7.5cm,
   ylim: (-150, 550),
   xlabel: none,
   ylabel: [Mean Absolute Percentage Error (%)],
-  legend: (position: top + left),
+  legend: none,
   grid: (stroke: (paint: luma(80%), thickness: 0.7pt, dash: "dashed")),
   xaxis: (
     ticks: (
@@ -128,7 +149,6 @@
     stroke: 0.9pt + rgb("#3b2222"),
     median: 0.9pt + black,
     outliers: none,
-    label: [Calories],
   ),
   ..add_data_points(calories, xs(-0.45), rgb("#c79293")),
   lq.boxplot(
@@ -139,7 +159,6 @@
     stroke: 0.9pt + rgb("#2c4240"),
     median: 0.9pt + black,
     outliers: none,
-    label: [Carbs],
   ),
   ..add_data_points(carbs, xs(-0.15), rgb("#537276")),
   lq.boxplot(
@@ -150,7 +169,6 @@
     stroke: 0.9pt + rgb("#2c4240"),
     median: 0.9pt + black,
     outliers: none,
-    label: [Proteins],
   ),
   ..add_data_points(proteins, xs(0.15), rgb("#2c4240")),
   lq.boxplot(
@@ -161,7 +179,7 @@
     stroke: 0.9pt + rgb("#3b2222"),
     median: 0.9pt + black,
     outliers: none,
-    label: [Fats],
   ),
   ..add_data_points(fats, xs(0.45), rgb("#ccc287")),
 )
+]

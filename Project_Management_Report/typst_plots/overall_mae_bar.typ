@@ -39,8 +39,8 @@
 #let values = app_keys.map(app => get_mae(app))
 
 #lq.diagram(
-  width: 16cm,
-  height: 5cm,
+  width: 20cm,
+  height: 7cm,
   ylim: (0, 100),
   xlabel: none,
   ylabel: [Overall MAPE (%)],
